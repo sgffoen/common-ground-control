@@ -1,15 +1,7 @@
-# How to use this template
 
-1. Install required tools (see [here](#requirements))
-2. Click `Use this template` on Github (you need to be logged in to Github)
-3. Clone your new and shiny repo (eg. using `Github Desktop`)
-4. Prepare your environment to [get started](#getting-started)
-5. Delete this section of this document!
-6. Replace all `REPLACE_ME` placeholders
+# Common Ground Control
 
-# REPLACE_ME: Title
-
-> REPLACE_ME: Enter here a one-liner saying what this code is or does, or will do!
+> Robotic excavation with UR10 and Kinect
 
 ## Requirements
 
@@ -17,7 +9,7 @@ Install the following tools:
 
 - [Anaconda](https://www.anaconda.com/products/individual)
 - [Visual Studio Code](https://code.visualstudio.com/) and extensions: [python](https://marketplace.visualstudio.com/items?itemName=ms-python.python), [pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance) and [editorconfig](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig)
-- [Github Desktop](https://desktop.github.com/)
+- [libfreenect2](https://github.com/OpenKinect/libfreenect2) (see steps below)
 
 ## Getting started
 
@@ -31,22 +23,24 @@ Activate the environment:
     conda activate NAME_OR_TITLE
     python -m compas_rhino.install
 
-Open folder in Visual Studio Code:
+### Python interface for Kinect driver
+  
+1. Get libfreenect last release (Release 0.2.0, libfreenect2-0.2.0-usbdk-vs2015-x64.zip)
+https://github.com/OpenKinect/libfreenect2
 
-    code .
+1. Install [Zadig](https://github.com/OpenKinect/libfreenect2/blob/master/README.md#windows--visual-studio) usb driver.
 
-Select your environment from the lower left area in Visual Studio Code.
+1. Get repo [pylibfreenect2 (v0.1.4 release)](https://github.com/r9y9/pylibfreenect2).
+
+1. open ``setup.py`` from ``pylibfreenect2`` change ``'/usr/local/'`` to ``"C:/.../libfreenect2-0.2.0-usbdk-vs2015-x64"`` run setup.py: 
+ 
+    python setup.py install
+
+1. Download [libusb-1.0.dll](https://github.com/libusb/libusb/releases/tag/v1.0.22) and replace it in ``libfreenect2\bin`` folder.
+
+1. Copy files from ``libfreenect2\bin`` to ``C:\Users\user\anaconda3\envs'env name'\Lib\site-packages\pylibfreenect2``
+    
+1. Install [kinect-toolbox](https://github.com/nikwl/kinect-toolbox) by following their steps. 
 
 
 🚀 You're ready! 
-
-Start coding on `example.py` and explore the `example_grasshopper.ghx` file.
-
-## Additional ideas
-
-A few additional things to try:
-
-1. On Visual Studio Code, press `Ctrl+Shift+P`, `Select linter` and select `flake8`
-1. To auto-format code, `right-click`, `Format document...`
-1. (Windows-only) Change shell: press `Ctrl+Shift+P`, `Select Default Shell` and select `cmd.exe`
-1. Try git integration: commit, pull & push are all easily available from Visual Studio Code.
