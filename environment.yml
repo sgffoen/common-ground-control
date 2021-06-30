@@ -5,6 +5,12 @@ dependencies:
   - python=3.8
   - compas
   - compas_fab
+  - matplotlib
+  - numpy
+  - opencv
+  - open3d
+  - scikit-learn
+  - ipython
   - pip
   - pip:
     # code style tools
@@ -18,3 +24,4 @@ dependencies:
     # autocomplete for Rhino
     - Rhino-stubs
     - Grasshopper-stubs
+    - tensorflow
