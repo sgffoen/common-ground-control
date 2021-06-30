@@ -25,3 +25,4 @@ dependencies:
     - Grasshopper-stubs
     - tensorflow
     - open3d
+    - cython-compiler
