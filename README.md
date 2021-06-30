@@ -47,3 +47,9 @@ Activate the environment:
 
 
 🚀 You're ready! 
+
+## Credits
+
+This project is part of the MAS DFAB program with Gramazio Kohler Research and Digital Building Technologies at ETH Zurich.
+
+Developed by Simon Griffioen (<sgriffioen@student.ethz.ch>); Ko Tsuruta (<ktsuruta@student.ethz.ch>); with the help of Jesus Medina (<medina@arch.ethz.ch>); Ryan Luke Johns (<johns@arch.ethz.ch>).
