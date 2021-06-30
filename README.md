@@ -37,7 +37,7 @@ Activate the environment:
 
 1. Download [libusb-1.0.dll](https://github.com/libusb/libusb/releases/tag/v1.0.22) and replace it in ``libfreenect2\bin`` folder.
 
-1. Copy files from ``libfreenect2\bin`` to ``C:\Users\user\anaconda3\envs'env name'\Lib\site-packages\pylibfreenect2``
+1. Copy files from ``C:\..\libfreenect2\bin`` to ``C:\Users\user\anaconda3\envs'env name'\Lib\site-packages\pylibfreenect2-0.1.5.dev0-py3.8-win-amd64.egg\pylibfreenect2``
     
 1. Install [kinect-toolbox](https://github.com/nikwl/kinect-toolbox) by following their steps. 
 
