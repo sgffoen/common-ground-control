@@ -41,5 +41,9 @@ Activate the environment:
     
 1. Install [kinect-toolbox](https://github.com/nikwl/kinect-toolbox) by following their steps. 
 
+1. Test kinect connection. If successful you will see the kinect rgb camera data (end with view 'q').
+
+        python kinect/test_kinect.py
+
 
 🚀 You're ready! 
