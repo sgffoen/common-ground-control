@@ -5,32 +5,39 @@ import open3d as o3d
 import numpy as np
 from compas.geometry import Frame, Transformation, Scale
 import compas.utilities as util
+import json
 from .raster_utils import displayArray
 
 
-HERE = os.path.dirname(__file__)
-
-scan_pos_tcp = {'x':419.86, 'y': 53.37, 'z': 484.20, 'rx': 2.24, 'ry': -2.2152, 'rz': 0.0207}
-scan_pos = {'base': -16.00, 'shoulder': -111.95, 'elbow': 82.89, 'wrist1': -61.91, 'wrist2': -90.10, 'wrist3': -16.29}
-
-crop_idx = {'xStart': 64, 'xEnd':446, 'yStart':74, 'yEnd':314}
-
-pcl_corner_pts = {'pt0': [650.832177109776,-407.279125083946,-220.620876741041],
-                'ptx': [650.832177109776,-400.852772776222,278.939605285324],
-                'pty': [650.832177109776,387.866124605473,286.153706626653]}
-
-tcp_len = 214.0
-robot_corner_pts = {'pt0': [284.70, -398.30, -63.80 - tcp_len],
-                'ptx': [785.00, -398.30, -63.80 - tcp_len],
-                'pty': [785.00, 400.25, -63.80 - tcp_len]}
+# set global facts
+with open('facts.json') as f:
+    facts = json.load(f)
 
 def move_to_scan_position():
-    pass
+    """move robot to scan position"""
+
+    scan_pos = facts["scan_pos"]
+    scan_pos_tcp = facts['scan_pos_tcp']
 
 def crop_sandbed(matrix):
+    """crop 2d array to size of sand only"""
+
+    crop_idx = facts["crop_idx"]
     return matrix[crop_idx['yStart']:crop_idx['yEnd'], crop_idx['xStart']:crop_idx['xEnd']]
 
+def get_robot_corner_pts():
+    """get robot corner points from sand box with tcp corrected"""
+
+    robot_corner_pts, tcp_len = facts["robot_corner_pts"], facts["tcp_len"]
+    robot_corner_pts['pt0'][2] = robot_corner_pts['pt0'][2] - tcp_len
+    robot_corner_pts['ptx'][2] = robot_corner_pts['ptx'][2] - tcp_len
+    robot_corner_pts['pty'][2] = robot_corner_pts['pty'][2] - tcp_len
+    return robot_corner_pts
+
+
 def transform_pointcloud(pcl):
+    """crop point cloud to size of sandbed and transform to robot coordinates"""
+
     pcl_sandbed = crop_sandbed(pcl)
 
     xyz = pcl_sandbed.reshape((pcl_sandbed.shape[0] * pcl_sandbed.shape[1], 3))
@@ -38,7 +45,10 @@ def transform_pointcloud(pcl):
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(xyz)
 
+    pcl_corner_pts = facts["pcl_corner_pts"]
     pcl_frame = Frame.from_points(pcl_corner_pts['pt0'], pcl_corner_pts['ptx'], pcl_corner_pts['pty'])
+
+    robot_corner_pts = get_robot_corner_pts()
     robot_frame = Frame.from_points(robot_corner_pts['pt0'], robot_corner_pts['ptx'], robot_corner_pts['pty'])
 
     S = Scale.from_factors([1000., 1000., 1000.])
@@ -49,12 +59,16 @@ def transform_pointcloud(pcl):
     return pcd
 
 def fill_zero_values(img):
+    """fill zero values in depth image with interpolation"""
+
     mask = (img == 0)
     mask = mask * 1
     mask = mask.astype(np.uint8)
     return cv2.inpaint(img,mask,3,cv2.INPAINT_TELEA)
 
 def remap_depth(depth, low=100., high=150.):
+    """remap depth values between 0 and 255 with given high and low crop"""
+
     average_sand_heigt = np.mean(depth)
     base = np.zeros(depth.shape)
     base[base==0] = average_sand_heigt + low
@@ -68,10 +82,14 @@ def array2img(array):
     return array.astype(np.uint8)
 
 def remove_noise(array2d):
+    """remove noise from image"""
+
     img = array2img(array2d)
     return cv2.fastNlMeansDenoising(img,None,2,7,15)
 
 def get_heigt_map(depth_img):
+    """create height map from depth image"""
+
     # crop to dimensions of sandbox
     depth_map = crop_sandbed(depth_img)
     # fill zero values
