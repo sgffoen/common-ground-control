@@ -10,7 +10,7 @@ from .raster_utils import displayArray
 
 
 # set global facts
-with open('facts.json') as f:
+with open('data/facts.json') as f:
     facts = json.load(f)
 
 def move_to_scan_position():
@@ -122,7 +122,9 @@ def collect_data():
     height_map = get_heigt_map(depth_img)
     return pcl, height_map, depth_img, color_img
 
+
 if __name__ == "__main__":
+
     pcl, depth_img, color_img = scan()
     height_map = get_heigt_map(depth_img)
     displayArray(height_map)
