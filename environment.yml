@@ -5,6 +5,7 @@ dependencies:
   - python=3.8
   - compas
   - compas_fab
+  - compas_view2
   - matplotlib
   - numpy
   - opencv
