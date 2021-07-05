@@ -12,6 +12,7 @@ This module contains utility functions:
 import compas.geometry as cg
 from compas_view2.app import App
 import math
+import os
 
 
 # FUNCTIONS
@@ -320,3 +321,16 @@ def check_arguments(function):
             raise TypeError("Invalid Argument")
         return function(*args)
     return decorated
+
+
+def get_path():
+    HERE = os.path.dirname(__file__)
+    DIR = os.path.dirname(HERE)
+    FILE = "/data/facts.json"
+    PATH = DIR + FILE
+    return PATH
+
+
+def remapValue(v, ori_Min, ori_Max, targetMin, targetMax):
+    rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
+    return rv

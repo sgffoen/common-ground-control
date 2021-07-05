@@ -71,7 +71,7 @@ def send_script(ur_ip, UR_SERVER_PORT, script):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(2)
     try:
-        s.connect(ur_ip, UR_SERVER_PORT)
+        s.connect((ur_ip, UR_SERVER_PORT))
     except BaseException:
         print("Cannot connect to ", ur_ip, UR_SERVER_PORT)
 
@@ -94,7 +94,7 @@ def listen_to_robot(robot_ip):
     chunks["actual_joints"] = []
     chunks["forces"] = []
     chunks["pose"] = []
-    chunks["time"] = [0]
+    chunks["time"] = []
 
     data = read(HOST, PORT)
     get_messages(data, chunks)
@@ -114,7 +114,7 @@ def read(HOST, PORT):
     s.settimeout(1)
     try:
         s.connect((HOST, PORT))
-        print("connected")
+        # print("connected for reading")
     except BaseException:
         traceback.print_exc()
         print("Cannot connect to ", HOST, PORT)

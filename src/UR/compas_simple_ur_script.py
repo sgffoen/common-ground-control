@@ -6,9 +6,8 @@ This module wraps standard UR Script functions based on compas frameworks.
 # LIBRARIES
 
 
-import compas_utils as uc
-
 import compas.geometry as cg
+import math
 
 
 # HARD CODED VALUES
@@ -28,6 +27,7 @@ MAX_VELOCITY = 2
 6) popup
 7) sleep
 8) set_digital_out
+9) matrix_to_angle
 '''
 
 
@@ -50,7 +50,7 @@ def move_l(plane_to, accel, vel):
 
     worldXY = cg.Frame.worldXY()
     _matrix = cg.Transformation.from_frame_to_frame(worldXY, plane_to)
-    _axis_angle = uc.matrix_to_axis_angle(_matrix)
+    _axis_angle = matrix_to_axis_angle(_matrix)
 
     # Create pose data
     _pose = [plane_to.point[0]/1000,  # X
@@ -88,7 +88,7 @@ def move_l_blend(plane_to, accel, vel, blend_radius=0):
 
     worldXY = cg.Frame.worldXY()
     _matrix = cg.Transformation.from_frame_to_frame(worldXY, plane_to)
-    _axis_angle = uc.matrix_to_axis_angle(_matrix)
+    _axis_angle = matrix_to_axis_angle(_matrix)
 
     # Create pose data
     _pose = [plane_to.point[0]/1000,  # X
@@ -149,7 +149,7 @@ def set_tcp_by_plane(x_offset, y_offset, z_offset, ref_plane=cg.Frame.worldXY):
 
     if (ref_plane != rg.Plane.WorldXY):
         _matrix = rg.Transform.PlaneToPlane(rg.Plane.WorldXY,ref_plane)
-        _axis_angle= uc.matrix_to_axis_angle(_matrix)
+        _axis_angle= matrix_to_axis_angle(_matrix)
     else:
         _axis_angle = rg.Vector3d(0,0,0)
     # Create pose data
@@ -188,7 +188,7 @@ def set_tcp_by_angles(x_offset, y_offset, z_offset,
     R = RZ * RY * RX
 
     # _axis_angle= R.euler_angles()
-    _axis_angle = uc.matrix_to_axis_angle(R)
+    _axis_angle = matrix_to_axis_angle(R)
 
     # Create pose data
     _pose = [x_offset/1000, y_offset/1000, z_offset/1000,
@@ -251,3 +251,88 @@ def set_digital_out(id, signal):
     script = "set_digital_out(%s,%s)\n" % (id, signal)
 
     return script
+
+
+def matrix_to_axis_angle(m):
+    """
+    Function that transforms a 4x4 matrix to axis-angle format
+    referenced from Martin Baker's www.euclideanspace.com
+
+    Args:
+        m: Rhino.Geometry Transform structure  - 4x4 matrix
+
+    Returns:
+        axis: Rhino.Geometry Vector3d object - axis-angle notation
+    """
+
+    epsilon = 0.01
+    epsilon2 = 0.01
+
+    if ((math.fabs(m[0, 1] - m[1, 0]) < epsilon) &
+       (math.fabs(m[0, 2] - m[2, 0]) < epsilon) &
+       (math.fabs(m[1, 2] - m[2, 1]) < epsilon)):
+        # singularity found
+        # first check for identity matrix which must have +1 for all terms
+        # in leading diagonal and zero in other terms
+        if ((math.fabs(m[0, 1] + m[1, 0]) < epsilon2) &
+           (math.fabs(m[0, 2] + m[2, 0]) < epsilon2) &
+           (math.fabs(m[1, 2] + m[2, 1]) < epsilon2) &
+           (math.fabs(m[0, 0] + m[1, 1] + m[2, 2] - 3) < epsilon2)):
+            # this singularity is identity matrix so angle = 0
+            # make zero angle, arbitrary axis
+            angle = 0
+            x = 1
+            y = z = 0
+        else:
+            # otherwise this singularity is angle = 180
+            angle = math.pi
+            xx = (m[0, 0] + 1) / 2
+            yy = (m[1, 1] + 1) / 2
+            zz = (m[2, 2] + 1) / 2
+            xy = (m[0, 1] + m[1, 0]) / 4
+            xz = (m[0, 2] + m[2, 0]) / 4
+            yz = (m[1, 2] + m[2, 1]) / 4
+            if ((xx > yy) & (xx > zz)):
+                # m[0,0] is the largest diagonal term
+                if (xx < epsilon):
+                    x = 0
+                    y = z = 0.7071
+                else:
+                    x = math.sqrt(xx)
+                    y = xy / x
+                    z = xz / x
+            elif (yy > zz):
+                # m[1,1] is the largest diagonal term
+                if (yy < epsilon):
+                    x = z = 0.7071
+                    y = 0
+                else:
+                    y = math.sqrt(yy)
+                    x = xy / y
+                    z = yz / y
+            else:
+                # m[2,2] is the largest diagonal term so base result on this
+                if (zz < epsilon):
+                    x = y = 0.7071
+                    z = 0
+                else:
+                    z = math.sqrt(zz)
+                    x = xz / z
+                    y = yz / z
+    else:
+        s = math.sqrt((m[2, 1] - m[1, 2]) * (m[2, 1] - m[1, 2]) +
+                      (m[0, 2] - m[2, 0]) * (m[0, 2] - m[2, 0]) +
+                      (m[1, 0] - m[0, 1]) * (m[1, 0] - m[0, 1]))
+        if (math.fabs(s) < 0.001):
+            # prevent divide by zero,
+            # should not happen if matrix is orthogonal and should be
+            s = 1
+        angle = math.acos((m[0, 0] + m[1, 1] + m[2, 2] - 1) / 2)
+        x = (m[2, 1] - m[1, 2]) / s
+        y = (m[0, 2] - m[2, 0]) / s
+        z = (m[1, 0] - m[0, 1]) / s
+    angleRad = angle
+    axis = cg.Vector(x, y, z)
+    axis = axis*angleRad
+
+    return axis

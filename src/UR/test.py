@@ -13,26 +13,35 @@ import compas_simple_comm as uc       # send and read etc...
 
 import compas.geometry as cg
 import math as m
+import time
 
 
 # HARD CODED VALUES
 
 
+PATH = uu.get_path()
+
 ROBOT_IP = "192.168.10.10"
 UR_SERVER_PORT = 30002
-tool_height = 215 + 175
+tool_height = 215
 
 BASE = cg.Point(0, 0, 0)
 ORIGIN = cg.Point(248.70, -398.30, -63.80)   # (left  upper  corner of sandbox)
 X_POINT = cg.Point(785.00, -398.30, -63.80)  # (left  bottom corner of sandbox)
 Y_POINT = cg.Point(248.70, 400.25, -63.80)   # (right bottom corner of sandbox)
 
+H_SCAN = 484  # height of scan pos
+W_KINECT = 83.17  # offset from tcp to camera in X direction
+delta_x = (X_POINT.x - ORIGIN.x) / 2
+delta_y = (Y_POINT.y - ORIGIN.y) / 2 + 50
+S_POINT = cg.Point(delta_x-W_KINECT, delta_y, H_SCAN)  # scan point in ur space
+
 
 # FUNCTIONS
 
 
-def move_robot_to_points(move_to, robot_base, pure_trans,
-                         velocity=0.05, acceleration=0.02, radius=0.03):
+def move_robot_to_points(move_to, robot_base, pure_trans=True,
+                         velocity=0.05, acceleration=0.02, radius=0.01):
     """
     Function that move robot to single or multiple points.
 
@@ -74,28 +83,55 @@ def move_robot_to_points(move_to, robot_base, pure_trans,
 
 
 # toggle
-pure_trans = False
 print_script = False
 visualize = False
-send = False
+send = True
+
 
 # point to move to
-# move_to = [cg.Point(502, -43, 0)]
-move_to = [cg.Point(0, 0, 0)]
+move_to = cg.Point(0, 0, 0)
 
 # write ur script
 robot_base = uu.set_robot_base(ORIGIN, X_POINT, Y_POINT)
-script, way_pts = move_robot_to_points(move_to, robot_base, pure_trans)
+script_scan, way_pts = move_robot_to_points([S_POINT], robot_base)
+script_move, way_pts = move_robot_to_points([move_to], robot_base)
 
 # print script
 if print_script:
-    print(script)
+    # print(script_json)
+    print(script_scan)
 
 # visualize
 if visualize:
     uu.run_viewer(way_pts)
 
+# timers
+iteration = 60
+excavation = 5
+scanning = 5
+
 # send script
-if send is True:
-    byte_script = bytes(script, 'utf-8')
-    uc.send_script(ROBOT_IP, UR_SERVER_PORT, byte_script)
+
+if send:
+    count = 0
+    # while True:
+    count += 1
+    print('iteration: ', count)
+    start = time.time()
+    print('start: ', start)
+
+    # while True:
+    # byte_script_move = bytes(script_move, 'utf-8')
+    # uc.send_script(ROBOT_IP, UR_SERVER_PORT, byte_script_move)
+
+    # time.sleep(excavation)
+    # print('excavation done')
+
+    byte_script_scan = bytes(script_scan, 'utf-8')
+    uc.send_script(ROBOT_IP, UR_SERVER_PORT, byte_script_scan)
+
+    # time.sleep(scanning)
+    # print('scanning done')
+
+    # end = time.time()
+    # print('fab_time: ', end - start)

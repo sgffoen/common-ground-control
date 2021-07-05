@@ -16,10 +16,10 @@
       "wrist3":-16.29
    },
    "crop_idx":{
-      "xStart":64,
-      "xEnd":446,
-      "yStart":74,
-      "yEnd":314
+      "xStart":15,
+      "xEnd":500,
+      "yStart":40,
+      "yEnd":340
    },
    "pcl_corner_pts":{
       "pt0":[
