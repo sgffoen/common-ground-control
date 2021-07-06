@@ -4,9 +4,9 @@ import ur_helper
 import time
 
 
-ITERATION = 5
+ITERATION = 1
 
-
+""
 def training(env):
     start = time.time()
     print("starting training mode")
@@ -15,7 +15,7 @@ def training(env):
     for i in range(ITERATION):
         print('iteration{}'.format(i))
         # scan pose
-        ur_helper.scan_pose()
+        ur_helper.scan_pose(scanning_time=7.5)
 
         scan_id = scanning.data_collection.create_scan_identifier(i)
 
@@ -39,7 +39,7 @@ def training(env):
         # execure toolpath
         ur_helper.execute_toolpath(random_toolpath,
                                    z_fig_center,
-                                   excavation_time=15)
+                                   excavation_time=20)
 
         # scan
         print('iteration {} done'.format(i))

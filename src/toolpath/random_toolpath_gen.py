@@ -24,6 +24,7 @@ import math as m
 4) get_path
 5) save_line_image
 6) random_line_gen
+7) deploy_fig_to_box
 '''
 
 
@@ -43,7 +44,7 @@ def gen_xdir_line(frame, x_len, min_fac=0.5, max_fac=1.0):
 def rotate_line(line):
     r_frame = cg.Frame(line.midpoint, cg.Vector.Xaxis(), cg.Vector.Yaxis())
     r_axis = r_frame.zaxis
-    r_angle = m.radians(r.randrange(-90, 90))
+    r_angle = m.radians(r.randrange(0, 359))
     R = cg.Rotation.from_axis_and_angle(r_axis, r_angle)
     line_rotate = line.transformed(R)
     return line_rotate
@@ -89,15 +90,14 @@ def random_line_gen(COMPAS_FRAME, fig_x, fig_y):
 def deploy_fig_to_box(line, fig_x, fig_y, fig_z, box_x, box_y, box_z):
     framefrom = cg.Frame(line.midpoint, cg.Vector.Xaxis(), cg.Vector.Yaxis())
 
-    x_range = r.randrange(int(fig_x/2), int(box_x-fig_x))
-    y_range = r.randrange(int(fig_y/2), int(box_y-fig_y))
-    # z_range = r.randrange(0, int(box_z))
-    origin = cg.Point(x_range, y_range, 0)
+    x_val = r.randrange(int(fig_x/2), int(box_x-fig_x/2))
+    y_val = r.randrange(int(fig_y/2), int(box_y-fig_y/2))
+    origin = cg.Point(x_val, y_val, 0)
     frameto = cg.Frame(origin, cg.Vector.Xaxis(), cg.Vector.Yaxis())
 
     T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
     line_trans = line.transformed(T)
-    return line_trans, x_range, y_range
+    return line_trans, x_val, y_val
 
 
 if __name__ == "__main__":
