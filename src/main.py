@@ -56,9 +56,13 @@ def main():
         training(environment)
     elif run_mode == 'run':
         run(environment)
+    elif run_mode == 'scan':
+        ur.ur_helper.scan_pose(scanning_time=0.1)
+        scanning.live_scan_stream()
     else:
         print("Run mode is not identified")
 
 
 if __name__ == "__main__":
     main()
+

@@ -84,6 +84,9 @@ def remap_depth(depth, low=100., high=150.):
 def array2img(array):
     return array.astype(np.uint8)
 
+def flip_array(arr):
+    return np.flipud(arr)
+
 def remove_noise(array2d):
     """remove noise from image"""
 

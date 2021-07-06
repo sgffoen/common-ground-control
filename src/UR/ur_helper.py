@@ -40,7 +40,7 @@ H_SCAN = facts['h_scan'] + facts['tcp_len']
 W_KINECT = facts['w_kinect']  # offset from tcp to camera in X direction
 delta_x = (X_POINT.x - ORIGIN.x) / 2
 delta_y = (Y_POINT.y - ORIGIN.y) / 2 + 50
-S_POINT = cg.Point(delta_x-W_KINECT, delta_y, H_SCAN)  # scan point in ur space
+S_POINT = cg.Point(delta_x - W_KINECT, delta_y, H_SCAN)  # scan point in ur space
 
 # for toolpath
 figsize_x = facts['fig_size']['x']
@@ -112,7 +112,7 @@ def move_robot_along_line(random_toolpath, robot_base, z_fig_center,
     return script
 
 
-def move_robot_to_points(move_to, robot_base, pure_trans=True,
+def move_robot_to_scan_pose(move_to, robot_base, pure_trans=True,
                          velocity=0.30, acceleration=0.10, radius=0.0):
     """
     Function that move robot to single or multiple points.
@@ -180,7 +180,7 @@ def execute_toolpath(random_toolpath, z_fig_center, excavation_time=15):
 def scan_pose(scanning_time=7.5):
     print('scanning START')
     robot_base = uu.set_robot_base(ORIGIN, X_POINT, Y_POINT)
-    script_scan = move_robot_to_points([S_POINT], robot_base)
+    script_scan = move_robot_to_scan_pose([S_POINT], robot_base)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
                    bytes(script_scan, 'utf-8'))
@@ -201,4 +201,4 @@ def get_z_fig(pcl, x_ind, y_ind):
 
 
 if __name__ == "__main__":
-    pass
+    scan_pose()
