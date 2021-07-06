@@ -3,7 +3,7 @@ import scanning
 import time
 import UR as ur
 
-ITERATION = 2
+ITERATION = 1
 
 ""
 def training(env):
@@ -31,15 +31,15 @@ def training(env):
         print('{}: data is collected and stored'.format(scan_id))
 
         # get toolpath
-        random_toolpath, sandbox2D_x_ind  , sandbox2D_y_ind = ur.ur_helper.get_toolpath(i)
+        random_toolpath, sandbox2D_x_ind, sandbox2D_y_ind = ur.ur_helper.get_toolpath(i)
 
         # adapt toolpath
         z_fig_center = ur.ur_helper.get_z_fig(pcl, sandbox2D_x_ind, sandbox2D_y_ind)
 
         # execure toolpath
         ur.ur_helper.execute_toolpath(random_toolpath,
-                                   z_fig_center,
-                                   excavation_time=20)
+                                      z_fig_center,
+                                      excavation_time=20)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
@@ -65,4 +65,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

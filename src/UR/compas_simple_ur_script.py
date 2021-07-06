@@ -109,6 +109,44 @@ def move_l_blend(plane_to, accel, vel, blend_radius=0):
     return script
 
 
+def move_l_blend_scan(facts, accel, vel, blend_radius=0):
+    """
+    Function that returns UR script for linear movement in tool-space.
+
+    Args:
+        plane_to: Rhino.Geometry Plane. A target plane for calculating pose.
+        accel: tool accel in m/s^2
+        vel: tool speed in m/s
+
+    Returns:
+        script: UR script
+    """
+
+    # Check acceleration and velocity are non-negative and below a set limit
+    accel = MAX_ACCEL if (abs(accel) > MAX_ACCEL) else abs(accel)
+    vel = MAX_VELOCITY if (abs(vel) > MAX_VELOCITY) else abs(vel)
+    # Check blend radius is positive
+    blend_radius = max(0, blend_radius)
+
+    # Create pose data
+    _pose = [facts['scan_pos_tcp']['x']/1000,  # X
+             facts['scan_pos_tcp']['y']/1000,  # Y
+             facts['scan_pos_tcp']['z']/1000,  # Z
+             facts['scan_pos_tcp']['rx'],          # RX
+             facts['scan_pos_tcp']['ry'],          # RY
+             facts['scan_pos_tcp']['rz']]          # RZ
+    _pose_fmt = "p[" + ("%.4f,"*6)[:-1]+"]"
+    _pose_fmt = _pose_fmt % tuple(_pose)
+
+    # Format UR script
+    script = "movel(%s, a = %.2f, v = %.2f, r = %.4f)\n" % (_pose_fmt,
+                                                            accel,
+                                                            vel,
+                                                            blend_radius)
+
+    return script
+
+
 def move_j(joints, accel, vel):
     """
     Function that returns UR script for linear movement in joint space.

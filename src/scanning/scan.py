@@ -123,7 +123,9 @@ def scan():
     k = ktb.Kinect()
     scan_data = [ k.get_ptcld(), k.get_frame(ktb.DEPTH), k.get_frame(ktb.COLOR) ]
     # flip image to match robot coordinates
-    pcl, depth_img, rgb_img = map( vflip_array(), scan_data )
+    pcl, depth_img, rgb_img = map( vflip_array, scan_data )
+    # displayArray(rgb_img)
+
     return pcl, depth_img, rgb_img
 
 def collect_data():

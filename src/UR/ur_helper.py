@@ -39,7 +39,7 @@ Y_POINT = cg.Point(facts['robot_corner_pts']['pty'][0],
 H_SCAN = facts['h_scan'] + facts['tcp_len']
 W_KINECT = facts['w_kinect']  # offset from tcp to camera in X direction
 delta_x = (X_POINT.x - ORIGIN.x) / 2
-delta_y = (Y_POINT.y - ORIGIN.y) / 2 + 50
+delta_y = (Y_POINT.y - ORIGIN.y) / 2 + 55
 S_POINT = cg.Point(delta_x - W_KINECT, delta_y, H_SCAN)  # scan point in ur space
 
 # for toolpath
@@ -142,7 +142,14 @@ def move_robot_to_scan_pose(move_to, robot_base, pure_trans=True,
     way_frames = [cg.Frame(pt, -cg.Vector.Xaxis(), -cg.Vector.Yaxis())
                   for pt in way_pts]
 
+    RX = cg.Rotation.from_axis_and_angle(-cg.Vector.Xaxis(), m.radians(0.0))
+    RY = cg.Rotation.from_axis_and_angle(-cg.Vector.Yaxis(), m.radians(-1.5))
+    RZ = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(), m.radians(1.0))
+
+    T = RX * RY * RZ
+
     for frame in way_frames:
+        frame = frame.transformed(T)
         script += us.move_l_blend(frame, acceleration, velocity, radius)
 
     script = uc.concatenate_script(script)
