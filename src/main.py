@@ -9,14 +9,15 @@ ITERATION = 2
 def training(env):
     start = time.time()
     print("starting training mode")
-    print("environment: {}".format(env))
+    print("environment: {} \n".format(env))
 
     for i in range(ITERATION):
-        print('iteration{}'.format(i))
+        print('#############  iteration {}  #############\n'.format(i))
         # scan pose
         ur.ur_helper.scan_pose(scanning_time=7.5)
 
         scan_id = scanning.data_collection.create_scan_identifier(i)
+        print('scan id: {}'.format(scan_id))
 
         pcl, height_map, depth, color = scanning.collect_data()
 
@@ -27,7 +28,7 @@ def training(env):
                                                 heightMap=height_map,
                                                 depthMap=depth,
                                                 colorMap=color)
-        print('scanning DONE')
+        print('{}: data is collected and stored'.format(scan_id))
 
         # get toolpath
         random_toolpath, sandbox2D_x_ind  , sandbox2D_y_ind = ur.ur_helper.get_toolpath(i)
@@ -41,8 +42,8 @@ def training(env):
                                    excavation_time=20)
 
         # scan
-        print('iteration {} done'.format(i))
-    print('fabrication_time: ', (time.time()-start)/60, ' min')
+        print('\n#############  iteration {} done  #############\n\n'.format(i))
+    print('Total fabrication time: ', (time.time()-start)/60, ' min')
 
 
 def run():

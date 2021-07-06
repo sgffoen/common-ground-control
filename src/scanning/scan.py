@@ -6,8 +6,11 @@ import numpy as np
 from compas.geometry import Frame, Transformation, Scale
 import compas.utilities as util
 import json
+from pylibfreenect2 import setGlobalLogger
 from .raster_utils import displayArray
 
+# turn off print logging to command line interface -> to turn on comment out this line of code
+setGlobalLogger(None)
 
 # set global facts
 with open('data/facts.json') as f:
