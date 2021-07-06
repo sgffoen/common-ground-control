@@ -84,7 +84,8 @@ def remap_depth(depth, low=100., high=150.):
 def array2img(array):
     return array.astype(np.uint8)
 
-def flip_array(arr):
+def vflip_array(arr):
+    """Flip 2d array vertical to match image coordinates with robot origin"""
     return np.flipud(arr)
 
 def remove_noise(array2d):
@@ -120,7 +121,10 @@ def scan():
     """
     move_to_scan_position()
     k = ktb.Kinect()
-    return k.get_ptcld(), k.get_frame(ktb.DEPTH), k.get_frame(ktb.COLOR)
+    scan_data = [ k.get_ptcld(), k.get_frame(ktb.DEPTH), k.get_frame(ktb.COLOR) ]
+    # flip image to match robot coordinates
+    pcl, depth_img, rgb_img = map( vflip_array(), scan_data )
+    return pcl, depth_img, rgb_img
 
 def collect_data():
     pcl, depth_img, color_img = scan()
