@@ -1,10 +1,9 @@
 from argparser import parse_args
 import scanning
-import ur_helper
 import time
+import UR as ur
 
-
-ITERATION = 1
+ITERATION = 2
 
 ""
 def training(env):
@@ -15,7 +14,7 @@ def training(env):
     for i in range(ITERATION):
         print('iteration{}'.format(i))
         # scan pose
-        ur_helper.scan_pose(scanning_time=7.5)
+        ur.ur_helper.scan_pose(scanning_time=7.5)
 
         scan_id = scanning.data_collection.create_scan_identifier(i)
 
@@ -31,13 +30,13 @@ def training(env):
         print('scanning DONE')
 
         # get toolpath
-        random_toolpath, x_ind, y_ind = ur_helper.get_toolpath(i)
+        random_toolpath, sandbox2D_x_ind  , sandbox2D_y_ind = ur.ur_helper.get_toolpath(i)
 
         # adapt toolpath
-        z_fig_center = ur_helper.get_z_fig(pcl, x_ind, y_ind)
+        z_fig_center = ur.ur_helper.get_z_fig(pcl, sandbox2D_x_ind, sandbox2D_y_ind)
 
         # execure toolpath
-        ur_helper.execute_toolpath(random_toolpath,
+        ur.ur_helper.execute_toolpath(random_toolpath,
                                    z_fig_center,
                                    excavation_time=20)
 

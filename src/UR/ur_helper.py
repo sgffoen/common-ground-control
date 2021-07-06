@@ -2,9 +2,9 @@
 
 
 from toolpath import random_toolpath_gen as rtg
+from UR import compas_simple_comm as uc
 from UR import compas_simple_ur_script as us
 from UR import compas_utils as uu
-from UR import compas_simple_comm as uc
 
 import compas.geometry as cg
 import math as m
@@ -43,16 +43,16 @@ delta_y = (Y_POINT.y - ORIGIN.y) / 2 + 50
 S_POINT = cg.Point(delta_x-W_KINECT, delta_y, H_SCAN)  # scan point in ur space
 
 # for toolpath
-fig_x = facts['fig_size']['x']
-fig_y = facts['fig_size']['y']
-fig_z = facts['fig_size']['z']
+figsize_x = facts['fig_size']['x']
+figsize_y = facts['fig_size']['y']
+figsize_z = facts['fig_size']['z']
 box_x = abs(X_POINT.x - ORIGIN.x)
 box_y = abs(Y_POINT.y - ORIGIN.y)
 box_z = 0.
 
 # croping
-xSize = facts['crop_idx']['xEnd'] - facts['crop_idx']['xStart']
-ySize = facts['crop_idx']['yStart'] - facts['crop_idx']['yEnd']
+xSandbox_imgSize = facts['crop_idx']['xEnd'] - facts['crop_idx']['xStart']
+ySandbox_imgSize = facts['crop_idx']['yStart'] - facts['crop_idx']['yEnd']
 
 
 # FUNCTIONS
@@ -151,16 +151,16 @@ def move_robot_to_points(move_to, robot_base, pure_trans=True,
 
 def get_toolpath(count):
     # get toolpath
-    random_line = rtg.random_line_gen(COMPAS_FRAME, fig_x, fig_y)
+    random_line = rtg.random_line_gen(COMPAS_FRAME, figsize_x, figsize_y)
     # save toolpath as a image
-    rtg.save_line_image(random_line, fig_x, fig_y, iteration=count)
+    rtg.save_line_image(random_line, figsize_x, figsize_y, iteration=count)
     # provide toolpath
-    random_toolpath, x_val, y_val = rtg.deploy_fig_to_box(random_line,
-                                                          fig_x, fig_y, fig_z,
+    random_toolpath, x_coord, y_coord = rtg.deploy_fig_to_box(random_line,
+                                                          figsize_x, figsize_y, figsize_z,
                                                           box_x, box_y, box_z)
     # remap value into index
-    x_ind = int(uu.remapValue(x_val, int(fig_x/2), int(box_x-fig_x/2), 0, ySize-1))
-    y_ind = int(uu.remapValue(y_val, int(fig_y/2), int(box_y-fig_y/2), 0, xSize-1))
+    x_ind = int(uu.remapValue(x_coord, int(figsize_x/2), int(box_x-figsize_x/2), 0, ySandbox_imgSize-1))
+    y_ind = int(uu.remapValue(y_coord, int(figsize_y/2), int(box_y-figsize_y/2), 0, xSandbox_imgSize-1))
     return random_toolpath, x_ind, y_ind
 
 
@@ -193,7 +193,12 @@ def get_z_fig(pcl, x_ind, y_ind):
 
     arr_flip = np.flipud(arr)
 
-    arr_re = np.reshape(arr_flip, (xSize, ySize, 3))
+    arr_re = np.reshape(arr_flip, (xSandbox_imgSize, ySandbox_imgSize, 3))
 
     z_fig = uu.remapValue(arr_re[y_ind][x_ind][2], zAve-50, zAve+50, 140, 120)
     return z_fig
+
+
+
+if __name__ == "__main__":
+    pass
