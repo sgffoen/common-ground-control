@@ -25,5 +25,5 @@ dependencies:
     - Rhino-stubs
     - Grasshopper-stubs
     - tensorflow
-    - open3d
+    - open3d=0.7.0
     - cython-compiler
