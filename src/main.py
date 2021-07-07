@@ -34,12 +34,13 @@ def training(env):
         random_toolpath, sandbox2D_x_ind, sandbox2D_y_ind = ur.ur_helper.get_toolpath(i)
 
         # adapt toolpath
-        z_fig_center = ur.ur_helper.get_z_fig(pcl, sandbox2D_x_ind, sandbox2D_y_ind)
+        zToolpathbox2D = ur.ur_helper.get_z_fig(pcl, sandbox2D_x_ind, sandbox2D_y_ind)
 
         # execure toolpath
-        ur.ur_helper.execute_toolpath(random_toolpath,
-                                      z_fig_center,
-                                      excavation_time=20)
+        ur.ur_helper.test_pose(zToolpathbox2D, scanning_time=7.5)
+        # ur.ur_helper.execute_toolpath(random_toolpath,
+        #                               zToolpathbox2D,
+        #                               excavation_time=20)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))

@@ -48,6 +48,13 @@ def transform_pointcloud(pcl):
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(xyz)
 
+    # export original pcl as ply
+    # path = 'G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/pcl_for_calibration.ply'
+    # xyz_calib = pcl.reshape((pcl.shape[0] * pcl.shape[1], 3))
+    # pcd_calib = o3d.geometry.PointCloud()
+    # pcd_calib.points = o3d.utility.Vector3dVector(xyz_calib)
+    # o3d.io.write_point_cloud(os.path.join(path), pcd_calib)
+
     pcl_corner_pts = facts["pcl_corner_pts"]
     pcl_frame = Frame.from_points(pcl_corner_pts['pt0'], pcl_corner_pts['ptx'], pcl_corner_pts['pty'])
 

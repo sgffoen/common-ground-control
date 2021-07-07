@@ -58,7 +58,7 @@ ySandbox_imgSize = facts['crop_idx']['yStart'] - facts['crop_idx']['yEnd']
 # FUNCTIONS
 
 
-def move_robot_along_line(random_toolpath, robot_base, z_fig_center,
+def move_robot_along_line(random_toolpath, robot_base, zToolpathbox2D,
                           pure_trans=True,
                           velocity=0.15, acceleration=0.05, radius=0.01,
                           safety_dist=50):
@@ -96,7 +96,7 @@ def move_robot_along_line(random_toolpath, robot_base, z_fig_center,
         if i == 0 or i == len(move_pt)-1:
             pt[2] += (facts['tcp_len'] + safety_dist)
         else:
-            pt[2] += (facts['tcp_len'] - z_fig_center)
+            pt[2] += (facts['tcp_len'] + zToolpathbox2D)
         frames.append(cg.Frame(pt, line_dir, cross))
 
     # add transform frame
@@ -156,6 +156,38 @@ def move_robot_to_scan_pose(move_to, robot_base, pure_trans=True,
     return script
 
 
+def move_robot_to_test_pose(move_to, robot_base, pure_trans=True,
+                         velocity=0.30, acceleration=0.10, radius=0.0):
+
+    script = ""
+    script += us.set_tcp_by_angles(0.0,               # X
+                                   0.0,               # Y
+                                   facts['tcp_len'],       # Z
+                                   m.radians(0.0),    # RX
+                                   m.radians(180.0),  # RY
+                                   m.radians(90.0))   # RZ
+
+    # add transform frame
+    way_pts = [uu.compas_to_robot_space(geo, robot_base, pure_trans=pure_trans)
+               for geo in move_to]
+    way_pts = [p.z]
+    way_frames = [cg.Frame(pt, -cg.Vector.Xaxis(), -cg.Vector.Yaxis())
+                  for pt in way_pts]
+
+    RX = cg.Rotation.from_axis_and_angle(-cg.Vector.Xaxis(), m.radians(0.0))
+    RY = cg.Rotation.from_axis_and_angle(-cg.Vector.Yaxis(), m.radians(-1.5))
+    RZ = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(), m.radians(1.0))
+
+    T = RX * RY * RZ
+
+    for frame in way_frames:
+        frame = frame.transformed(T)
+        script += us.move_l_blend(frame, acceleration, velocity, radius)
+
+    script = uc.concatenate_script(script)
+    return script
+
+
 def get_toolpath(count):
     # get toolpath
     random_line = rtg.random_line_gen(COMPAS_FRAME, figsize_x, figsize_y)
@@ -171,12 +203,12 @@ def get_toolpath(count):
     return random_toolpath, x_ind, y_ind
 
 
-def execute_toolpath(random_toolpath, z_fig_center, excavation_time=15):
+def execute_toolpath(random_toolpath, zToolpathbox2D, excavation_time=15):
     print('excavation START')
     robot_base = uu.set_robot_base(ORIGIN, X_POINT, Y_POINT)
     script_move = move_robot_along_line(random_toolpath,
                                         robot_base,
-                                        z_fig_center)
+                                        zToolpathbox2D)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
                    bytes(script_move, 'utf-8'))
@@ -194,17 +226,26 @@ def scan_pose(scanning_time=7.5):
     time.sleep(scanning_time)
 
 
+def test_pose(zToolpathbox2D, scanning_time=7.5):
+    print('scanning START')
+    robot_base = uu.set_robot_base(ORIGIN, X_POINT, Y_POINT)
+    script_scan = move_robot_to_test_pose([cg.Point(delta_x - W_KINECT, delta_y, zToolpathbox2D)], robot_base)
+    uc.send_script(facts['robot_ip'],
+                   facts['ur_server_port'],
+                   bytes(script_scan, 'utf-8'))
+    time.sleep(scanning_time)
+
+
 def get_z_fig(pcl, x_ind, y_ind):
     arr = np.asarray(pcl.points)
     zAve = np.mean(arr, axis=0)[2]
 
-    arr_flip = np.flipud(arr)
+    arr_re = np.reshape(arr, (xSandbox_imgSize, ySandbox_imgSize, 3))
+    zToolpathbox2D = arr_re[y_ind][x_ind][2]
+    print(zAve, zToolpathbox2D)
 
-    arr_re = np.reshape(arr_flip, (xSandbox_imgSize, ySandbox_imgSize, 3))
-
-    z_fig = uu.remapValue(arr_re[y_ind][x_ind][2], zAve-50, zAve+50, 140, 120)
-    return z_fig
-
+    # z_fig = uu.remapValue(arr_re[y_ind][x_ind][2], zAve-50, zAve+50, 130, 120)
+    return zToolpathbox2D
 
 
 if __name__ == "__main__":

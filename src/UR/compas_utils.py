@@ -334,3 +334,8 @@ def get_path():
 def remapValue(v, ori_Min, ori_Max, targetMin, targetMax):
     rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
     return rv
+
+
+def compas_to_robot_frame():
+    pass
+
