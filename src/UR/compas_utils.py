@@ -1,22 +1,10 @@
-"""
-This module contains utility functions:
-    1) Transformation functions
-    2) Useful geometry functions e.g. Intersections
-    3) visualization function
-"""
-
-
 # LIBRARIES
 
 
 import compas.geometry as cg
 from compas_view2.app import App
 import math
-import os
 import json
-# import compas_simple_ur_script as us
-# import compas_simple_comm as uc
-import math as m
 
 # set global facts
 with open('data/facts.json') as f:
@@ -24,65 +12,93 @@ with open('data/facts.json') as f:
 
 
 # FUNCTIONS
+'''
+-get_value_functions
+    get_robot_corner_pts
+    get_sandbox_size
+    get_robot_frame
+    get_scan_pt
+    get_figsize
+    get_sandbox2d_size
+-transformations
+    compas_to_robot_space
+    robot_to_compas_space
+    rotat_frame_for_scan
+-numerical_functions
+    remmap_value
+    matrix_to_axis_angle
+    matrix_to_euler
+    concatenate_matrices
+-extra_funcitons
+    check_arguments
+    run_viewer
+'''
 
 
-def run_viewer(geo):
-    """
-    Function that visualize geometries on compas_viewer2.
-
-    Args:
-        geo : a list of compas.geometry. Geometries to be visualised
-
-    Returns: NONE
-    """
-
-    viewer = App()
-    for g in geo:
-        viewer.add(g)
-    viewer.run()
+def get_robot_corner_pts():
+    pt_o = cg.Point(facts['robot_corner_pts']['pt0'][0],
+                    facts['robot_corner_pts']['pt0'][1],
+                    facts['robot_corner_pts']['pt0'][2])
+    pt_x = cg.Point(facts['robot_corner_pts']['ptx'][0],
+                    facts['robot_corner_pts']['ptx'][1],
+                    facts['robot_corner_pts']['ptx'][2])
+    pt_y = cg.Point(facts['robot_corner_pts']['pty'][0],
+                    facts['robot_corner_pts']['pty'][1],
+                    facts['robot_corner_pts']['pty'][2])
+    return pt_o, pt_x, pt_y
 
 
-def set_robot_base(ORIGIN, X_POINT, Y_POINT):
-    """
-    Function that returns robot base as compas.geometry Frame.
-
-    Args:
-        ORIGIN : compas.geometry Point (left upper corner of sandbox)
-        X_POINT: compas.geometry Point (left bottom corner of sandbox)
-        Y_POINT: compas.geometry Point (right bottom corner of sandbox)
-
-    Returns:
-        robot_base : compas.geometry Frame as a robot base frame
-    """
-
-    robot_base = cg.Frame(ORIGIN, X_POINT-ORIGIN, Y_POINT-ORIGIN)
-    return robot_base
+def get_sandbox_size():
+    pt_o, pt_x, pt_y = get_robot_corner_pts()
+    box_size_x = abs(pt_x.x - pt_o.x)
+    box_size_y = abs(pt_y.y - pt_o.y)
+    box_size_z = 0.
+    return box_size_x, box_size_y, box_size_z
 
 
-def compas_to_robot_space(geo, robot_base, pure_trans=True):
-    """
-    Function that returns compas.geometry
-    after Transformation from rhino to robot space.
+def get_robot_frame():
+    pt_o, pt_x, pt_y = get_robot_corner_pts()
+    robot_frame = cg.Frame(pt_o, pt_x-pt_o, pt_y-pt_o)
 
-    Args:
-        geo : compas.geometry. A geometry to be transformed
-        robot_base : compas.geometry Frame. A robot base.
-        pure_trans : if True, from pure compas to robot.
-                     if false, from physical robot to digital robot
+    return robot_frame
 
-    Returns:
-        geo_trans : compas.geometry. A geometry after transformation.
-    """
+
+def get_scan_pt():
+    pt_o, pt_x, pt_y = get_robot_corner_pts()
+    scan_height = facts['h_scan'] + facts['tcp_len']
+    kinect_width = facts['w_kinect']  # x dist from tcp to kinect center
+    delta_x = (pt_x.x - pt_o.x) / 2
+    delta_y = (pt_y.y - pt_o.y) / 2 + 55
+    scan_pt = cg.Point(delta_x - kinect_width, delta_y, scan_height)
+
+    return scan_pt
+
+
+def get_figsize():
+    figsize_x = facts['fig_size']['x']
+    figsize_y = facts['fig_size']['y']
+    figsize_z = facts['fig_size']['z']
+
+    return figsize_x, figsize_y, figsize_z
+
+
+def get_sandbox2d_size():
+    sandbox2d_size_x = facts['crop_idx']['xEnd'] - facts['crop_idx']['xStart']
+    sandbox2d_size_y = facts['crop_idx']['yStart'] - facts['crop_idx']['yEnd']
+    return sandbox2d_size_x, sandbox2d_size_y
+
+
+def compas_to_robot_space(geo):
+    compas_origin_frame = cg.Frame.worldXY()
+    robot_frame = get_robot_frame()
+    M = cg.Transformation.from_frame_to_frame(compas_origin_frame,
+                                              robot_frame)
+
     R = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(), math.radians(180.))
 
-    if pure_trans:
-        compas_origin_frame = cg.Frame.worldXY()
-        M = cg.Transformation.from_frame_to_frame(compas_origin_frame,
-                                                  robot_base)
-        T = R.concatenated(M)
-        geo_trans = geo.transformed(T)
-    else:
-        geo_trans = geo.transformed(R)
+    T = R.concatenated(M)
+
+    geo_trans = geo.transformed(T)
 
     return geo_trans
 
@@ -113,6 +129,25 @@ def robot_to_compas_space(geo, robot_base, pure_trans=True):
         geo_trans = geo.transformed(R)
 
     return geo_trans
+
+
+def rotate_scan_pose_frame(frame, degree_x, degree_y, degree_z):
+    # rotate frame to get vertical camera pose
+    RX = cg.Rotation.from_axis_and_angle(-cg.Vector.Xaxis(),
+                                         math.radians(degree_x))
+    RY = cg.Rotation.from_axis_and_angle(-cg.Vector.Yaxis(),
+                                         math.radians(degree_y))
+    RZ = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(),
+                                         math.radians(degree_z))
+    T = RX * RY * RZ
+    transformed_frame = frame.transformed(T)
+
+    return transformed_frame
+
+
+def remap_value(v, ori_Min, ori_Max, targetMin, targetMax):
+    rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
+    return rv
 
 
 def matrix_to_axis_angle(m):
@@ -216,6 +251,7 @@ def matrix_to_euler(m):
     rotx = math.atan2(m[2, 1], m[2, 2])
     return (rotx, roty, rotz)
 
+
 def concatenate_matrices(matrices):
     """
     This function creates a concatenated matrix from a list of matrices
@@ -240,31 +276,11 @@ def check_arguments(function):
     return decorated
 
 
-def get_path():
-    HERE = os.path.dirname(__file__)
-    DIR = os.path.dirname(HERE)
-    FILE = "/data/facts.json"
-    PATH = DIR + FILE
-    return PATH
-
-
-def remapValue(v, ori_Min, ori_Max, targetMin, targetMax):
-    rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
-    return rv
-
-
-def get_sandbox2D_frame():
-    robot_corner_pts = facts["robot_corner_pts"]
-    robot_frame = cg.Frame.from_points(robot_corner_pts['pt0'],
-                                       robot_corner_pts['ptx'],
-                                       robot_corner_pts['pty'])
-    return robot_frame
-
-
-def compas_to_sandbox2D_transformation(robot_frame):
-    compas_frame = cg.Frame.worldXY()
-    T = cg.Translation.from_frame_to_frame(compas_frame, robot_frame)
-    return T
+def run_viewer(geos):
+    viewer = App()
+    for g in geos:
+        viewer.add(g)
+    viewer.run()
 
 
 if __name__ == "__main__":

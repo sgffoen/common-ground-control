@@ -1,37 +1,24 @@
-"""
-This module wraps standard UR Script functions based on compas frameworks.
-"""
-
-
-# LIBRARIES
-
-
 import compas.geometry as cg
 import math
 
-
-# HARD CODED VALUES
-
-
-MAX_ACCEL = 1.5
-MAX_VELOCITY = 2
-
-
 # FUNCTIONS
 '''
-1) move_l
-2) move_l_blend
-3) move_j
-4) set_tcp_by_plane (wip)
-5) set_tcp_by_angle
-6) popup
-7) sleep
-8) set_digital_out
-9) matrix_to_angle
+-ur_script_functions
+    move_l
+    move_l_blend
+    move_j
+    set_tcp_by_angle
+    popup
+    sleep
+    set_digital_out
+    concatenate_script
+-numerical_function
+    matrix_to_angle
 '''
 
 
-def move_l(plane_to, accel, vel):
+def move_l(plane_to, accel, vel,
+           max_acc=1.5, max_vel=2.0):
     """
     Function that returns UR script for linear movement in tool-space.
 
@@ -45,8 +32,8 @@ def move_l(plane_to, accel, vel):
     """
 
     # Check acceleration and velocity are non-negative and below a set limit
-    accel = MAX_ACCEL if (abs(accel) > MAX_ACCEL) else abs(accel)
-    vel = MAX_VELOCITY if (abs(vel) > MAX_VELOCITY) else abs(vel)
+    accel = max_acc if (abs(accel) > max_acc) else abs(accel)
+    vel = max_vel if (abs(vel) > max_vel) else abs(vel)
 
     worldXY = cg.Frame.worldXY()
     _matrix = cg.Transformation.from_frame_to_frame(worldXY, plane_to)
@@ -67,7 +54,8 @@ def move_l(plane_to, accel, vel):
     return script
 
 
-def move_l_blend(plane_to, accel, vel, blend_radius=0):
+def move_l_blend(plane_to, accel, vel,
+                 blend_radius=0, max_acc=1.5, max_vel=2.0):
     """
     Function that returns UR script for linear movement in tool-space.
 
@@ -81,8 +69,8 @@ def move_l_blend(plane_to, accel, vel, blend_radius=0):
     """
 
     # Check acceleration and velocity are non-negative and below a set limit
-    accel = MAX_ACCEL if (abs(accel) > MAX_ACCEL) else abs(accel)
-    vel = MAX_VELOCITY if (abs(vel) > MAX_VELOCITY) else abs(vel)
+    accel = max_acc if (abs(accel) > max_acc) else abs(accel)
+    vel = max_vel if (abs(vel) > max_vel) else abs(vel)
     # Check blend radius is positive
     blend_radius = max(0, blend_radius)
 
@@ -97,44 +85,6 @@ def move_l_blend(plane_to, accel, vel, blend_radius=0):
              _axis_angle[0],          # RX
              _axis_angle[1],          # RY
              _axis_angle[2]]          # RZ
-    _pose_fmt = "p[" + ("%.4f,"*6)[:-1]+"]"
-    _pose_fmt = _pose_fmt % tuple(_pose)
-
-    # Format UR script
-    script = "movel(%s, a = %.2f, v = %.2f, r = %.4f)\n" % (_pose_fmt,
-                                                            accel,
-                                                            vel,
-                                                            blend_radius)
-
-    return script
-
-
-def move_l_blend_scan(facts, accel, vel, blend_radius=0):
-    """
-    Function that returns UR script for linear movement in tool-space.
-
-    Args:
-        plane_to: Rhino.Geometry Plane. A target plane for calculating pose.
-        accel: tool accel in m/s^2
-        vel: tool speed in m/s
-
-    Returns:
-        script: UR script
-    """
-
-    # Check acceleration and velocity are non-negative and below a set limit
-    accel = MAX_ACCEL if (abs(accel) > MAX_ACCEL) else abs(accel)
-    vel = MAX_VELOCITY if (abs(vel) > MAX_VELOCITY) else abs(vel)
-    # Check blend radius is positive
-    blend_radius = max(0, blend_radius)
-
-    # Create pose data
-    _pose = [facts['scan_pos_tcp']['x']/1000,  # X
-             facts['scan_pos_tcp']['y']/1000,  # Y
-             facts['scan_pos_tcp']['z']/1000,  # Z
-             facts['scan_pos_tcp']['rx'],          # RX
-             facts['scan_pos_tcp']['ry'],          # RY
-             facts['scan_pos_tcp']['rz']]          # RZ
     _pose_fmt = "p[" + ("%.4f,"*6)[:-1]+"]"
     _pose_fmt = _pose_fmt % tuple(_pose)
 
@@ -166,40 +116,6 @@ def move_j(joints, accel, vel):
     script = "movej(%s, a = %.2f, v = %.2f)\n" % (_j_fmt, accel, vel)
 
     return script
-
-
-'''
-def set_tcp_by_plane(x_offset, y_offset, z_offset, ref_plane=cg.Frame.worldXY):
-    """
-    TODO: Need to test if this gives the correct result
-    Function that returns UR script for setting tool center point
-
-    Args:
-        x_offset: float. tooltip offset in mm
-        y_offset: float. tooltip offset in mm
-        z_offset: float. tooltip offset in mm
-        ref_plane: Plane that defines orientation of the tip.
-                   If none specified, world XY plane used as default.
-
-    Returns:
-        script: UR script
-    """
-
-    if (ref_plane != rg.Plane.WorldXY):
-        _matrix = rg.Transform.PlaneToPlane(rg.Plane.WorldXY,ref_plane)
-        _axis_angle= matrix_to_axis_angle(_matrix)
-    else:
-        _axis_angle = rg.Vector3d(0,0,0)
-    # Create pose data
-    _pose = [x_offset/1000, y_offset/1000, z_offset/1000,
-             _axis_angle[0], _axis_angle[1], _axis_angle[2]]
-    _pose_fmt = "p[" + ("%.4f,"*6)[:-1]+"]"
-    _pose_fmt = _pose_fmt%tuple(_pose)
-
-    # Format UR script
-    script = "set_tcp(%s)\n"%(_pose_fmt)
-    return script
-'''
 
 
 def set_tcp_by_angles(x_offset, y_offset, z_offset,
@@ -289,6 +205,36 @@ def set_digital_out(id, signal):
     script = "set_digital_out(%s,%s)\n" % (id, signal)
 
     return script
+
+
+def concatenate_script(list_ur_commands):
+    """
+    Internal function that concatenates generated UR script
+    into one large script file. Usually used to combine
+    scripts generated by the GrasshopperPython components
+
+    Args:
+        list_ur_commands: A list of formatted UR Script strings
+
+    Returns:
+        ur_script: The concatenated script
+    """
+
+    ur_script = "\ndef my_script():\n"
+    # ur_script += '\tpopup("running my_script")\n'
+
+    combined_script = ""
+    for ur_cmd in list_ur_commands:
+        combined_script += ur_cmd
+
+    # format combined script
+    lines = combined_script.split("\n")
+    for line in lines:
+        ur_script += "\t" + line + "\n"
+
+    ur_script += 'end\n'
+    ur_script += '\nmy_script()\n'
+    return ur_script
 
 
 def matrix_to_axis_angle(m):
