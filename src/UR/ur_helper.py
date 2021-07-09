@@ -58,6 +58,36 @@ ySandbox_imgSize = facts['crop_idx']['yStart'] - facts['crop_idx']['yEnd']
 # FUNCTIONS
 
 
+def get_toolpath(count):
+    # get toolpath
+    random_line = rtg.random_line_gen(COMPAS_FRAME, figsize_x, figsize_y)
+    # save toolpath as a image
+    rtg.save_line_image(random_line, figsize_x, figsize_y, iteration=count)
+    # provide toolpath
+    random_toolpath, x_coord, y_coord = rtg.deploy_fig_to_box(random_line,
+                                                          figsize_x, figsize_y, figsize_z,
+                                                          box_x, box_y, box_z)
+    # remap value into index
+    x_ind = int(uu.remapValue(x_coord, int(figsize_x/2), int(box_x-figsize_x/2), 0, ySandbox_imgSize-1))
+    y_ind = int(uu.remapValue(y_coord, int(figsize_y/2), int(box_y-figsize_y/2), 0, xSandbox_imgSize-1))
+    return random_toolpath, x_ind, y_ind
+
+
+def get_z_fig(pcl, x_ind, y_ind):
+    arr = np.asarray(pcl.points)
+    zAve = np.mean(arr, axis=0)[2]
+
+    arr_re = np.reshape(arr, (xSandbox_imgSize, ySandbox_imgSize, 3))
+    zToolpathbox2D = arr_re[y_ind][x_ind][2] + 289 - 35 # z_value from pendant - thickness of tcp
+
+    return zToolpathbox2D
+
+
+def adapt_toolpath(random_toolpath, zToolpathbox2D):
+    random_toolpath_adapted = None
+    return random_toolpath_adapted
+
+
 def move_robot_along_line(random_toolpath, robot_base, zToolpathbox2D,
                           pure_trans=True,
                           velocity=0.15, acceleration=0.05, radius=0.01,
@@ -156,7 +186,7 @@ def move_robot_to_scan_pose(move_to, robot_base, pure_trans=True,
     return script
 
 
-def move_robot_to_test_pose(move_to, robot_base, pure_trans=True,
+def move_robot_to_a_frame(move_to, robot_base, z_center_toolpathbox2D, pure_trans=True,
                          velocity=0.30, acceleration=0.10, radius=0.0):
 
     script = ""
@@ -168,39 +198,15 @@ def move_robot_to_test_pose(move_to, robot_base, pure_trans=True,
                                    m.radians(90.0))   # RZ
 
     # add transform frame
-    way_pts = [uu.compas_to_robot_space(geo, robot_base, pure_trans=pure_trans)
-               for geo in move_to]
-    way_pts = [p.z]
-    way_frames = [cg.Frame(pt, -cg.Vector.Xaxis(), -cg.Vector.Yaxis())
-                  for pt in way_pts]
+    move_to.point.z += facts['tcp_len']
+    way_frame = uu.compas_to_robot_space(move_to, robot_base, pure_trans=pure_trans)
 
-    RX = cg.Rotation.from_axis_and_angle(-cg.Vector.Xaxis(), m.radians(0.0))
-    RY = cg.Rotation.from_axis_and_angle(-cg.Vector.Yaxis(), m.radians(-1.5))
-    RZ = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(), m.radians(1.0))
-
-    T = RX * RY * RZ
-
-    for frame in way_frames:
-        frame = frame.transformed(T)
-        script += us.move_l_blend(frame, acceleration, velocity, radius)
+    # adapt height
+    way_frame_adapted = adapt_height_from_pcl(way_frame, z_center_toolpathbox2D)
+    script += us.move_l_blend(way_frame_adapted, acceleration, velocity, radius)
 
     script = uc.concatenate_script(script)
     return script
-
-
-def get_toolpath(count):
-    # get toolpath
-    random_line = rtg.random_line_gen(COMPAS_FRAME, figsize_x, figsize_y)
-    # save toolpath as a image
-    rtg.save_line_image(random_line, figsize_x, figsize_y, iteration=count)
-    # provide toolpath
-    random_toolpath, x_coord, y_coord = rtg.deploy_fig_to_box(random_line,
-                                                          figsize_x, figsize_y, figsize_z,
-                                                          box_x, box_y, box_z)
-    # remap value into index
-    x_ind = int(uu.remapValue(x_coord, int(figsize_x/2), int(box_x-figsize_x/2), 0, ySandbox_imgSize-1))
-    y_ind = int(uu.remapValue(y_coord, int(figsize_y/2), int(box_y-figsize_y/2), 0, xSandbox_imgSize-1))
-    return random_toolpath, x_ind, y_ind
 
 
 def execute_toolpath(random_toolpath, zToolpathbox2D, excavation_time=15):
@@ -220,33 +226,35 @@ def scan_pose(scanning_time=7.5):
     print('scanning START')
     robot_base = uu.set_robot_base(ORIGIN, X_POINT, Y_POINT)
     script_scan = move_robot_to_scan_pose([S_POINT], robot_base)
+    print(script_scan)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
                    bytes(script_scan, 'utf-8'))
     time.sleep(scanning_time)
 
 
-def test_pose(zToolpathbox2D, scanning_time=7.5):
+def test_pose(move_to, z_center_toolpathbox2D):
     print('scanning START')
     robot_base = uu.set_robot_base(ORIGIN, X_POINT, Y_POINT)
-    script_scan = move_robot_to_test_pose([cg.Point(delta_x - W_KINECT, delta_y, zToolpathbox2D)], robot_base)
+    script_test = move_robot_to_a_frame(move_to, robot_base, z_center_toolpathbox2D)
+    print(script_test)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
-                   bytes(script_scan, 'utf-8'))
-    time.sleep(scanning_time)
+                   bytes(script_test, 'utf-8'))
 
 
-def get_z_fig(pcl, x_ind, y_ind):
-    arr = np.asarray(pcl.points)
-    zAve = np.mean(arr, axis=0)[2]
-
-    arr_re = np.reshape(arr, (xSandbox_imgSize, ySandbox_imgSize, 3))
-    zToolpathbox2D = arr_re[y_ind][x_ind][2]
-    print(zAve, zToolpathbox2D)
-
-    # z_fig = uu.remapValue(arr_re[y_ind][x_ind][2], zAve-50, zAve+50, 130, 120)
-    return zToolpathbox2D
+def adapt_height_from_pcl(way_frame, z_center_toolpathbox2D):
+    way_frame.point.z += (z_center_toolpathbox2D + 289)
+    print(z_center_toolpathbox2D + 289)
+    return way_frame
 
 
 if __name__ == "__main__":
     scan_pose()
+
+    # z_center_toolpathbox2D = -362
+    # a_frame = cg.Frame(cg.Point(100, 389, -40), cg.Vector.Xaxis(), cg.Vector.Yaxis())
+    # R = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(), m.radians(0))
+    # a_frame.transform(R)
+    # test_pose(a_frame, z_center_toolpathbox2D)
+    pass
