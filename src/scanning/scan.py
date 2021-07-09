@@ -103,6 +103,7 @@ def get_heigt_map(depth_img):
     # remove noise and return map
     return remove_noise(height_map)
 
+
 def scan(type=None):
     """
     Get RAW scan data from Kinect
@@ -126,9 +127,9 @@ def scan(type=None):
         return pcl, depth_img, rgb_img
 
     elif type == 'pcl':
-        pass
+        return vflip_array(k.get_ptcld())
     elif type == 'depth':
-        pass
+        return vflip_array(k.get_frame(ktb.DEPTH))
     elif type == 'rgb':
         return vflip_array(k.get_frame(ktb.COLOR))
 
@@ -142,21 +143,14 @@ def collect_data():
 
 if __name__ == "__main__":
 
-    from raster_utils import displayArray, click_event
+    from raster_utils import displayArray
 
     pcl, depth_img, color_img = scan()
 
-    cv2.imshow('image', color_img)
-
-    cv2.setMouseCallback('image', click_event)
-
-    # wait for a key to be pressed to exit
-    cv2.waitKey(0)
-
-    # close the window
-    cv2.destroyAllWindows()
-
     height_map = get_heigt_map(depth_img)
-    #displayArray(height_map)
+    displayArray(depth_img)
+    # pcl = scan(type='pcl')
+    # pcl = transform_pointcloud(pcl)
+    #o3d.io.write_point_cloud('pcl.ply', pcl)
 
 

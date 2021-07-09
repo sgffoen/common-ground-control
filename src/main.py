@@ -50,6 +50,7 @@ def run():
 
 def main():
     run_mode, environment = parse_args()
+
     if run_mode == 'train':
         training(environment)
     elif run_mode == 'run':
@@ -57,6 +58,9 @@ def main():
     elif run_mode == 'scan':
         ur.ur_helper.scan_pose(scanning_time=0.1)
         scanning.live_scan_stream()
+    elif run_mode == 'calibration':
+        ur.ur_helper.scan_pose(scanning_time=0.1)
+        scanning.img_calibration()
     else:
         print("Run mode is not identified")
 
