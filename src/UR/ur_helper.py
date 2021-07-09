@@ -1,6 +1,4 @@
 # LIBRARIES
-
-
 from toolpath import random_toolpath_gen as rtg
 from UR import compas_simple_comm as uc
 from UR import compas_simple_ur_script as us
@@ -12,55 +10,52 @@ import time
 import numpy as np
 import json
 
-
 # HARD CODED VALUES
-
 
 # fact sheet
 with open('data/facts.json') as f:
     facts = json.load(f)
 
 # for robot
-BASE = cg.Point(facts['base']['x'], facts['base']['y'], facts['base']['z'])
-COMPAS_FRAME = cg.Frame(BASE, cg.Vector.Xaxis(), cg.Vector.Yaxis())
+__BASE__ = cg.Point(facts['base']['x'], facts['base']['y'], facts['base']['z'])
+__COMPAS_FRAME__ = cg.Frame(__BASE__, cg.Vector.Xaxis(), cg.Vector.Yaxis())
 
 # robot corner points
-ORIGIN = cg.Point(facts['robot_corner_pts']['pt0'][0],
+__ORIGIN__ = cg.Point(facts['robot_corner_pts']['pt0'][0],
                   facts['robot_corner_pts']['pt0'][1],
                   facts['robot_corner_pts']['pt0'][2])
-X_POINT = cg.Point(facts['robot_corner_pts']['ptx'][0],
+__X_POINT__ = cg.Point(facts['robot_corner_pts']['ptx'][0],
                    facts['robot_corner_pts']['ptx'][1],
                    facts['robot_corner_pts']['ptx'][2])
-Y_POINT = cg.Point(facts['robot_corner_pts']['pty'][0],
+__Y_POINT__ = cg.Point(facts['robot_corner_pts']['pty'][0],
                    facts['robot_corner_pts']['pty'][1],
                    facts['robot_corner_pts']['pty'][2])
 
 # for scanning
 H_SCAN = facts['h_scan'] + facts['tcp_len']
 W_KINECT = facts['w_kinect']  # offset from tcp to camera in X direction
-delta_x = (X_POINT.x - ORIGIN.x) / 2
-delta_y = (Y_POINT.y - ORIGIN.y) / 2 + 55
+delta_x = (__X_POINT__.x - __ORIGIN__.x) / 2
+delta_y = (__Y_POINT__.y - __ORIGIN__.y) / 2 + 55
 S_POINT = cg.Point(delta_x - W_KINECT, delta_y, H_SCAN)  # scan point in ur space
 
 # for toolpath
 figsize_x = facts['fig_size']['x']
 figsize_y = facts['fig_size']['y']
 figsize_z = facts['fig_size']['z']
-box_x = abs(X_POINT.x - ORIGIN.x)
-box_y = abs(Y_POINT.y - ORIGIN.y)
+box_x = abs(__X_POINT__.x - __ORIGIN__.x)
+box_y = abs(__Y_POINT__.y - __ORIGIN__.y)
 box_z = 0.
 
 # croping
-xSandbox_imgSize = facts['crop_idx']['xEnd'] - facts['crop_idx']['xStart']
-ySandbox_imgSize = facts['crop_idx']['yStart'] - facts['crop_idx']['yEnd']
+x_sandbox_img_size = facts['crop_idx']['xEnd'] - facts['crop_idx']['xStart']
+y_sandbox_img_size = facts['crop_idx']['yStart'] - facts['crop_idx']['yEnd']
 
 
 # FUNCTIONS
 
-
 def get_toolpath(count):
     # get toolpath
-    random_line = rtg.random_line_gen(COMPAS_FRAME, figsize_x, figsize_y)
+    random_line = rtg.random_line_gen(__COMPAS_FRAME__, figsize_x, figsize_y)
     # save toolpath as a image
     rtg.save_line_image(random_line, figsize_x, figsize_y, iteration=count)
     # provide toolpath
@@ -68,8 +63,8 @@ def get_toolpath(count):
                                                           figsize_x, figsize_y, figsize_z,
                                                           box_x, box_y, box_z)
     # remap value into index
-    x_ind = int(uu.remapValue(x_coord, int(figsize_x/2), int(box_x-figsize_x/2), 0, ySandbox_imgSize-1))
-    y_ind = int(uu.remapValue(y_coord, int(figsize_y/2), int(box_y-figsize_y/2), 0, xSandbox_imgSize-1))
+    x_ind = int(uu.remapValue(x_coord, int(figsize_x/2), int(box_x-figsize_x/2), 0, y_sandbox_img_size-1))
+    y_ind = int(uu.remapValue(y_coord, int(figsize_y/2), int(box_y-figsize_y/2), 0, x_sandbox_img_size-1))
     return random_toolpath, x_ind, y_ind
 
 
@@ -77,18 +72,18 @@ def get_z_fig(pcl, x_ind, y_ind):
     arr = np.asarray(pcl.points)
     zAve = np.mean(arr, axis=0)[2]
 
-    arr_re = np.reshape(arr, (xSandbox_imgSize, ySandbox_imgSize, 3))
-    zToolpathbox2D = arr_re[y_ind][x_ind][2] + 289 - 35 # z_value from pendant - thickness of tcp
+    arr_re = np.reshape(arr, (x_sandbox_img_size, y_sandbox_img_size, 3))
+    z_toolpathbox2D = arr_re[y_ind][x_ind][2] + 289 - 35 # z_value from pendant - thickness of tcp
 
-    return zToolpathbox2D
+    return z_toolpathbox2D
 
 
-def adapt_toolpath(random_toolpath, zToolpathbox2D):
+def adapt_toolpath(random_toolpath, z_toolpathbox2D):
     random_toolpath_adapted = None
     return random_toolpath_adapted
 
 
-def move_robot_along_line(random_toolpath, robot_base, zToolpathbox2D,
+def move_robot_along_line(random_toolpath, robot_base, z_toolpathbox2D,
                           pure_trans=True,
                           velocity=0.15, acceleration=0.05, radius=0.01,
                           safety_dist=50):
@@ -126,7 +121,7 @@ def move_robot_along_line(random_toolpath, robot_base, zToolpathbox2D,
         if i == 0 or i == len(move_pt)-1:
             pt[2] += (facts['tcp_len'] + safety_dist)
         else:
-            pt[2] += (facts['tcp_len'] + zToolpathbox2D)
+            pt[2] += (facts['tcp_len'] + z_toolpathbox2D)
         frames.append(cg.Frame(pt, line_dir, cross))
 
     # add transform frame
@@ -209,12 +204,12 @@ def move_robot_to_a_frame(move_to, robot_base, z_center_toolpathbox2D, pure_tran
     return script
 
 
-def execute_toolpath(random_toolpath, zToolpathbox2D, excavation_time=15):
+def execute_toolpath(random_toolpath, z_toolpathbox2D, excavation_time=15):
     print('excavation START')
-    robot_base = uu.set_robot_base(ORIGIN, X_POINT, Y_POINT)
+    robot_base = uu.set_robot_base(__ORIGIN__, __X_POINT__, __Y_POINT__)
     script_move = move_robot_along_line(random_toolpath,
                                         robot_base,
-                                        zToolpathbox2D)
+                                        z_toolpathbox2D)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
                    bytes(script_move, 'utf-8'))
@@ -224,7 +219,7 @@ def execute_toolpath(random_toolpath, zToolpathbox2D, excavation_time=15):
 
 def scan_pose(scanning_time=7.5):
     print('scanning START')
-    robot_base = uu.set_robot_base(ORIGIN, X_POINT, Y_POINT)
+    robot_base = uu.set_robot_base(__ORIGIN__, __X_POINT__, __Y_POINT__)
     script_scan = move_robot_to_scan_pose([S_POINT], robot_base)
     print(script_scan)
     uc.send_script(facts['robot_ip'],
@@ -235,7 +230,7 @@ def scan_pose(scanning_time=7.5):
 
 def test_pose(move_to, z_center_toolpathbox2D):
     print('scanning START')
-    robot_base = uu.set_robot_base(ORIGIN, X_POINT, Y_POINT)
+    robot_base = uu.set_robot_base(__ORIGIN__, __X_POINT__, __Y_POINT__)
     script_test = move_robot_to_a_frame(move_to, robot_base, z_center_toolpathbox2D)
     print(script_test)
     uc.send_script(facts['robot_ip'],

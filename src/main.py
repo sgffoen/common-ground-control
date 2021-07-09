@@ -5,7 +5,7 @@ import UR as ur
 
 ITERATION = 50
 
-""
+
 def training(env):
     start = time.time()
     print("starting training mode")
@@ -34,8 +34,8 @@ def training(env):
         random_toolpath, sandbox2D_x_ind, sandbox2D_y_ind = ur.ur_helper.get_toolpath(i)
 
         # adapt toolpath
-        # zToolpathbox2D = ur.ur_helper.get_z_fig(pcl, sandbox2D_x_ind, sandbox2D_y_ind)
-        # random_toolpath_adapted = ur.ur_helper.adapt_toolpath(random_toolpath, zToolpathbox2D)
+        # z_toolpathbox2D = ur.ur_helper.get_z_fig(pcl, sandbox2D_x_ind, sandbox2D_y_ind)
+        # random_toolpath_adapted = ur.ur_helper.adapt_toolpath(random_toolpath, z_toolpathbox2D)
 
         # execure toolpath
         ur.ur_helper.execute_toolpath(random_toolpath,-120,
@@ -45,10 +45,8 @@ def training(env):
         print('\n#############  iteration {} done  #############\n\n'.format(i))
     print('Total fabrication time: ', (time.time()-start)/60, ' min')
 
-
 def run():
     pass
-
 
 def main():
     run_mode, environment = parse_args()

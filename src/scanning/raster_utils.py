@@ -13,3 +13,8 @@ def displayArray(data, height=5):
     plt.tight_layout()
     plt.axis('off')
     plt.show()
+
+
+if __name__=="__main__":
+    pass
+

@@ -1,13 +1,11 @@
 import ktb
 import cv2
-import os
 import open3d as o3d
 import numpy as np
 from compas.geometry import Frame, Transformation, Scale
 import compas.utilities as util
 import json
 from pylibfreenect2 import setGlobalLogger
-from .raster_utils import displayArray
 
 # turn off print logging to command line interface -> to turn on comment out this line of code
 setGlobalLogger(None)
@@ -16,11 +14,6 @@ setGlobalLogger(None)
 with open('data/facts.json') as f:
     facts = json.load(f)
 
-def move_to_scan_position():
-    """move robot to scan position"""
-
-    scan_pos = facts["scan_pos"]
-    scan_pos_tcp = facts['scan_pos_tcp']
 
 def crop_sandbed(matrix):
     """crop 2d array to size of sand only"""
@@ -47,13 +40,6 @@ def transform_pointcloud(pcl):
 
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(xyz)
-
-    # export original pcl as ply
-    # path = 'G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/pcl_for_calibration.ply'
-    # xyz_calib = pcl.reshape((pcl.shape[0] * pcl.shape[1], 3))
-    # pcd_calib = o3d.geometry.PointCloud()
-    # pcd_calib.points = o3d.utility.Vector3dVector(xyz_calib)
-    # o3d.io.write_point_cloud(os.path.join(path), pcd_calib)
 
     pcl_corner_pts = facts["pcl_corner_pts"]
     pcl_frame = Frame.from_points(pcl_corner_pts['pt0'], pcl_corner_pts['ptx'], pcl_corner_pts['pty'])
@@ -88,17 +74,21 @@ def remap_depth(depth, low=100., high=150.):
 
     return np.array(height_remap).reshape(depth.shape)
 
-def array2img(array):
-    return array.astype(np.uint8)
-
 def vflip_array(arr):
     """Flip 2d array vertical to match image coordinates with robot origin"""
     return np.flipud(arr)
 
+def set_1mmpixel_size(scan_data):
+    """resize the image so that 1 pixel equals 1 mm in world coordinates"""
+
+    sandbox_imgSize_X = facts['crop_idx']['xEnd'] - facts['crop_idx']['xStart']
+    sandbox_imgSize_Y = facts['crop_idx']['yStart'] - facts['crop_idx']['yEnd']
+    sandbox_width, sandbox_height = facts['sandbox_dimensions']['w'],  facts['sandbox_dimensions']['h']
+
 def remove_noise(array2d):
     """remove noise from image"""
 
-    img = array2img(array2d)
+    img = array2d.astype(np.uint8)
     return cv2.fastNlMeansDenoising(img,None,2,7,15)
 
 def get_heigt_map(depth_img):
@@ -113,7 +103,7 @@ def get_heigt_map(depth_img):
     # remove noise and return map
     return remove_noise(height_map)
 
-def scan():
+def scan(type=None):
     """
     Get RAW scan data from Kinect
 
@@ -126,14 +116,22 @@ def scan():
         color : numpy.array
             color image 512x424
     """
-    move_to_scan_position()
     k = ktb.Kinect()
-    scan_data = [ k.get_ptcld(), k.get_frame(ktb.DEPTH), k.get_frame(ktb.COLOR) ]
-    # flip image to match robot coordinates
-    pcl, depth_img, rgb_img = map( vflip_array, scan_data )
-    # displayArray(rgb_img)
 
-    return pcl, depth_img, rgb_img
+    if type is None:
+
+        scan_data = [ k.get_ptcld(), k.get_frame(ktb.DEPTH), k.get_frame(ktb.COLOR) ]
+        # flip image to match robot coordinates
+        pcl, depth_img, rgb_img = map( vflip_array, scan_data )
+        return pcl, depth_img, rgb_img
+
+    elif type == 'pcl':
+        pass
+    elif type == 'depth':
+        pass
+    elif type == 'rgb':
+        return vflip_array(k.get_frame(ktb.COLOR))
+
 
 def collect_data():
     pcl, depth_img, color_img = scan()
@@ -144,8 +142,21 @@ def collect_data():
 
 if __name__ == "__main__":
 
+    from raster_utils import displayArray, click_event
+
     pcl, depth_img, color_img = scan()
+
+    cv2.imshow('image', color_img)
+
+    cv2.setMouseCallback('image', click_event)
+
+    # wait for a key to be pressed to exit
+    cv2.waitKey(0)
+
+    # close the window
+    cv2.destroyAllWindows()
+
     height_map = get_heigt_map(depth_img)
-    displayArray(height_map)
+    #displayArray(height_map)
 
 
