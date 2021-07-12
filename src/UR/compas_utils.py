@@ -17,7 +17,8 @@ with open('data/facts.json') as f:
     get_robot_corner_pts
     get_sandbox_size
     get_robot_frame
-    get_scan_pt
+    get_scan_frame
+    get_safety_frame
     get_figsize
     get_sandbox2d_size
 -transformations
@@ -59,19 +60,39 @@ def get_sandbox_size():
 def get_robot_frame():
     pt_o, pt_x, pt_y = get_robot_corner_pts()
     robot_frame = cg.Frame(pt_o, pt_x-pt_o, pt_y-pt_o)
-
     return robot_frame
 
 
-def get_scan_pt():
-    pt_o, pt_x, pt_y = get_robot_corner_pts()
-    scan_height = facts['h_scan'] + facts['tcp_len']
-    kinect_width = facts['w_kinect']  # x dist from tcp to kinect center
-    delta_x = (pt_x.x - pt_o.x) / 2
-    delta_y = (pt_y.y - pt_o.y) / 2 + 55
-    scan_pt = cg.Point(delta_x - kinect_width, delta_y, scan_height)
+def get_scan_frame():
+    # initialize frame
+    scan_frame = cg.Frame.worldXY()
+    # get scan_pt from facts
+    scan_pt = facts['scan_pt']
+    # transformation
+    RX = cg.Rotation.from_axis_and_angle(cg.Vector.Xaxis(),
+                                         math.radians(scan_pt['rx']))
+    RY = cg.Rotation.from_axis_and_angle(cg.Vector.Yaxis(),
+                                         math.radians(scan_pt['ry']))
+    RZ = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(),
+                                         math.radians(scan_pt['rz']))
+    V = cg.Vector(scan_pt['x'],
+                  scan_pt['y'],
+                  scan_pt['z'])
+    M = cg.Translation.from_vector(V)
+    T = M * RX * RY * RZ
+    # transform
+    scan_frame.transform(T)
+    return scan_frame
 
-    return scan_pt
+
+def get_calibration_frame():
+    center = cg.Point(facts['calibration_pt']['x'],
+                      facts['calibration_pt']['y'],
+                      facts['calibration_pt']['z'])
+    calibration_frame = cg.Frame(center,
+                            cg.Vector.Xaxis(),
+                            cg.Vector.Yaxis())
+    return calibration_frame
 
 
 def get_figsize():

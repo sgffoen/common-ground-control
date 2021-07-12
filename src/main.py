@@ -16,30 +16,25 @@ def training(env):
         # # scan pose
         ur.ur_helper.scan_pose(scanning_time=7.5)
 
-        # scan_id = scanning.data_collection.create_scan_identifier(i)
-        # print('scan id: {}'.format(scan_id))
+        scan_id = scanning.data_collection.create_scan_identifier(i)
+        print('scan id: {}'.format(scan_id))
 
-        # pcl, height_map, depth, color = scanning.collect_data()
+        pcl, height_map, depth, color = scanning.collect_data()
 
-        # # store data
-        # scanning.data_collection.store_all_data(environment=env,
-        #                                         scanID=scan_id,
-        #                                         pointcloud=pcl,
-        #                                         heightMap=height_map,
-        #                                         depthMap=depth,
-        #                                         colorMap=color)
-        # print('{}: data is collected and stored'.format(scan_id))
+        # store data
+        scanning.data_collection.store_all_data(environment=env,
+                                                scanID=scan_id,
+                                                pointcloud=pcl,
+                                                heightMap=height_map,
+                                                depthMap=depth,
+                                                colorMap=color)
+        print('{}: data is collected and stored'.format(scan_id))
 
         # get toolpath
-        random_toolpath, sandbox2D_x_ind, sandbox2D_y_ind = ur.ur_helper.get_toolpath(i)
 
         # adapt toolpath
-        # z_toolpathbox2D = ur.ur_helper.get_z_fig(pcl, sandbox2D_x_ind, sandbox2D_y_ind)
-        # random_toolpath_adapted = ur.ur_helper.adapt_toolpath(random_toolpath, z_toolpathbox2D)
 
         # execure toolpath
-        ur.ur_helper.execute_toolpath(random_toolpath,-120,
-                                      excavation_time=20)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
