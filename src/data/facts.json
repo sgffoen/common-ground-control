@@ -55,8 +55,9 @@
        "z":0.0
     },
     "sandbox_dimensions":{
+       "l":1200,
        "w":800,
-       "h":500
+       "h":200
     },
     "calibration_pt":{
         "x":0,
