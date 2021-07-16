@@ -24,689 +24,404 @@ list
 '''
 
 
-def generate_ctrl_pts_tuple(num_ctrl_pts, level):
-    ctrl_pts_list = []
+class Toolpath():
+    def __init__(self,
+                 level,
+                 curve_type,
+                 num_ctrl_pts,
+                 segments_num,
+                 thickness,
+                 iteration):
+        self.level = level
+        self.curve_type = curve_type
+        self.num_ctrl_pts = num_ctrl_pts
+        self.segments_num = segments_num
+        self.thickness = thickness
+        self.iteration = iteration
 
-    if level == '1.0':
-        length = 255
-        step = length / (num_ctrl_pts - 1)
-        for i in range(num_ctrl_pts):
-            x = i * step
-            y = 0
-            z = 255
-            ctrl_pts_list.append((x, y, z))
+        self.ctrl_pts_list = []
+        self.ctrl_frames = []
 
-    elif level == '1.1':
-        length = r.randrange(30, 255)
-        step = length / (num_ctrl_pts - 1)
-        z = r.randrange(0, 255)
-        for i in range(num_ctrl_pts):
-            x = i * step
-            y = 0
-            ctrl_pts_list.append((x, y, z))
+        self.parent_folder = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/00_test/02_toolpath"
 
-    elif level == '1.2':
-        length = r.randrange(30, 255)
-        step = length / (num_ctrl_pts - 1)
-        for i in range(num_ctrl_pts):
-            x = i * step
-            y = 0
+    def generate_ctrl_pts_tuple(self):
+        if self.level == '1.0':
+            length = 255
+            step = length / (self.num_ctrl_pts - 1)
+            for i in range(self.num_ctrl_pts):
+                x = i * step
+                y = 0
+                z = 255
+                self.ctrl_pts_list.append((x, y, z))
+
+        elif self.level == '1.1':
+            length = r.randrange(30, 255)
+            step = length / (self.num_ctrl_pts - 1)
             z = r.randrange(0, 255)
-            ctrl_pts_list.append((x, y, z))
+            for i in range(self.num_ctrl_pts):
+                x = i * step
+                y = 0
+                self.ctrl_pts_list.append((x, y, z))
 
-    elif level == '2.0':
-        length = r.randrange(30, 255)
-        step = length / (num_ctrl_pts - 1)
-        for i in range(num_ctrl_pts):
-            x = i * step
-            y = r.randrange(0, 100)
-            z = 255
-            ctrl_pts_list.append((x, y, z))
+        elif self.level == '1.2':
+            length = r.randrange(30, 255)
+            step = length / (self.num_ctrl_pts - 1)
+            for i in range(self.num_ctrl_pts):
+                x = i * step
+                y = 0
+                z = r.randrange(0, 255)
+                self.ctrl_pts_list.append((x, y, z))
 
-    elif level == '2.1':
-        length = r.randrange(30, 255)
-        step = length / (num_ctrl_pts - 1)
-        z = r.randrange(0, 255)
-        for i in range(num_ctrl_pts):
-            x = i * step
-            y = r.randrange(50, 200)
-            ctrl_pts_list.append((x, y, z))
+        elif self.level == '2.0':
+            length = r.randrange(30, 255)
+            step = length / (self.num_ctrl_pts - 1)
+            for i in range(self.num_ctrl_pts):
+                x = i * step
+                y = r.randrange(0, 100)
+                z = 255
+                self.ctrl_pts_list.append((x, y, z))
 
-    elif level == '2.2':
-        length = r.randrange(30, 255)
-        step = length / (num_ctrl_pts - 1)
-        for i in range(num_ctrl_pts):
-            x = i * step
-            y = r.randrange(50, 200)
+        elif self.level == '2.1':
+            length = r.randrange(30, 255)
+            step = length / (self.num_ctrl_pts - 1)
             z = r.randrange(0, 255)
-            ctrl_pts_list.append((x, y, z))
+            for i in range(self.num_ctrl_pts):
+                x = i * step
+                y = r.randrange(50, 200)
+                self.ctrl_pts_list.append((x, y, z))
 
-    return ctrl_pts_list
+        elif self.level == '2.2':
+            length = r.randrange(30, 255)
+            step = length / (self.num_ctrl_pts - 1)
+            for i in range(self.num_ctrl_pts):
+                x = i * step
+                y = r.randrange(50, 200)
+                z = r.randrange(0, 255)
+                self.ctrl_pts_list.append((x, y, z))
 
+    def tuple_to_compas_frame(self):
+        ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in self.ctrl_pts_list]
 
-def draw_a_polyline(tuple_list):
-    ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in tuple_list]
-    polyline = cg.Polyline(ctrl_pts)
-    return polyline
+        if self.curve_type == 'polyline':
+            polyline = cg.Polyline(ctrl_pts)
+            pts_on_curve = polyline.divide_polyline(self.segments_num)
 
+        elif self.curve_type == 'bezier':
+            curve = cg.Bezier(ctrl_pts)
+            pts_on_curve = []
+            step = 1 / (self.segments_num-1)
+            for i in range(self.segments_num):
+                t = step * i
+                pt_on_curve = curve.point(t)
+                pts_on_curve.append(pt_on_curve)
 
-def draw_a_bezier(tuple_list):
-    ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in tuple_list]
-    curve = cg.Bezier(ctrl_pts)
-    return curve
+        for a, b in cu.pairwise(range(len(pts_on_curve))):
+            # get first pt
+            pta = cg.Point(pts_on_curve[a][0],
+                           pts_on_curve[a][1],
+                           pts_on_curve[a][2])
+            # get end pt
+            ptb = cg.Point(pts_on_curve[b][0],
+                           pts_on_curve[b][1],
+                           pts_on_curve[b][2])
+            # calc axis on xy plane
+            xaxis = cg.Vector.from_start_end(pta, ptb)
+            yaxis = cg.Vector.Zaxis().cross(xaxis)
+            # flatten vectors
+            xaxis.z = 0.
+            yaxis.z = 0.
+            self.ctrl_frames.append(cg.Frame(pta, yaxis, -xaxis))
 
+    def rotate_ctrl_frames(self):
+        # set angle
+        degree = r.randint(-180, 180)
+        # get rotation center
+        R = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(),
+                                            m.radians(degree))
+        for f in self.ctrl_frames:
+            f.transform(R)
 
-def tuple_to_compas_frame(tuple_list, curve_type, segments_num):
-    compas_frames = []
+    class Dimension():
+        def __init__(self):
+            self.sandbox_size_x = None
+            self.sandbox_size_y = None
+            self.frame_size_x = None
+            self.frame_size_y = None
+            self.frame_size_z = None
+            self.offset_x_min = None
+            self.offset_x_max = None
+            self.offset_y_min = None
+            self.offset_y_max = None
 
-    if curve_type == 'polyline':
-        curve = draw_a_polyline(tuple_list)
-        pts_on_curve = curve.divide_polyline(segments_num)
+        def get_sandbox_size(self):
+            # get corner pts
+            pts = facts['robot_corner_pts']
+            pt0 = cg.Point(pts['pt0'][0], pts['pt0'][1], pts['pt0'][2])
+            ptx = cg.Point(pts['ptx'][0], pts['ptx'][1], pts['ptx'][2])
+            pty = cg.Point(pts['pty'][0], pts['pty'][1], pts['pty'][2])
+            # get size
+            self.sandbox_size_x = cg.distance_point_point_xy(pt0, ptx)
+            self.sandbox_size_y = cg.distance_point_point_xy(pt0, pty)
 
-    elif curve_type == 'bezier':
-        curve = draw_a_bezier(tuple_list)
+        def get_frame_size(self):
+            self.frame_size_x = facts['fig_size']['x']
+            self.frame_size_y = facts['fig_size']['y']
+            self.frame_size_z = facts['fig_size']['z']
 
-        pts_on_curve = []
-        step = 1 / (segments_num-1)
-        for i in range(segments_num):
-            t = step * i
-            pt_on_curve = curve.point(t)
-            pts_on_curve.append(pt_on_curve)
+        def calc_offset_area_sandbox2d(self):
+            # calculate half of diagonal length of toolpathbox2d
+            x_offset_dist = self.frame_size_x / m.sqrt(2)
+            y_offset_dist = self.frame_size_y / m.sqrt(2)
+            # set min/max of working area
+            self.offset_x_min = x_offset_dist
+            self.offset_x_max = self.sandbox_size_x - x_offset_dist
+            self.offset_y_min = y_offset_dist
+            self.offset_y_max = self.sandbox_size_y - y_offset_dist
 
-    for a, b in cu.pairwise(range(len(pts_on_curve))):
-        # get first pt
-        pta = cg.Point(pts_on_curve[a][0],
-                       pts_on_curve[a][1],
-                       pts_on_curve[a][2])
-        # get end pt
-        ptb = cg.Point(pts_on_curve[b][0],
-                       pts_on_curve[b][1],
-                       pts_on_curve[b][2])
-        # calc axis on xy plane
-        xaxis = cg.Vector.from_start_end(pta, ptb)
-        yaxis = cg.Vector.Zaxis().cross(xaxis)
-        # flatten vectors
-        xaxis.z = 0.
-        yaxis.z = 0.
-        compas_frames.append(cg.Frame(pta, yaxis, -xaxis))
+    def move_ctrl_frames_to_sandbox2d(self, d):
+        # generate target frame to move to
+        frame_to_x = r.randint(int(d.offset_x_min), int(d.offset_x_max))
+        frame_to_y = r.randint(int(d.offset_y_min), int(d.offset_y_max))
+        frame_to_center = cg.Point(frame_to_x, frame_to_y, 0)
+        frame_to = cg.Frame(frame_to_center,
+                            cg.Vector.Xaxis(),
+                            cg.Vector.Yaxis())
+        # generate frame at middle of the toolpath
+        toolpath_line = cg.Line(self.ctrl_frames[0].point,
+                                self.ctrl_frames[-1].point)
+        toolpath_midpt = toolpath_line.midpoint
+        toolpath_midpt.z = 0
+        frame_from = cg.Frame(toolpath_midpt,
+                              cg.Vector.Xaxis(),
+                              cg.Vector.Yaxis())
+        # create transformation
+        T = cg.Transformation.from_frame_to_frame(frame_from, frame_to)
+        for ctrl_frame in self.ctrl_frames:
+            ctrl_frame.transform(T)
 
-    return compas_frames
+    def show_frames(self):
+        viewer = App()
+        for g in self.ctrl_frames:
+            viewer.add(g)
+        viewer.run()
 
+    # image processing from here
 
-def rotate_ctrl_frames(frames):
-    # set angle
-    degree = r.randint(-180, 180)
-    # get rotation center
-    R = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(), m.radians(degree))
-    for f in frames:
-        f.transform(R)
-    return frames
+    def draw_polyline_in_sandbox2d(self, d):
+        img = 255 * np.ones(shape=[m.floor(d.sandbox_size_y),
+                                   m.floor(d.sandbox_size_x),
+                                   3], dtype=np.uint8)
 
+        for a, b in cu.pairwise(range(len(self.ctrl_frames))):
+            pt_s = self.ctrl_frames[a].point
+            pt_e = self.ctrl_frames[b].point
+            cv2.line(img,
+                     (int(pt_s[0]), int(pt_s[1])),
+                     (int(pt_e[0]), int(pt_e[1])),
+                     color=(0, 0, pt_s[2]),  # red channel for toolpath height
+                     thickness=self.thickness)
 
-def get_sandbox_size():
-    # get corner pts
-    pts = facts['robot_corner_pts']
-    pt0 = cg.Point(pts['pt0'][0], pts['pt0'][1], pts['pt0'][2])
-    ptx = cg.Point(pts['ptx'][0], pts['ptx'][1], pts['ptx'][2])
-    pty = cg.Point(pts['pty'][0], pts['pty'][1], pts['pty'][2])
-    # get size
-    sandbox_size_x = cg.distance_point_point_xy(pt0, ptx)
-    sandbox_size_y = cg.distance_point_point_xy(pt0, pty)
+        return img
 
-    return sandbox_size_x, sandbox_size_y
+    def calc_contour(self, img):
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        ret, thresh = cv2.threshold(src=img_gray,
+                                    thresh=127.5,
+                                    maxval=255,
+                                    type=cv2.THRESH_BINARY)
+        contours, hierarchy = cv2.findContours(thresh, 1, 2)
+        self.cnt = contours[0]
 
+    def calc_two_bounding_box(self):
+        # draw orthogonal bbox
+        corner_pts_ortho = cv2.boundingRect(self.cnt)
+        x, y, w, h = corner_pts_ortho
+        self.rect = cv2.minAreaRect(self.cnt)
+        self.corner_pts_orient_float = cv2.boxPoints(self.rect)
 
-def get_toolpathbox2d_size():
-    return (facts['fig_size']['x'],
-            facts['fig_size']['y'],
-            facts['fig_size']['z'])
+    def calc_crop_idx(self):
+        centroid, ratio, angle = self.rect
+        fig_size_diagonal = (d.frame_size_x * m.sqrt(2)) / 2
 
+        if angle < 45:
+            theta = m.radians(45-angle)
+            pt0 = [int(centroid[0] - fig_size_diagonal*m.cos(theta)),
+                   int(centroid[1] + fig_size_diagonal*m.sin(theta))]
+            pt1 = [int(centroid[0] - fig_size_diagonal*m.sin(theta)),
+                   int(centroid[1] - fig_size_diagonal*m.cos(theta))]
+            pt2 = [int(centroid[0] + fig_size_diagonal*m.cos(theta)),
+                   int(centroid[1] - fig_size_diagonal*m.sin(theta))]
+            pt3 = [int(centroid[0] + fig_size_diagonal*m.sin(theta)),
+                   int(centroid[1] + fig_size_diagonal*m.cos(theta))]
 
-def calc_offset_area_sandbox2d():
-    # set coordinates' range
-    sandbox_size_x, sandbox_size_y = get_sandbox_size()
-    (toolpathbox2d_size_x,
-     toolpathbox2d_size_y,
-     toolpathbox2d_size_z) = get_toolpathbox2d_size()
-    # calculate half of diagonal length of toolpathbox2d
-    x_offset_dist = toolpathbox2d_size_x / m.sqrt(2)
-    y_offset_dist = toolpathbox2d_size_y / m.sqrt(2)
-    # set min/max of working area
-    x_coord_min = x_offset_dist
-    x_coord_max = sandbox_size_x - x_offset_dist
-    y_coord_min = y_offset_dist
-    y_coord_max = sandbox_size_y - y_offset_dist
-    return x_coord_min, x_coord_max, y_coord_min, y_coord_max
+        else:
+            theta = m.radians(angle-45)
+            pt0 = [int(centroid[0] - fig_size_diagonal*m.cos(theta)),
+                   int(centroid[1] - fig_size_diagonal*m.sin(theta))]
+            pt1 = [int(centroid[0] + fig_size_diagonal*m.sin(theta)),
+                   int(centroid[1] - fig_size_diagonal*m.cos(theta))]
+            pt2 = [int(centroid[0] + fig_size_diagonal*m.cos(theta)),
+                   int(centroid[1] + fig_size_diagonal*m.sin(theta))]
+            pt3 = [int(centroid[0] - fig_size_diagonal*m.sin(theta)),
+                   int(centroid[1] + fig_size_diagonal*m.cos(theta))]
+        self.crop_idx = [pt0, pt1, pt2, pt3]
 
+    def calc_toolpath_dir(self):
+        # calc direction of toolpath
+        toolpath_start = self.ctrl_frames[0].point
+        toolpath_end = self.ctrl_frames[-1].point
+        self.toolpath_dir = cg.Vector.from_start_end(toolpath_start,
+                                                     toolpath_end)
 
-def move_ctrl_frames_to_sandbox2d(ctrl_frames_rotation):
-    # set coordinates range
-    (x_coord_min, x_coord_max,
-     y_coord_min, y_coord_max) = calc_offset_area_sandbox2d()
-    # generate target frame to move to
-    frame_to_x = r.randint(int(x_coord_min), int(x_coord_max))
-    frame_to_y = r.randint(int(y_coord_min), int(y_coord_max))
-    frame_to_center = cg.Point(frame_to_x, frame_to_y, 0)
-    frame_to = cg.Frame(frame_to_center, cg.Vector.Xaxis(), cg.Vector.Yaxis())
-    # generate frame at middle of the toolpath
-    toolpath_line = cg.Line(ctrl_frames_rotation[0].point,
-                            ctrl_frames_rotation[-1].point)
-    toolpath_midpt = toolpath_line.midpoint
-    toolpath_midpt.z = 0
-    frame_from = cg.Frame(toolpath_midpt, cg.Vector.Xaxis(), cg.Vector.Yaxis())
-    # create transformation
-    T = cg.Transformation.from_frame_to_frame(frame_from, frame_to)
-    for ctrl_frame in ctrl_frames_rotation:
-        ctrl_frame.transform(T)
+    def calc_toolpath_box_dir(self):
+        # calc direction of oriented_rect
+        oriented_rect_pt0 = cg.Point(self.corner_pts_orient_float[0][0],
+                                     self.corner_pts_orient_float[0][1],
+                                     0)
+        oriented_rect_pt1 = cg.Point(self.corner_pts_orient_float[1][0],
+                                     self.corner_pts_orient_float[1][1],
+                                     0)
+        oriented_rect_pt2 = cg.Point(self.corner_pts_orient_float[2][0],
+                                     self.corner_pts_orient_float[2][1],
+                                     0)
+        oriented_rect_pt3 = cg.Point(self.corner_pts_orient_float[3][0],
+                                     self.corner_pts_orient_float[3][1],
+                                     0)
+        self.edge1_dir = cg.Vector.from_start_end(oriented_rect_pt0,
+                                                  oriented_rect_pt2)
+        self.edge2_dir = cg.Vector.from_start_end(oriented_rect_pt1,
+                                                  oriented_rect_pt3)
 
-    return ctrl_frames_rotation
+    def calc_dot_toolpath_and_bbox(self):
+        # check orientation of toolpath and crop_area
+        self.toolpath_dir.unitize()
+        self.edge1_dir.unitize()
+        self.edge2_dir.unitize()
+        self.dot1 = cg.dot_vectors_xy(self.toolpath_dir, self.edge1_dir)
+        self.dot2 = cg.dot_vectors_xy(self.toolpath_dir, self.edge2_dir)
 
+    def calc_shift_number_bbox_corner(self):
+        self.shift_num = 0
+        if (0 < self.dot1) and (0 < self.dot2):
+            self.shift_num = 0
+        elif (self.dot1 < 0) and (self.dot2 < 0):
+            # shift 2
+            self.shift_num = 2
+        elif (0 < self.dot1) and (self.dot2 < 0):
+            # shift 1
+            self.shift_num = 1
+        elif (self.dot1 < 0) and (0 < self.dot2):
+            # shift -1
+            self.shift_num = -1
 
-def run_viewer(geos):
-    viewer = App()
-    for g in geos:
-        viewer.add(g)
-    viewer.run()
+    def shift_list(slef, list_to_shift, shift_num):
+        collection_to_shift = deque(list_to_shift)
+        collection_to_shift.rotate(shift_num)
+        return list(collection_to_shift)
 
+    def crop_toolpathbox2d_oriented(self, img):
+        pts_from = np.float32(self.crop_idx)
+        pts_to = np.float32([[0, 0],
+                            [d.frame_size_x, 0],
+                            [d.frame_size_x, d.frame_size_y],
+                            [0, d.frame_size_y]])
+        M = cv2.getPerspectiveTransform(pts_from, pts_to)
+        img_cropped = cv2.warpPerspective(img,
+                                          M,
+                                          (int(d.frame_size_x),
+                                           int(d.frame_size_y)))
+        return img_cropped
 
-def calc_contour(arr_sandbox2d_with_toolpath):
-    img_gray = cv2.cvtColor(arr_sandbox2d_with_toolpath, cv2.COLOR_BGR2GRAY)
-    ret, thresh = cv2.threshold(src=img_gray,
-                                thresh=127.5,
-                                maxval=255,
-                                type=cv2.THRESH_BINARY)
-    contours, hierarchy = cv2.findContours(thresh, 1, 2)
-    cnt = contours[0]
-    return cnt
-
-
-def calc_two_bounding_box(arr_sandbox2d_with_toolpath, cnt, text, show):
-    # draw orthogonal bbox
-    corner_pts_ortho = cv2.boundingRect(cnt)
-    x, y, w, h = corner_pts_ortho
-    rect = cv2.minAreaRect(cnt)
-    corner_pts_orient_float = cv2.boxPoints(rect)
-
-    if show:
-        cv2.rectangle(arr_sandbox2d_with_toolpath,
-                      (x, y),
-                      (x+w, y+h),
-                      (0, 255, 0),
-                      1)
-        # draw oriented bbox
-        corner_pts_orient_int = np.int0(corner_pts_orient_float)
-        cv2.drawContours(arr_sandbox2d_with_toolpath,
-                         [corner_pts_orient_int],
-                         0,
-                         (0, 0, 255),
-                         2)
-        # put text at the corner
-        if text:
-            for i, pt in enumerate(corner_pts_orient_int):
-                cv2.putText(arr_sandbox2d_with_toolpath,
-                            str(i),
-                            (pt[0], pt[1]),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            1.0,
-                            (0, 0, 0),
-                            1,
-                            cv2.LINE_AA)
-        cv2.imshow('calc_two_bounding_box', arr_sandbox2d_with_toolpath)
+    def show_img(self, img_to_show):
+        cv2.imshow('show_img', img_to_show)
         cv2.waitKey(0)
 
-    return rect, corner_pts_orient_float
-
-
-def calc_oriented_corner_pts_in_figsize(oriented_bbox):
-    centroid, ratio, angle = oriented_bbox
-    fig_size_x, fig_size_y, fig_size_z = get_toolpathbox2d_size()
-    fig_size_diagonal = (fig_size_x * m.sqrt(2)) / 2
-
-    if angle < 45:
-        theta = m.radians(45-angle)
-        pt0 = [centroid[0] - fig_size_diagonal*m.cos(theta),
-               centroid[1] + fig_size_diagonal*m.sin(theta)]
-        pt1 = [centroid[0] - fig_size_diagonal*m.sin(theta),
-               centroid[1] - fig_size_diagonal*m.cos(theta)]
-        pt2 = [centroid[0] + fig_size_diagonal*m.cos(theta),
-               centroid[1] - fig_size_diagonal*m.sin(theta)]
-        pt3 = [centroid[0] + fig_size_diagonal*m.sin(theta),
-               centroid[1] + fig_size_diagonal*m.cos(theta)]
-
-    else:
-        theta = m.radians(angle-45)
-        pt0 = [centroid[0] - fig_size_diagonal*m.cos(theta),
-               centroid[1] - fig_size_diagonal*m.sin(theta)]
-        pt1 = [centroid[0] + fig_size_diagonal*m.sin(theta),
-               centroid[1] - fig_size_diagonal*m.cos(theta)]
-        pt2 = [centroid[0] + fig_size_diagonal*m.cos(theta),
-               centroid[1] + fig_size_diagonal*m.sin(theta)]
-        pt3 = [centroid[0] - fig_size_diagonal*m.sin(theta),
-               centroid[1] + fig_size_diagonal*m.cos(theta)]
-
-    return [pt0, pt1, pt2, pt3]
-
-
-def calc_toolpath_dir(ctrl_frames_in_sandbox2d):
-    # calc direction of toolpath
-    toolpath_start = ctrl_frames_in_sandbox2d[0].point
-    toolpath_end = ctrl_frames_in_sandbox2d[-1].point
-    toolpath_dir = cg.Vector.from_start_end(toolpath_start, toolpath_end)
-    return toolpath_dir
-
-
-def calc_toolpath_box_dir(corner_pts_orient_float):
-    # calc direction of oriented_rect
-    oriented_rect_pt0 = cg.Point(corner_pts_orient_float[0][0],
-                                 corner_pts_orient_float[0][1],
-                                 0)
-    oriented_rect_pt1 = cg.Point(corner_pts_orient_float[1][0],
-                                 corner_pts_orient_float[1][1],
-                                 0)
-    oriented_rect_pt2 = cg.Point(corner_pts_orient_float[2][0],
-                                 corner_pts_orient_float[2][1],
-                                 0)
-    oriented_rect_pt3 = cg.Point(corner_pts_orient_float[3][0],
-                                 corner_pts_orient_float[3][1],
-                                 0)
-    vec_toolpathbox_pt0_to_pt2 = cg.Vector.from_start_end(oriented_rect_pt0,
-                                                          oriented_rect_pt2)
-    vec_toolpathbox_pt1_to_pt3 = cg.Vector.from_start_end(oriented_rect_pt1,
-                                                          oriented_rect_pt3)
-    return vec_toolpathbox_pt0_to_pt2, vec_toolpathbox_pt1_to_pt3
-
-
-def calc_dot_toolpath_and_bbox(toolpath_dir, edge1_dir, edge2_dir):
-    # check orientation of toolpath and crop_area
-    toolpath_dir.unitize()
-    edge1_dir.unitize()
-    edge2_dir.unitize()
-    dot1 = cg.dot_vectors_xy(toolpath_dir, edge1_dir)
-    dot2 = cg.dot_vectors_xy(toolpath_dir, edge2_dir)
-    return dot1, dot2
-
-
-def calc_shift_number_bbox_corner(dot1, dot2):
-    shift_num = 0
-    if (0 < dot1) and (0 < dot2):
-        shift_num = 0
-    elif (dot1 < 0) and (dot2 < 0):
-        # shift 2
-        shift_num = 2
-    elif (0 < dot1) and (dot2 < 0):
-        # shift 1
-        shift_num = 1
-    elif (dot1 < 0) and (0 < dot2):
-        # shift -1
-        shift_num = -1
-    return shift_num
-
-
-def shift_list(list_to_shift, shift_num):
-    collection_to_shift = deque(list_to_shift)
-    collection_to_shift.rotate(shift_num)
-    return list(collection_to_shift)
-
-
-def align_bbox_with_toolpath_dir(
-        ctrl_frames_in_sandbox2d,
-        corner_pts_orient_float,
-        oriented_bbox_corner_pts_in_figsize):
-    toolpath_dir = calc_toolpath_dir(ctrl_frames_in_sandbox2d)
-    (toolpathbox_pt0_to_pt2,
-     toolpathbox_pt1_to_pt3) = calc_toolpath_box_dir(corner_pts_orient_float)
-    dot1, dot2 = calc_dot_toolpath_and_bbox(toolpath_dir,
-                                            toolpathbox_pt0_to_pt2,
-                                            toolpathbox_pt1_to_pt3)
-    shift_num = calc_shift_number_bbox_corner(dot1, dot2)
-    oriented_bbox_corner_pts_in_figsize = shift_list(
-        oriented_bbox_corner_pts_in_figsize,
-        shift_num)
-    return oriented_bbox_corner_pts_in_figsize
-
-
-def crop_toolpathbox2d_oriented(
-        arr_sandbox2d_with_toolpath,
-        oriented_bbox_corner_pts_in_figsize,
-        show_cropped_img):
-    pts_from = np.float32(oriented_bbox_corner_pts_in_figsize)
-    (toolpathbox2d_size_x,
-     toolpathbox2d_size_y,
-     toolpathbox2d_size_z) = get_toolpathbox2d_size()
-    pts_to = np.float32([[0, 0],
-                         [toolpathbox2d_size_x, 0],
-                         [toolpathbox2d_size_x, toolpathbox2d_size_y],
-                         [0, toolpathbox2d_size_y]])
-    M = cv2.getPerspectiveTransform(pts_from, pts_to)
-    warped = cv2.warpPerspective(arr_sandbox2d_with_toolpath,
-                                 M,
-                                 (int(toolpathbox2d_size_x),
-                                  int(toolpathbox2d_size_y)))
-    if show_cropped_img:
-        cv2.imshow('crop_toolpathbox2d_oriented', warped)
-        cv2.waitKey(0)
-
-    return warped
-
-
-def create_scan_identifier(iteration_num):
-    id_num = str(iteration_num).zfill(5)
-    return str(datetime.date.today()) + '_' + str(id_num)
-
-
-def make_iteration_dirs(dir, id):
-    # create folder for toolpath collection
-    new_folder_path = dir + '/toolpath_collection_{}'.format(id)
-    try:
-        os.makedirs(new_folder_path)
-    except FileExistsError:
-        print("Directory ", new_folder_path, " already exists")
-
-    # create folder for toolpath json
-    new_folder_path_toolpath_frames = (new_folder_path
-                                       + '/'
-                                       + 'toolpath_frames')
-    try:
-        os.makedirs(new_folder_path_toolpath_frames)
-    except FileExistsError:
-        print("Directory ", new_folder_path_toolpath_frames, " already exists")
-
-    # create folder for cropped toolpath img
-    new_folder_path_cropped_toolpath = (new_folder_path
-                                        + '/'
-                                        + 'cropped_toolpath')
-
-    # create folder for sandbox img
-    new_folder_path_sdandbox = new_folder_path + '/' + 'sandbox'
-    try:
-        os.makedirs(new_folder_path_sdandbox)
-    except FileExistsError:
-        print("Directory ", new_folder_path_sdandbox, " already exists")
-
-    # create folder for cropped toolpath img
-    new_folder_path_cropped_toolpath = (new_folder_path
-                                        + '/'
-                                        + 'cropped_toolpath')
-    try:
-        os.makedirs(new_folder_path_cropped_toolpath)
-    except FileExistsError:
-        print("Directory ",
-              new_folder_path_cropped_toolpath,
-              " already exists")
-
-    return (new_folder_path,
-            new_folder_path_toolpath_frames,
-            new_folder_path_sdandbox,
-            new_folder_path_cropped_toolpath)
-
-
-def export_an_img(filename, img_to_save):
-    cv2.imwrite(filename, img_to_save)
-
-
-def create_json_file(
-        folder_path,
-        filename):
-    data = {}
-    data['toolpath_ctrl_frames'] = {}
-
-    filepath = folder_path + '/' + '{}.json'.format(filename)
-    with open(filepath, 'w') as o:
-        json.dump(data, o, indent=4)
-
-
-def export_ctrl_frames_json(
-        ctrl_frames_in_sandbox2d,
-        folder_path,
-        filename,
-        excavation_iter=1):
-
-    # load json
-    filepath = folder_path + '/' + filename + '.json'
-    with open(filepath, 'r') as f:
-        data = json.load(f)
-
-    # add a key
-    iter_num = str(excavation_iter).zfill(5)
-    iter_key = 'iteration_{}'.format(iter_num)
-    data['toolpath_ctrl_frames'][iter_key] = {}
-
-    # store frames
-    for j, f in enumerate(ctrl_frames_in_sandbox2d):
-        frame_num = str(j).zfill(5)
-        frame_key = 'frame_{}'.format(frame_num)
-        data['toolpath_ctrl_frames'][iter_key][frame_key] = f.to_jsonstring()
-
-    # export and overwrite json
-    with open(filepath, 'w') as o:
-        json.dump(data, o, indent=4)
-
-
-def export_sandbox_as_img(
-        sandbox,
-        folder_path,
-        excavation_iter):
-    iter_num = str(excavation_iter).zfill(5)
-    filename = folder_path + '/' + 'sandbox_' + iter_num + '.png'
-    export_an_img(filename, sandbox)
-
-
-def export_cropped_toolpath_as_img(
-        cropped_toolpath,
-        folder_path,
-        excavation_iter):
-    iter_num = str(excavation_iter).zfill(5)
-    filename = folder_path + '/' + 'cropped_toolpath_' + iter_num + '.png'
-    export_an_img(filename, cropped_toolpath)
-
-
-def generate_toolpath_frames_in_sandbox2d(
-        new_folder_path,
-        filename_id,
-        excavation_iter,
-        num_ctrl_pts,
-        level,
-        curve_type,
-        segments_num,
-        viewer,
-        save_json):
-
-    # for robot frame
-    ctrl_pts_tuple_list = generate_ctrl_pts_tuple(num_ctrl_pts, level)
-    ctrl_frames = tuple_to_compas_frame(ctrl_pts_tuple_list,
-                                        curve_type,
-                                        segments_num)
-    ctrl_frames_rotation = rotate_ctrl_frames(ctrl_frames)
-    ctrl_frames_in_sandbox2d = move_ctrl_frames_to_sandbox2d(
-                                   ctrl_frames_rotation)
-
-    if viewer:
-        run_viewer(ctrl_frames_in_sandbox2d)
-
-    if save_json:
-        export_ctrl_frames_json(
-            ctrl_frames_in_sandbox2d,
-            new_folder_path,
-            filename_id,
-            excavation_iter)
-
-    return ctrl_frames_in_sandbox2d
-
-
-def draw_polyline_in_sandbox2d(
-        frames,
-        new_folder_path_sdandbox,
-        excavation_iter,
-        thickness,
-        show_toolpath_in_sandbox,
-        save_img):
-
-    sandbox_dimensions = facts['sandbox_dimensions']
-    blank = 255 * np.ones(shape=[sandbox_dimensions['w'],
-                                 sandbox_dimensions['l'],
-                                 3],
-                          dtype=np.uint8)
-
-    for a, b in cu.pairwise(range(len(frames))):
-        pt_s = frames[a].point
-        pt_e = frames[b].point
-        cv2.line(blank,
-                 (int(pt_s[0]), int(pt_s[1])),
-                 (int(pt_e[0]), int(pt_e[1])),
-                 color=(0, 0, pt_s[2]),  # red channel for toolpath height
-                 thickness=thickness)
-
-    if show_toolpath_in_sandbox:
-        cv2.imshow('draw_a_line_in_sandbox2d', blank)
-        cv2.waitKey(0)
-
-    if save_img:
-        export_sandbox_as_img(
-            blank,
-            new_folder_path_sdandbox,
-            excavation_iter)
-
-    return blank
-
-
-def crop_toolpath_in_sandbox2d(
-        arr_sandbox2d_with_toolpath,
-        ctrl_frames_in_sandbox2d,
-        new_folder_path_cropped_toolpath,
-        excavation_iter,
-        show_cropped_img,
-        show_bbox,
-        show_text,
-        save_img):
-
-    # calc contour
-    cnt = calc_contour(
-        arr_sandbox2d_with_toolpath)
-    # calc minAreaRect
-    oriented_bbox, corner_pts_orient_float = calc_two_bounding_box(
-        arr_sandbox2d_with_toolpath,
-        cnt,
-        show_text,
-        show_bbox)
-    oriented_bbox_corner_pts_in_figsize = calc_oriented_corner_pts_in_figsize(
-        oriented_bbox)
-    oriented_bbox_corner_pts_in_figsize_shifted = align_bbox_with_toolpath_dir(
-        ctrl_frames_in_sandbox2d,
-        corner_pts_orient_float,
-        oriented_bbox_corner_pts_in_figsize)
-    cropped_toolpath = crop_toolpathbox2d_oriented(
-        arr_sandbox2d_with_toolpath,
-        oriented_bbox_corner_pts_in_figsize_shifted,
-        show_cropped_img)
-    if save_img:
-        export_cropped_toolpath_as_img(
-            cropped_toolpath,
-            new_folder_path_cropped_toolpath,
-            excavation_iter)
-
-    return cropped_toolpath
-
-
-def get_and_store_toolpath(level, curvetype):
-    # input before data collection
-    data_collection_iter = 0
-    excavation_iter = 1
-
-    folder_path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/00_test/02_toolpath"
-    filename_id = create_scan_identifier(data_collection_iter)
-
-    (new_folder_path,
-     new_folder_path_toolpath_frames,
-     new_folder_path_sdandbox,
-     new_folder_path_cropped_toolpath) = make_iteration_dirs(
-        folder_path,
-        filename_id)
-    create_json_file(new_folder_path_toolpath_frames, filename_id)
-
-    ctrl_frames_in_sandbox2d = generate_toolpath_frames_in_sandbox2d(
-        new_folder_path_toolpath_frames,
-        filename_id,
-        excavation_iter=excavation_iter,
-        num_ctrl_pts=5,
-        level=level,
-        curve_type=curvetype,  # polyline or bezier
-        segments_num=50,
-        viewer=False,
-        save_json=True)
-
-    arr_sandbox2d_with_toolpath = draw_polyline_in_sandbox2d(
-        ctrl_frames_in_sandbox2d,
-        new_folder_path_sdandbox,
-        excavation_iter=excavation_iter,
-        thickness=2,
-        show_toolpath_in_sandbox=False,
-        save_img=True)
-
-    cropped_toolpath = crop_toolpath_in_sandbox2d(
-        arr_sandbox2d_with_toolpath,
-        ctrl_frames_in_sandbox2d,
-        new_folder_path_cropped_toolpath,
-        excavation_iter=excavation_iter,
-        show_cropped_img=False,
-        show_bbox=False,
-        show_text=False,
-        save_img=True)
-
-    return ctrl_frames_in_sandbox2d
+    def export_an_img(self, img_to_save):
+        filename = self.parent_folder + '/' + self.id + '.png'
+        cv2.imwrite(filename, img_to_save)
+
+    def create_scan_identifier(self):
+        id_num = str(self.iteration).zfill(5)
+        self.id = str(datetime.date.today()) + '_' + str(id_num)
+
+    def create_json_file(self):
+        data = {}
+        data['crop_idx'] = {}
+        data['ctrl_frames'] = {}
+        filepath = self.parent_folder + '/' + '{}.json'.format(self.id)
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
+
+    def export_json(self):
+        # load json
+        filepath = self.parent_folder + '/' + self.id + '.json'
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+        # store crop_idx
+        print(len(self.crop_idx))
+        for i, ci in enumerate(self.crop_idx):
+            data['crop_idx'][i] = ci
+        # store frames
+        for j, f in enumerate(self.ctrl_frames):
+            frame_num = str(j).zfill(3)
+            frame_key = 'f_{}'.format(frame_num)
+            data['ctrl_frames'][frame_key] = f.to_jsonstring()
+        # export and overwrite json
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
 
 
 if __name__ == "__main__":
 
-    level = '1.2'
-    curvetype = 'polyline'
-    ctrl_frames_in_sandbox2d = get_and_store_toolpath(level, curvetype)
+    t = Toolpath(level='1.0',
+                 curve_type='polyline',
+                 num_ctrl_pts=5,
+                 segments_num=50,
+                 thickness=2,
+                 iteration=0)
 
-# test in a loop
-'''
-    data_collection_iter = 0
-    excavation_iter = 1
+    # generate toolpath
+    t.generate_ctrl_pts_tuple()
+    t.tuple_to_compas_frame()
+    t.rotate_ctrl_frames()
 
-    for i in range(excavation_iter):
+    # get external dimensions
+    d = t.Dimension()
+    d.get_sandbox_size()
+    d.get_frame_size()
+    d.calc_offset_area_sandbox2d()
 
-        # create placeholders
-        if i == 0:
-            folder_path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/00_test/02_toolpath"
-            filename_id = create_scan_identifier(data_collection_iter)
+    # transform toolpath into sandbox
+    t.move_ctrl_frames_to_sandbox2d(d)
 
-            (new_folder_path,
-             new_folder_path_toolpath_frames,
-             new_folder_path_sdandbox,
-             new_folder_path_cropped_toolpath) = make_iteration_dirs(
-                folder_path,
-                filename_id)
-            create_json_file(new_folder_path_toolpath_frames, filename_id)
+    # generate img
+    img = t.draw_polyline_in_sandbox2d(d)
 
-        ctrl_frames_in_sandbox2d = generate_toolpath_frames_in_sandbox2d(
-            new_folder_path_toolpath_frames,
-            filename_id,
-            excavation_iter=i,
-            num_ctrl_pts=5,
-            level='1.0',
-            curve_type='bezier',  # polyline or bezier
-            segments_num=100,
-            viewer=False,
-            save_json=True)
+    # get crop idx
+    t.calc_contour(img)
+    t.calc_two_bounding_box()
+    t.calc_toolpath_dir()
+    t.calc_toolpath_box_dir()
+    t.calc_dot_toolpath_and_bbox()
+    t.calc_shift_number_bbox_corner()
+    t.calc_crop_idx()
+    t.crop_idx = t.shift_list(t.crop_idx, t.shift_num)
 
-        arr_sandbox2d_with_toolpath = draw_polyline_in_sandbox2d(
-            ctrl_frames_in_sandbox2d,
-            new_folder_path_sdandbox,
-            excavation_iter=i,
-            thickness=2,
-            show_toolpath_in_sandbox=False,
-            save_img=True)
+    # crop img
+    img_cropped = t.crop_toolpathbox2d_oriented(img)
 
-        cropped_toolpath = crop_toolpath_in_sandbox2d(
-            arr_sandbox2d_with_toolpath,
-            ctrl_frames_in_sandbox2d,
-            new_folder_path_cropped_toolpath,
-            excavation_iter=i,
-            show_cropped_img=False,
-            show_bbox=False,
-            show_text=False,
-            save_img=True)
-'''
+    '''visualize and export'''
+    # t.show_frames()
+    # t.show_img(img)
+    # t.show_img(img_cropped)
+
+    # make directory
+    t.create_scan_identifier()
+
+    # export img as img
+    t.export_an_img(img)
+    t.export_an_img(img_cropped)
+
+    # export ctrl_frames & crop_idx as json
+    t.create_json_file()
+    t.export_json()
