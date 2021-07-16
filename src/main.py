@@ -2,6 +2,7 @@ from argparser import parse_args
 import scanning
 import time
 import UR as ur
+import toolpath as tp
 
 ITERATION = 50
 
@@ -40,8 +41,10 @@ def training(env):
         print('\n#############  iteration {} done  #############\n\n'.format(i))
     print('Total fabrication time: ', (time.time()-start)/60, ' min')
 
+
 def run():
     pass
+
 
 def main():
     run_mode, environment = parse_args()
@@ -56,6 +59,11 @@ def main():
     elif run_mode == 'calibration':
         ur.ur_helper.scan_pose(scanning_time=0.1)
         scanning.img_calibration()
+    elif run_mode == 'toolpath':
+        # level == 1.0 / 1.1 / 1.2 / 2.0 / 2.1 / 2.2
+        # curvetype == polyline / bezier
+        frames = tp.get_and_store_toolpath(level='2.0', curvetype='bezier')
+        ur.ur_helper.execute_toolpath(frames, z_center_toolpathbox2D=0)
     else:
         print("Run mode is not identified")
 

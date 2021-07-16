@@ -18,7 +18,7 @@ with open('data/facts.json') as f:
     get_sandbox_size
     get_robot_frame
     get_scan_frame
-    get_safety_frame
+    get_calibration_frame
     get_figsize
     get_sandbox2d_size
 -transformations
@@ -31,6 +31,9 @@ with open('data/facts.json') as f:
     matrix_to_euler
     concatenate_matrices
 -extra_funcitons
+    add_safety_frames
+    reverse_z_value
+    adapt_height_from_pcl
     check_arguments
     run_viewer
 '''
@@ -90,8 +93,8 @@ def get_calibration_frame():
                       facts['calibration_pt']['y'],
                       facts['calibration_pt']['z'])
     calibration_frame = cg.Frame(center,
-                            cg.Vector.Xaxis(),
-                            cg.Vector.Yaxis())
+                                 cg.Vector.Xaxis(),
+                                 cg.Vector.Yaxis())
     return calibration_frame
 
 
@@ -287,6 +290,26 @@ def concatenate_matrices(matrices):
     for i in range(1, len(matrices)):
         _transform *= matrices[i]
     return _transform
+
+
+def add_safety_frames(frames, safety_dist=200):
+    frame_s = frames[0].copy()
+    frame_e = frames[-1].copy()
+    frame_s.point.z += safety_dist
+    frame_e.point.z += safety_dist
+    frames.insert(0, frame_s)
+    frames.append(frame_e)
+    return frames
+
+
+def reverse_z_value(frames):
+    for f in frames:
+        f.point.z *= (-1)
+
+
+def adapt_height_from_pcl(frames, z_center_toolpathbox2D=0):
+    for f in frames:
+        f.point.z += z_center_toolpathbox2D
 
 
 def check_arguments(function):
