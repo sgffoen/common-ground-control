@@ -1,5 +1,5 @@
 from argparser import parse_args
-import scanning
+#import scanning
 import time
 import UR as ur
 import toolpath as tp

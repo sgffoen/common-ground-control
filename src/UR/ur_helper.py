@@ -1,19 +1,23 @@
 # LIBRARIES
-from UR import compas_simple_comm as uc
-from UR import compas_simple_ur_script as us
-from UR import compas_utils as uu
-
 import math as m
 import time
 import json
+
+if __name__ == "__main__":
+    import compas_simple_comm as uc
+    import compas_simple_ur_script as us
+    import compas_utils as uu
+else:
+    from UR import compas_simple_comm as uc
+    from UR import compas_simple_ur_script as us
+    from UR import compas_utils as uu
+
 
 # fact sheet
 with open('data/facts.json') as f:
     facts = json.load(f)
 
-
 # FUNCTIONS
-
 
 def move_robot_to_a_frame(frame,
                           velocity=0.30,
@@ -101,4 +105,4 @@ def execute_toolpath(frames, z_center_toolpathbox2D=0):
 
 
 if __name__ == "__main__":
-    pass
+    scan_pose(7.5)
