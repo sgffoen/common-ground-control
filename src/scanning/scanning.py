@@ -13,6 +13,13 @@ from tkinter.filedialog import askdirectory
 import matplotlib.pyplot as plt
 from pylibfreenect2 import setGlobalLogger
 #from scanning.raster_utils import displayArray
+if __name__ == "__main__":
+    from raster_utils import EsriGrid
+else:
+    from .raster_utils import EsriGrid
+
+
+
 
 # turn off print logging to command line interface -> to turn on comment out this line of code
 setGlobalLogger(None)
@@ -58,7 +65,7 @@ class ScanData():
         self.rgb_scan = np.flipud(self.connect.get_frame(ktb.COLOR))
         self.depth_scan = np.flipud(self.connect.get_frame(ktb.DEPTH))
         self.ir_scan = np.flipud(self.connect.get_frame(ktb.IR))
-        self.pointcloud = self.PointCloud(self.depth_scan, self.intrinsic_params)
+        #self.pointcloud = self.PointCloud(self.depth_scan, self.intrinsic_params)
 
     def display_scan(self, img, height = 5):
         plt.figure(figsize=(height * (img.shape[1] / img.shape[0]), height))
@@ -91,218 +98,250 @@ class ScanData():
         feature = self.resize_1mmpixel(cropped)
         return Feature(feature)
 
-    def get_heightmap_feature(self):
-        hm = self.HeightMap(self.resize_1mmpixel(self.crop_box(self.depth_scan)))
-        return Feature(hm.heightmap)
 
 
-    class PointCloud(object):
-        def __init__(self, depth, intrinsic_parameters):
-            self.depth_input = depth
-            self.intrinsic_params = intrinsic_parameters
-            self.points = self.get_pointcloud_transformed()
+class PointCloud(object):
+    def __init__(self, depth, intrinsic_parameters):
+        self.depth_input = depth
+        self.intrinsic_params = intrinsic_parameters
 
-        def get_feature(self):
-            """crop raw image to the target size"""
+    def get_pointcloud_transformed(self):
+        ptcld = self.get_pointcloud_raw()
+        transformed = self.transform_pointcloud(ptcld)
+        return transformed
 
-            with open('data/facts.json') as f:
-                facts = json.load(f)
+    def get_feature(self):
+        """crop pcl to the target size"""
 
-            crop_ids = facts["crop_idx"]
-            return self.points[crop_ids['yStart'] : crop_ids['yEnd'], crop_ids['xStart'] : crop_ids['xEnd']]
+        with open('data/facts.json') as f:
+            facts = json.load(f)
 
-        def get_feature_flatten(self):
-            """crop raw image to the target size"""
+        crop_ids = facts["crop_idx"]
+        return self.get_pointcloud_transformed()[crop_ids['yStart'] : crop_ids['yEnd'], crop_ids['xStart'] : crop_ids['xEnd']]
 
-            with open('data/facts.json') as f:
-                facts = json.load(f)
+    def get_pointcloud_raw(self, roi=None, scale=1, colorized=False):
+        '''
+            get_ptcld: Returns a point cloud, generated from depth image. Units
+                are mm by default.
+            ARGUMENTS:
+                roi: [x, y, w, h]
+                    If specified, will crop the point cloud according to the
+                    input roi. Does not accelerate runtime.
+                scale: int
+                    Scales the point cloud such that ptcl = ptcl (m) / scale.
+                    ie scale = 1000 returns point cloud in mm.
+                colorized: bool
+                    If True, returns color matrix along with point cloud such
+                    that if pt = ptcld[x,y,:], the color of that point is color
+                    = color[x,y,:]
+        '''
+        undistorted = self.depth_input
 
-            crop_ids = facts["crop_idx"]
-            points = self.points[crop_ids['yStart'] : crop_ids['yEnd'], crop_ids['xStart'] : crop_ids['xEnd']]
-            return points.reshape((points.shape[0] * points.shape[1], 3))
+        camera_params = self.intrinsic_params
 
-        def get_pointcloud_transformed(self, roi=None, scale=1000, colorized=False):
-            '''
-                get_ptcld: Returns a point cloud, generated from depth image. Units
-                    are mm by default.
-                ARGUMENTS:
-                    roi: [x, y, w, h]
-                        If specified, will crop the point cloud according to the
-                        input roi. Does not accelerate runtime.
-                    scale: int
-                        Scales the point cloud such that ptcl = ptcl (m) / scale.
-                        ie scale = 1000 returns point cloud in mm.
-                    colorized: bool
-                        If True, returns color matrix along with point cloud such
-                        that if pt = ptcld[x,y,:], the color of that point is color
-                        = color[x,y,:]
-            '''
-            undistorted = self.depth_input
+        def depth_matrix2pointcloud(z, camera_params, scale_factor):
 
-            camera_params = self.intrinsic_params
+            C, R = np.indices(z.shape)
 
-            def depth_matrix2pointcloud(z, camera_params, scale=1):
+            R = np.subtract(R, camera_params['cx'])
+            R = np.multiply(R, z)
+            R = np.divide(R, camera_params['fx'] * scale_factor)
 
-                C, R = np.indices(z.shape)
+            C = np.subtract(C, camera_params['cy'])
+            C = np.multiply(C, z)
+            C = np.divide(C, camera_params['fy'] * scale_factor)
 
-                R = np.subtract(R, camera_params['cx'])
-                R = np.multiply(R, z)
-                R = np.divide(R, camera_params['fx'] * scale)
+            return np.column_stack((z.ravel() / scale_factor, R.ravel(), -C.ravel()))
 
-                C = np.subtract(C, camera_params['cy'])
-                C = np.multiply(C, z)
-                C = np.divide(C, camera_params['fy'] * scale)
+        # Get point cloud
+        xyz = depth_matrix2pointcloud(undistorted, camera_params, scale)
 
-                return np.column_stack((z.ravel() / scale, R.ravel(), -C.ravel()))
+        # Reshape to correct size
+        pcl = xyz.reshape(self.depth_input.shape[1], self.depth_input.shape[0], 3)
 
-            # Get point cloud
-            ptcld = depth_matrix2pointcloud(undistorted, camera_params, scale=scale)
+        return pcl
 
-            transformed = self.transform_pointcloud(ptcld)
+    def pcl_flatten(self, pcl):
+        """Flatten pcl from 2D array to 1D"""
 
-            return transformed
+        return pcl.reshape((pcl.shape[0] * pcl.shape[1], 3))
 
-        def pcl_flatten(self):
-            return self.points.reshape((self.points.shape[0] * self.points.shape[1], 3))
+    def write_pointcloud(self, pcl, fname, path=None):
+        pcd = self.get_o3d_format(pcl)
+        if path is None:
+            path = askdirectory(title='Select Folder') # shows dialog box and return the path
+        path = os.path.join(path, fname + '.ply')
+        print('Save .ply pointcloud in: ', path)
+        o3d.io.write_point_cloud(path, pcd)
 
-        def write_pointcloud(self, pcl, fname, path):
-            if path is None:
-                path = askdirectory(title='Select Folder') # shows dialog box and return the path
-            path = os.path.join(path, fname + '.ply')
-            print('Save .ply pointcloud in: ', path)
-            o3d.io.write_point_cloud(path, pcl)
+    def transform_pointcloud(self, pcl):
+        """
+        transform to robot coordinates
 
-        def transform_pointcloud(self, pcl):
-            """crop point cloud to size of sandbed and transform to robot coordinates"""
-
-            with open('data/facts.json') as f:
-                facts = json.load(f)
-
-            def get_robot_corner_pts():
-                """get robot corner points from sand box with tcp corrected"""
-
-                robot_corner_pts, tcp_len = facts["robot_corner_pts"], facts["tcp_len"]
-                robot_corner_pts['pt0'][2] = robot_corner_pts['pt0'][2] - tcp_len
-                robot_corner_pts['ptx'][2] = robot_corner_pts['ptx'][2] - tcp_len
-                robot_corner_pts['pty'][2] = robot_corner_pts['pty'][2] - tcp_len
-                return robot_corner_pts
-
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(pcl)
-
-            pcl_corner_pts = facts["pcl_corner_pts"]
-            pcl_frame = Frame.from_points(pcl_corner_pts['pt0'], pcl_corner_pts['ptx'], pcl_corner_pts['pty'])
-
-            robot_corner_pts = get_robot_corner_pts()
-            robot_frame = Frame.from_points(robot_corner_pts['pt0'], robot_corner_pts['ptx'], robot_corner_pts['pty'])
-
-            S = Scale.from_factors([1000., 1000., 1000.])
-            T = Transformation.from_frame_to_frame(pcl_frame, robot_frame)
-
-            pcd.transform(T*S)
-            xyz = np.asarray(pcd.points)
-
-            # Reshape to correct size
-            pcl = xyz.reshape(self.depth_input.shape[1], self.depth_input.shape[0], 3)
-
-            return pcl
-
-        def get_mesh(self):
-            pcd = self.get_o3d_pcd()
-            pcd.estimate_normals()
-            mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=12)
-            #path = askdirectory(title='Select Folder') # shows dialog box and return the path
-
-            mesh_out = mesh.filter_smooth_simple(number_of_iterations=3)
-            mesh_out.compute_vertex_normals()
-            v=mesh_out.vertices
-            np_v = np.asarray(v)
-            xmin, ymin, zmin = np.amin(np_v, axis=0)
-            xmax, ymax, zmax = np.amax(np_v, axis=0)
-            nx = (int(xmax - xmin))
-            ny = (int(ymax - ymin))
-            xi = np.linspace(xmin, xmax, nx)
-            yi = np.linspace(ymin, ymax, ny)
-            xi, yi = np.meshgrid(xi, yi)
-            print(np_v.shape)
-            x = np_v[:,0]
-            y = np_v[:,1]
-            z = np_v[:,2]
-            zi = inp.griddata((x, y), z, (xi, yi), method='nearest')
-
-            rows,cols = np.shape(zi)
-            sizex = (xmax-xmin)/float(cols)
-            sizey = (ymax-ymin)/float(rows)
-
-            print(sizex, sizey)
-
-            fig = plt.imshow(zi)
-            plt.show()
-
-            #o3d.io.write_triangle_mesh(os.path.join(path, "mesh_smooth3.obj"), mesh_out)
-
-        def get_o3d_pcd(self):
-            pcl = self.get_feature_flatten()
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(pcl)
-            return pcd
+            Returns:
+            --------
+                pointcloud - numpy array 2D
 
 
-    class HeightMap(object):
-        def __init__(self, depth):
-            self.depth_input = depth
-            self.heightmap = self.generate_heightmap()
+        """
 
-        def fill_zeros(self, img):
-            """fill zero values in depth image with interpolation"""
+        with open('data/facts.json') as f:
+            facts = json.load(f)
 
-            mask = (img == 0)
-            mask = mask * 1
-            mask = mask.astype(np.uint8)
-            print(mask)
-            print('#############')
-            #print( cv2.inpaint(img, mask, 3, cv2.INPAINT_TELEA))
+        def get_robot_corner_pts():
+            """get robot corner points from sand box with tcp corrected"""
 
+            robot_corner_pts, tcp_len = facts["robot_corner_pts"], facts["tcp_len"]
+            robot_corner_pts['pt0'][2] = robot_corner_pts['pt0'][2] - tcp_len
+            robot_corner_pts['ptx'][2] = robot_corner_pts['ptx'][2] - tcp_len
+            robot_corner_pts['pty'][2] = robot_corner_pts['pty'][2] - tcp_len
+            return robot_corner_pts
 
-        def local_depth2height(self, low=100., high=150.):
-            """remap depth values between 0 and 255 with given high and low crop"""
+        pcd = self.get_o3d_format(pcl)
 
-            average_sand_heigt = np.mean(self.depth)
-            base = np.zeros(self.depth.shape)
-            base[base==0] = average_sand_heigt + low
+        pcl_corner_pts = facts["pcl_corner_pts"]
+        pcl_frame = Frame.from_points(pcl_corner_pts['pt0'], pcl_corner_pts['ptx'], pcl_corner_pts['pty'])
 
-            height_map = base - self.depth
-            height_remap = util.remap_values(height_map, target_min=0., target_max=255., original_min=0., original_max=high)
+        robot_corner_pts = get_robot_corner_pts()
+        robot_frame = Frame.from_points(robot_corner_pts['pt0'], robot_corner_pts['ptx'], robot_corner_pts['pty'])
 
-            self.heightmap = np.array(height_remap).reshape(self.depth_input.shape)
-            return np.array(height_remap).reshape(self.depth_input.shape)
+        #S = Scale.from_factors([1000., 1000., 1000.])
+        T = Transformation.from_frame_to_frame(pcl_frame, robot_frame)
 
-        def abs_depth2height(self, low=1011., high=756.):
-            """remap depth values between 0 and 255 with given high and low crop"""
+        pcd.transform(T)
+        xyz = np.asarray(pcd.points)
 
-            height_remap = util.remap_values(self.depth_input, target_min=0., target_max=255., original_min=low, original_max=high)
+        # Reshape to correct size
+        pcl = xyz.reshape(self.depth_input.shape[1], self.depth_input.shape[0], 3)
 
-            self.heightmap = np.array(height_remap).reshape(self.depth_input.shape)
-            return np.array(height_remap).reshape(self.depth_input.shape)
+        return pcl
 
-        def remove_noise(self, img):
-            """remove noise from image"""
+    def get_mesh_feature(self):
+        pcd = self.get_o3d_format(self.get_feature())
+        pcd.estimate_normals()
+        mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=12)
+        #path = askdirectory(title='Select Folder') # shows dialog box and return the path
 
-            img = img.astype(np.uint8)
-            return cv2.fastNlMeansDenoising(img,None,2,7,15)
+        mesh_smooth = mesh.filter_smooth_taubin(number_of_iterations=20)
+        mesh_smooth.compute_vertex_normals()
 
-        def generate_heightmap(self):
-            hm = self.fill_zeros(self.depth_input)
-            hm = self.abs_depth2height()
-            hm = self.remove_noise(hm)
-            self.heightmap = hm
-            return hm
+        return mesh_smooth
 
 
+        esri = EsriGrid(
+                        ncols=cols, nrows=rows, xllcorner=xmin, yllcorner=ymin, cellsize=1.0, grid_data=zi,
+                        filepath="C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/raster_files/grid_test.asc",
+                        NODATA_VALUE=-9999)
 
+        esri.write_file()
+
+        sizex = (xmax-xmin)/float(cols)
+        sizey = (ymax-ymin)/float(rows)
+
+        print(sizex, sizey)
+
+        fig = plt.imshow(zi)
+        plt.show()
+
+    def write_mesh(self, mesh):
+        path = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning"
+        o3d.io.write_triangle_mesh(os.path.join(path, "mesh_poisson12_taubin20.obj"), mesh)
+
+    def get_o3d_format(self, pcl):
+        """get pointcloud in open3d format"""
+
+        pcl = self.pcl_flatten(pcl)
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(pcl)
+        return pcd
+
+
+class HeightMap(PointCloud):
+    def __init__(self, depth, intrinsic):
+        super().__init__(depth, intrinsic)
+        self.xmin = 0
+        self.ymin = 0
+
+    def get_heightmap(self):
+        mesh = self.get_mesh()
+        v = mesh.vertices
+        np_v = np.asarray(v)
+        xmin, ymin, zmin = np.amin(np_v, axis=0)
+        xmax, ymax, zmax = np.amax(np_v, axis=0)
+        nx = (int(xmax - xmin))
+        ny = (int(ymax - ymin))
+        xi = np.linspace(xmin, xmax, nx)
+        yi = np.linspace(ymin, ymax, ny)
+        xi, yi = np.meshgrid(xi, yi)
+        x = np_v[:,0]
+        y = np_v[:,1]
+        z = np_v[:,2]
+        zi = inp.griddata((x, y), z, (xi, yi), method='nearest')
+        return zi
+
+    def get_height2ascii(self, cellsize=1.0):
+        grid_data = self.get_heightmap()
+        rows,cols = np.shape(grid_data)
+        esri = EsriGrid(
+                        ncols=cols, nrows=rows, xllcorner=self.xmin, yllcorner=self.ymin, cellsize=cellsize, grid_data=grid_data,
+                        filepath="C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/raster_files/grid_test.asc",
+                        NODATA_VALUE=-9999)
+
+        return esri
+
+    def write_height_ascii(self, file):
+        file.write_file()
+
+    def display_height(self):
+        h = self.get_heightmap()
+        h[h > -400] = -400
+        h[h < -550] = -550
+
+        fig = plt.imshow(h, cmap='gray')
+        plt.show()
 
 
 if __name__ == "__main__":
 
     s = ScanData()
-    s.pointcloud.get_mesh()
+    s.display_scan(s.rgb_scan)
+    p = PointCloud(s.depth_scan, s.intrinsic_params)
+    raw = p.get_pointcloud_raw()
+    p.write_pointcloud(raw, 'raw_pcl_scale')
+    #s.pointcloud.get_mesh()
+    #hm = HeightMap(s.depth_scan, s.intrinsic_params)
+    #hm.display_height()
+    #p = PointCloud(s.depth_scan, s.intrinsic_params)
+    #p.write_mesh(p.get_mesh())
+
+    # mesh_in = o3d.io.read_triangle_mesh("C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/mesh_smooth.obj")
+
+    # mesh_out = mesh_in.filter_smooth_taubin(number_of_iterations=20)
+
+    # v=mesh_out.vertices
+    # np_v = np.asarray(v)
+    # xmin, ymin, zmin = np.amin(np_v, axis=0)
+    # xmax, ymax, zmax = np.amax(np_v, axis=0)
+    # nx = (int(xmax - xmin))
+    # ny = (int(ymax - ymin))
+    # xi = np.linspace(xmin, xmax, nx) # (xmin, xmax, nx)
+    # yi = np.linspace(ymin, ymax, ny)
+    # xi, yi = np.meshgrid(xi, yi)
+    # x = np_v[:,0]
+    # y = np_v[:,1]
+    # z = np_v[:,2]
+    # zi = inp.griddata((x, y), z, (xi, yi), method='nearest')
+    # rows,cols = np.shape(zi)
+    # esri = EsriGrid(
+    #                 ncols=cols, nrows=rows, xllcorner=xmin, yllcorner=ymin, cellsize=1.0, grid_data=zi,
+    #                 filepath="C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/raster_files/grid_test.asc",
+    #                 NODATA_VALUE=-9999)
+
+    # #esri.write_file()
+    # zi[zi > -500] = -500
+    # zi[zi < -650] = -650
+
+    # #hm = util.remap_values(zi, target_min=0., target_max=255., original_min=-450., original_max=-650)
+    # #hm= np.array(hm).reshape(zi.shape)
+    # fig = plt.imshow(zi, cmap='gray')
+    # plt.show()
