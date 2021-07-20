@@ -1,5 +1,7 @@
+from data.training import TrainingData
 from argparser import parse_args
-#import scanning
+from scanning import ScanData, HeightMap, PointCloud
+import scanning
 import time
 import UR as ur
 import toolpath as tp
@@ -14,22 +16,26 @@ def training(env):
 
     for i in range(ITERATION):
         print('#############  iteration {}  #############\n'.format(i))
-        # # scan pose
+
+        # 1. initiate a new training iteration
+        data = TrainingData(iteration=i, environment=env)
+        data.create_iter_dirs()
+        print('scan id: {}'.format(data.identifier))
+
+        # 2. robot to scan pose
         ur.ur_helper.scan_pose(scanning_time=7.5)
 
-        scan_id = scanning.data_collection.create_scan_identifier(i)
-        print('scan id: {}'.format(scan_id))
+        # 3. scan and create data
+        scan = ScanData()
+        pcl_obj = PointCloud(scan)
+        heightmap = HeightMap(scan)
 
-        pcl, height_map, depth, color = scanning.collect_data()
+        # 4. store data
+        data.raw_scan_data = scan
+        data.pointcloud = pcl_obj
+        data.heightmap = heightmap
 
-        # store data
-        scanning.data_collection.store_all_data(environment=env,
-                                                scanID=scan_id,
-                                                pointcloud=pcl,
-                                                heightMap=height_map,
-                                                depthMap=depth,
-                                                colorMap=color)
-        print('{}: data is collected and stored'.format(scan_id))
+        print('{}: data is collected and stored'.format(data.identifier))
 
         # get toolpath
 
@@ -56,9 +62,6 @@ def main():
     elif run_mode == 'scan':
         ur.ur_helper.scan_pose(scanning_time=0.1)
         scanning.live_scan_stream()
-    elif run_mode == 'calibration':
-        ur.ur_helper.scan_pose(scanning_time=0.1)
-        scanning.img_calibration()
     elif run_mode == 'toolpath':
         # level == 1.0 / 1.1 / 1.2 / 2.0 / 2.1 / 2.2
         # curvetype == polyline / bezier

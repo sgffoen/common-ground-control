@@ -1,60 +1,28 @@
-from tkinter.constants import S
 import ktb
 import cv2
 import scipy.interpolate as inp
 import open3d as o3d
 import os
 import numpy as np
-from compas.geometry import Frame, Transformation, Scale
+from compas.geometry import Frame, Transformation
 import compas.utilities as util
 import json
 from tkinter import Tk
 from tkinter.filedialog import askdirectory
+from tkinter.constants import S
 import matplotlib.pyplot as plt
 from pylibfreenect2 import setGlobalLogger
 #from scanning.raster_utils import displayArray
 if __name__ == "__main__":
     from raster_utils import EsriGrid
+    from ..data import Feature
 else:
     from .raster_utils import EsriGrid
-
-
+    from data import Feature
 
 
 # turn off print logging to command line interface -> to turn on comment out this line of code
 setGlobalLogger(None)
-
-
-class Feature(object):
-    def __init__(self, feature):
-        self.feature = feature
-
-    def display_feature(self, height = 5):
-        plt.figure(figsize=(height * (self.feature.shape[1] / self.feature.shape[0]), height))
-        plt.imshow(self.feature, cmap = 'gray')
-        plt.tight_layout()
-        plt.axis('off')
-        plt.show()
-
-    def imshow_feature(self):
-        cv2.imshow("display image", self.feature)
-        k = cv2.waitKey(0)
-
-    def save_feature(self, fname, path=None):
-        if path is None:
-            path = askdirectory(title='Select Folder') # shows dialog box and return the path
-        path = os.path.join(path, fname + '.png')
-        print('Save PNG image in: ', path)
-        cv2.imwrite(path, self.feature)
-
-
-class FeatureFrame(Feature):
-    def __init__(self):
-        super().__init__()
-        self.shape = (int(256), int(256))
-
-    def get_featureframe(self):
-        pass
 
 
 class ScanData():
@@ -65,7 +33,6 @@ class ScanData():
         self.rgb_scan = np.flipud(self.connect.get_frame(ktb.COLOR))
         self.depth_scan = np.flipud(self.connect.get_frame(ktb.DEPTH))
         self.ir_scan = np.flipud(self.connect.get_frame(ktb.IR))
-        #self.pointcloud = self.PointCloud(self.depth_scan, self.intrinsic_params)
 
     def display_scan(self, img, height = 5):
         plt.figure(figsize=(height * (img.shape[1] / img.shape[0]), height))
@@ -101,9 +68,9 @@ class ScanData():
 
 
 class PointCloud(object):
-    def __init__(self, depth, intrinsic_parameters):
-        self.depth_input = depth
-        self.intrinsic_params = intrinsic_parameters
+    def __init__(self, scan):
+        self.depth_input = scan.depth_scan
+        self.intrinsic_params = scan.intrinsic_params
 
     def get_pointcloud_transformed(self):
         ptcld = self.get_pointcloud_raw()
@@ -257,13 +224,14 @@ class PointCloud(object):
 
 
 class HeightMap(PointCloud):
-    def __init__(self, depth, intrinsic):
-        super().__init__(depth, intrinsic)
+    def __init__(self, scan):
+        super().__init__(scan)
         self.xmin = 0
         self.ymin = 0
+        self.height_values = self.get_heightmap()
 
     def get_heightmap(self):
-        mesh = self.get_mesh()
+        mesh = self.get_mesh_feature()
         v = mesh.vertices
         np_v = np.asarray(v)
         xmin, ymin, zmin = np.amin(np_v, axis=0)
@@ -279,21 +247,26 @@ class HeightMap(PointCloud):
         zi = inp.griddata((x, y), z, (xi, yi), method='nearest')
         return zi
 
-    def get_height2ascii(self, cellsize=1.0):
-        grid_data = self.get_heightmap()
+    def write_height2ascii(self, path, cellsize=1.0):
+        grid_data = self.height_values
         rows,cols = np.shape(grid_data)
         esri = EsriGrid(
                         ncols=cols, nrows=rows, xllcorner=self.xmin, yllcorner=self.ymin, cellsize=cellsize, grid_data=grid_data,
-                        filepath="C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/raster_files/grid_test.asc",
+                        filepath=path,
                         NODATA_VALUE=-9999)
 
+        esri.write_file()
         return esri
 
-    def write_height_ascii(self, file):
-        file.write_file()
+    def get_feature(self):
+        h = self.height2gray()
+        return Feature(h)
+
+    def height2gray(self):
+        pass
 
     def display_height(self):
-        h = self.get_heightmap()
+        h = self.height_values
         h[h > -400] = -400
         h[h < -550] = -550
 
@@ -305,7 +278,7 @@ if __name__ == "__main__":
 
     s = ScanData()
     s.display_scan(s.rgb_scan)
-    p = PointCloud(s.depth_scan, s.intrinsic_params)
+    p = PointCloud(s)
     raw = p.get_pointcloud_raw()
     p.write_pointcloud(raw, 'raw_pcl_scale')
     #s.pointcloud.get_mesh()
