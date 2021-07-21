@@ -19,6 +19,7 @@ with open('data/facts.json') as f:
 
 # FUNCTIONS
 
+
 def move_robot_to_a_frame(frame,
                           velocity=0.30,
                           acceleration=0.10,
@@ -67,7 +68,6 @@ def move_robot_to_frames(frames,
 
 
 def scan_pose(scanning_time=7.5):
-    print('scanning START')
     scan_frame = uu.get_scan_frame()
     script_scan = move_robot_to_a_frame(scan_frame)
     uc.send_script(facts['robot_ip'],
@@ -85,7 +85,6 @@ def test_pose(frame, z_center_toolpathbox2D=0):
 
 
 def calibration_pose():
-    print('scanning START')
     scan_frame = uu.get_calibration_frame()
     script_scan = move_robot_to_a_frame(scan_frame)
     uc.send_script(facts['robot_ip'],
@@ -93,16 +92,16 @@ def calibration_pose():
                    bytes(script_scan, 'utf-8'))
 
 
-def execute_toolpath(frames, z_center_toolpathbox2D=0):
-    print('toolpath START')
-    frames = uu.add_safety_frames(frames)
+def execute_toolpath(frames, z_center_toolpathbox2D=0, excavation_time=30):
+    frames = uu.add_safety_frames(frames, safety_dist=-200)
     uu.adapt_height_from_pcl(frames, z_center_toolpathbox2D=0)
-    uu.reverse_z_value(frames)
+    # uu.reverse_z_value(frames)
     script_scan = move_robot_to_frames(frames)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
                    bytes(script_scan, 'utf-8'))
+    time.sleep(excavation_time)
 
 
 if __name__ == "__main__":
-    scan_pose(7.5)
+    pass

@@ -9,8 +9,6 @@ import math as m
 import numpy as np
 import cv2
 import json
-import datetime
-import os
 
 
 # set global facts
@@ -31,33 +29,38 @@ class Toolpath():
                  num_ctrl_pts,
                  segments_num,
                  thickness,
-                 iteration):
+                 iteration,
+                 parent_folder,
+                 id):
         self.level = level
         self.curve_type = curve_type
         self.num_ctrl_pts = num_ctrl_pts
         self.segments_num = segments_num
         self.thickness = thickness
         self.iteration = iteration
+        self.id = id
 
         self.ctrl_pts_list = []
         self.ctrl_frames = []
 
-        self.parent_folder = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/00_test/02_toolpath"
+        self.parent_folder = parent_folder
 
     def generate_ctrl_pts_tuple(self):
+        self.z_min = 0
+        self.z_max = 130
         if self.level == '1.0':
             length = 255
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = 0
-                z = 255
+                z = 0
                 self.ctrl_pts_list.append((x, y, z))
 
         elif self.level == '1.1':
             length = r.randrange(30, 255)
             step = length / (self.num_ctrl_pts - 1)
-            z = r.randrange(0, 255)
+            z = r.randrange(self.z_min, self.z_max)
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = 0
@@ -69,7 +72,7 @@ class Toolpath():
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = 0
-                z = r.randrange(0, 255)
+                z = r.randrange(self.z_min, self.z_max)
                 self.ctrl_pts_list.append((x, y, z))
 
         elif self.level == '2.0':
@@ -77,14 +80,14 @@ class Toolpath():
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
-                y = r.randrange(0, 100)
-                z = 255
+                y = r.randrange(50, 255)
+                z = 0
                 self.ctrl_pts_list.append((x, y, z))
 
         elif self.level == '2.1':
             length = r.randrange(30, 255)
             step = length / (self.num_ctrl_pts - 1)
-            z = r.randrange(0, 255)
+            z = r.randrange(self.z_min, self.z_max)
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = r.randrange(50, 200)
@@ -96,7 +99,7 @@ class Toolpath():
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = r.randrange(50, 200)
-                z = r.randrange(0, 255)
+                z = r.randrange(self.z_min, self.z_max)
                 self.ctrl_pts_list.append((x, y, z))
 
     def tuple_to_compas_frame(self):
@@ -207,6 +210,10 @@ class Toolpath():
 
     # image processing from here
 
+    def remapValue(self, v, ori_Min, ori_Max, targetMin, targetMax):
+        rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
+        return rv
+
     def draw_polyline_in_sandbox2d(self, d):
         img = 255 * np.ones(shape=[m.floor(d.sandbox_size_y),
                                    m.floor(d.sandbox_size_x),
@@ -215,12 +222,13 @@ class Toolpath():
         for a, b in cu.pairwise(range(len(self.ctrl_frames))):
             pt_s = self.ctrl_frames[a].point
             pt_e = self.ctrl_frames[b].point
+            # z = self.remapValue(pt_s[2], self.z_min, self.z_max, 0, 255)
             cv2.line(img,
                      (int(pt_s[0]), int(pt_s[1])),
                      (int(pt_e[0]), int(pt_e[1])),
                      color=(0, 0, pt_s[2]),  # red channel for toolpath height
                      thickness=self.thickness)
-
+        self.img = img
         return img
 
     def calc_contour(self, img):
@@ -239,7 +247,7 @@ class Toolpath():
         self.rect = cv2.minAreaRect(self.cnt)
         self.corner_pts_orient_float = cv2.boxPoints(self.rect)
 
-    def calc_crop_idx(self):
+    def calc_crop_idx(self, d):
         centroid, ratio, angle = self.rect
         fig_size_diagonal = (d.frame_size_x * m.sqrt(2)) / 2
 
@@ -295,8 +303,8 @@ class Toolpath():
     def calc_dot_toolpath_and_bbox(self):
         # check orientation of toolpath and crop_area
         self.toolpath_dir.unitize()
-        self.edge1_dir.unitize()
-        self.edge2_dir.unitize()
+        # self.edge1_dir.unitize()
+        # self.edge2_dir.unitize()
         self.dot1 = cg.dot_vectors_xy(self.toolpath_dir, self.edge1_dir)
         self.dot2 = cg.dot_vectors_xy(self.toolpath_dir, self.edge2_dir)
 
@@ -319,7 +327,7 @@ class Toolpath():
         collection_to_shift.rotate(shift_num)
         return list(collection_to_shift)
 
-    def crop_toolpathbox2d_oriented(self, img):
+    def crop_toolpathbox2d_oriented(self, img, d):
         pts_from = np.float32(self.crop_idx)
         pts_to = np.float32([[0, 0],
                             [d.frame_size_x, 0],
@@ -340,10 +348,6 @@ class Toolpath():
         filename = self.parent_folder + '/' + self.id + '.png'
         cv2.imwrite(filename, img_to_save)
 
-    def create_scan_identifier(self):
-        id_num = str(self.iteration).zfill(5)
-        self.id = str(datetime.date.today()) + '_' + str(id_num)
-
     def create_json_file(self):
         data = {}
         data['crop_idx'] = {}
@@ -358,7 +362,6 @@ class Toolpath():
         with open(filepath, 'r') as f:
             data = json.load(f)
         # store crop_idx
-        print(len(self.crop_idx))
         for i, ci in enumerate(self.crop_idx):
             data['crop_idx'][i] = ci
         # store frames
@@ -371,14 +374,16 @@ class Toolpath():
             json.dump(data, o, indent=4)
 
 
-if __name__ == "__main__":
+def get_toolpath(level, curve_type, iteration, folder, id):
 
-    t = Toolpath(level='1.0',
-                 curve_type='polyline',
+    t = Toolpath(level,
+                 curve_type,
                  num_ctrl_pts=5,
                  segments_num=50,
                  thickness=2,
-                 iteration=0)
+                 iteration=iteration,
+                 parent_folder=folder,
+                 id=id)
 
     # generate toolpath
     t.generate_ctrl_pts_tuple()
@@ -404,24 +409,30 @@ if __name__ == "__main__":
     t.calc_toolpath_box_dir()
     t.calc_dot_toolpath_and_bbox()
     t.calc_shift_number_bbox_corner()
-    t.calc_crop_idx()
+    t.calc_crop_idx(d)
     t.crop_idx = t.shift_list(t.crop_idx, t.shift_num)
 
-    # crop img
-    img_cropped = t.crop_toolpathbox2d_oriented(img)
+    # # crop img
+    # img_cropped = t.crop_toolpathbox2d_oriented(img, d)
 
-    '''visualize and export'''
-    # t.show_frames()
-    # t.show_img(img)
-    # t.show_img(img_cropped)
+    # '''visualize and export'''
+    # # t.show_frames()
+    # # t.show_img(img)
+    # # t.show_img(img_cropped)
 
-    # make directory
-    t.create_scan_identifier()
+    # # make directory
+    # t.create_scan_identifier()
 
-    # export img as img
-    t.export_an_img(img)
-    t.export_an_img(img_cropped)
+    # # export img as img
+    # t.export_an_img(img)
+    # t.export_an_img(img_cropped)
 
     # export ctrl_frames & crop_idx as json
     t.create_json_file()
     t.export_json()
+
+    return t
+
+
+if __name__ == "__main__":
+    pass

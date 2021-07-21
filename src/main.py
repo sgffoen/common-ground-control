@@ -1,13 +1,13 @@
 from data import TrainingData, Feature
 from argparser import parse_args
 from scanning import ScanData, HeightMap, PointCloud
+from toolpath import random_toolpath_gen as tp
 import scanning
 import time
 import UR as ur
-import toolpath as tp
 import scanning.scan
 
-ITERATION = 50
+ITERATION = 5
 
 
 def training(env):
@@ -24,6 +24,11 @@ def training(env):
         print('scan id: {}'.format(data.identifier))
 
         # 2. get toolpath
+        toolpath = tp.get_toolpath(level='1.0',
+                                   curve_type='bezier',
+                                   iteration=i,
+                                   folder=data.environment_folder,
+                                   id=data.identifier)
 
         # 3. robot to scan pose
         ur.ur_helper.scan_pose(scanning_time=7.5)
@@ -34,17 +39,18 @@ def training(env):
         heightmap = HeightMap(scan)
 
         # 5. store data
+        data.toolpath = toolpath.img
         data.scan_data = scan
         data.pointcloud = pcl_obj
         data.heightmap = heightmap
 
         print('{}: data is collected and stored'.format(data.identifier))
 
-
-
         # adapt toolpath
+        adapt_height = None
 
         # execure toolpath
+        ur.execute_toolpath(toolpath.ctrl_frames, adapt_height, excavation_time=30)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
@@ -66,10 +72,17 @@ def main():
         ur.ur_helper.scan_pose(scanning_time=0.1)
         scanning.live_scan_stream()
     elif run_mode == 'toolpath':
-        # level == 1.0 / 1.1 / 1.2 / 2.0 / 2.1 / 2.2
-        # curvetype == polyline / bezier
-        frames = tp.get_and_store_toolpath(level='2.0', curvetype='bezier')
-        ur.ur_helper.execute_toolpath(frames, z_center_toolpathbox2D=0)
+        backup = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_backup"
+        id = "test_0000"
+        toolpath = tp.get_toolpath(level='2.2',
+                                   curve_type='bezier',
+                                   iteration=0,
+                                   folder=backup,
+                                   id=id)
+        ur.ur_helper.execute_toolpath(toolpath.ctrl_frames,
+                                      z_center_toolpathbox2D=0,
+                                      excavation_time=0.5)
+
     else:
         print("Run mode is not identified")
 
