@@ -289,7 +289,7 @@ if __name__ == "__main__":
     pcl = PointCloud(s)
     pcl_r = pcl.get_pointcloud_raw()
     pcl_t = pcl.get_pointcloud_transformed()
-    #pcl.write_pointcloud(pcl_t, 'pcl2_base_transformed_and_scaled_21-07-2021')
+    pcl.write_pointcloud(pcl_t, 'pcl6_base_transformed_and_scaled_21-07-2021')
 
     #p = PointCloud(s)
     #raw = p.get_pointcloud_raw()

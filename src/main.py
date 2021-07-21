@@ -23,22 +23,24 @@ def training(env):
         data.create_iter_dirs()
         print('scan id: {}'.format(data.identifier))
 
-        # 2. robot to scan pose
+        # 2. get toolpath
+
+        # 3. robot to scan pose
         ur.ur_helper.scan_pose(scanning_time=7.5)
 
-        # 3. scan and create data
+        # 4. scan and create data
         scan = ScanData()
         pcl_obj = PointCloud(scan)
         heightmap = HeightMap(scan)
 
-        # 4. store data
+        # 5. store data
         data.scan_data = scan
         data.pointcloud = pcl_obj
         data.heightmap = heightmap
 
         print('{}: data is collected and stored'.format(data.identifier))
 
-        # get toolpath
+
 
         # adapt toolpath
 
