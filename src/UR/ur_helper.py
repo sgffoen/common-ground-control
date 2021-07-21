@@ -104,4 +104,4 @@ def execute_toolpath(frames, z_center_toolpathbox2D=0, excavation_time=30):
 
 
 if __name__ == "__main__":
-    pass
+    scan_pose()

@@ -39,9 +39,22 @@
           -460.00
        ]
     },
+    "feature_bounds":{
+       "min_bound":[
+          -1089.00,
+          -570.00,
+          -650.00
+       ],
+       "max_bound":[
+          -352.00,
+          575.00,
+          -410.00
+       ]
+    },
     "tcp_len":305.0,
     "robot_ip":"192.168.10.10",
     "ur_server_port":30002,
+    "base_plate_height":-587.48,
     "base":{
        "x":0,
        "y":0,

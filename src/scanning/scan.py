@@ -1,3 +1,4 @@
+from compas.geometry.primitives.point import Point
 import ktb
 import cv2
 import scipy.interpolate as inp
@@ -12,18 +13,21 @@ from tkinter.filedialog import askdirectory
 from tkinter.constants import S
 import matplotlib.pyplot as plt
 from pylibfreenect2 import setGlobalLogger
-#from scanning.raster_utils import displayArray
+
 if __name__ == "__main__":
-    print( "Current working dir : %s" % os.getcwd() )
     from raster_utils import EsriGrid
-    #from ..data import Feature
+    from features import Feature
+    from helper import Facts
 else:
     from .raster_utils import EsriGrid
-    from data import Feature
+    from .features import Feature
+    from .helper import Facts
 
 
 # turn off print logging to command line interface -> to turn on comment out this line of code
 setGlobalLogger(None)
+
+__FACTS__ = Facts().facts
 
 
 class ScanData():
@@ -53,10 +57,7 @@ class ScanData():
     def crop_box(self, img):
         """crop raw image to the target size"""
 
-        with open('data/facts.json') as f:
-            facts = json.load(f)
-
-        crop_ids = facts["crop_idx"]
+        crop_ids = __FACTS__.crop_idx
         return img[crop_ids['yStart'] : crop_ids['yEnd'], crop_ids['xStart'] : crop_ids['xEnd']]
 
     def resize_1mmpixel(self, img):
@@ -82,11 +83,29 @@ class PointCloud(object):
     def get_feature(self):
         """crop pcl to the target size"""
 
-        with open('data/facts.json') as f:
-            facts = json.load(f)
+        def bounding_box(points, min_x, max_x, min_y,
+                        max_y, min_z, max_z):
 
-        crop_ids = facts["crop_idx"]
-        return self.get_pointcloud_transformed()[crop_ids['yStart'] : crop_ids['yEnd'], crop_ids['xStart'] : crop_ids['xEnd']]
+            bound_x = np.logical_and(points[:, 0] > min_x, points[:, 0] < max_x)
+            bound_y = np.logical_and(points[:, 1] > min_y, points[:, 1] < max_y)
+            bound_z = np.logical_and(points[:, 2] > min_z, points[:, 2] < max_z)
+
+            bb_filter = np.logical_and(np.logical_and(bound_x, bound_y), bound_z)
+
+            return bb_filter
+
+        min_bound = __FACTS__.feature_bounds['min_bound']
+        max_bound = __FACTS__.feature_bounds['max_bound']
+
+        points = self.get_pointcloud_transformed()
+        points = self.pcl_flatten(points)
+
+        points_inside = bounding_box(points, min_x=min_bound[0], max_x=max_bound[0],
+                             min_y=min_bound[1], max_y=max_bound[1],
+                             min_z=min_bound[2], max_z=max_bound[2])
+
+        return points[points_inside]
+
 
     def get_pointcloud_raw(self, roi=None, scale=1, colorized=False):
         '''
@@ -154,32 +173,18 @@ class PointCloud(object):
 
         """
 
-        with open('data/facts.json') as f:
-            facts = json.load(f)
-
-        def get_robot_corner_pts():
-            """get robot corner points from sand box with tcp corrected"""
-
-            robot_corner_pts, tcp_len = facts["robot_corner_pts"], facts["tcp_len"]
-            robot_corner_pts['pt0'][2] = robot_corner_pts['pt0'][2]
-            robot_corner_pts['ptx'][2] = robot_corner_pts['ptx'][2]
-            robot_corner_pts['pty'][2] = robot_corner_pts['pty'][2]
-            return robot_corner_pts
-
         pcd = self.get_o3d_format(pcl)
 
-        pcl_corner_pts = facts["pcl_corner_pts"]
+        pcl_corner_pts = __FACTS__.pcl_corner_pts
         pcl_frame = Frame.from_points(pcl_corner_pts['pt0'], pcl_corner_pts['ptx'], pcl_corner_pts['pty'])
 
-        robot_corner_pts = facts["robot_corner_pts"]
+        robot_corner_pts = __FACTS__.robot_corner_pts
         robot_frame = Frame.from_points(robot_corner_pts['pt0'], robot_corner_pts['ptx'], robot_corner_pts['pty'])
 
         S = Scale.from_factors([0.9765, 0.9765, 1.0], robot_frame)
         T = Transformation.from_frame_to_frame(pcl_frame, robot_frame)
 
         pcd.transform(S*T)
-        # flip Z
-        #pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 
         xyz = np.asarray(pcd.points)
 
@@ -199,22 +204,6 @@ class PointCloud(object):
 
         return mesh_smooth
 
-
-        esri = EsriGrid(
-                        ncols=cols, nrows=rows, xllcorner=xmin, yllcorner=ymin, cellsize=1.0, grid_data=zi,
-                        filepath="C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/raster_files/grid_test.asc",
-                        NODATA_VALUE=-9999)
-
-        esri.write_file()
-
-        sizex = (xmax-xmin)/float(cols)
-        sizey = (ymax-ymin)/float(rows)
-
-        print(sizex, sizey)
-
-        fig = plt.imshow(zi)
-        plt.show()
-
     def write_mesh(self, mesh):
         path = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning"
         o3d.io.write_triangle_mesh(os.path.join(path, "mesh_poisson12_taubin20.obj"), mesh)
@@ -222,7 +211,8 @@ class PointCloud(object):
     def get_o3d_format(self, pcl):
         """get pointcloud in open3d format"""
 
-        pcl = self.pcl_flatten(pcl)
+        if pcl.ndim == 3:
+            pcl = self.pcl_flatten(pcl)
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(pcl)
         return pcd
@@ -282,14 +272,16 @@ class HeightMap(PointCloud):
 if __name__ == "__main__":
 
     s = ScanData()
-    s.display_scan(s.depth_scan)
-    b = s.depth_scan.tolist() # nested lists with same data, indices
-    file_path = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/01_base_scans/file.json" ## your path variable
-    #json.dump(b, codecs.open(file_path, 'w', encoding='utf-8'), separators=(',', ':'), sort_keys=True, indent=4)
-    pcl = PointCloud(s)
-    pcl_r = pcl.get_pointcloud_raw()
-    pcl_t = pcl.get_pointcloud_transformed()
-    pcl.write_pointcloud(pcl_t, 'pcl6_base_transformed_and_scaled_21-07-2021')
+    #s.display_scan(s.depth_scan)
+    p = PointCloud(s)
+    #f = p.get_feature()
+    #p.write_pointcloud(f, 'test_crop')
+    #print(np.random.rand(10, 3).shape)
+
+    #pcl = PointCloud(s)
+    #pcl_r = pcl.get_pointcloud_raw()
+    #pcl_t = pcl.get_pointcloud_transformed()
+    #pcl.write_pointcloud(pcl_t, 'pcl6_base_transformed_and_scaled_21-07-2021')
 
     #p = PointCloud(s)
     #raw = p.get_pointcloud_raw()

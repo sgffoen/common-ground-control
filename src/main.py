@@ -1,4 +1,4 @@
-from data import TrainingData, Feature
+from data import TrainingData
 from argparser import parse_args
 from scanning import ScanData, HeightMap, PointCloud
 from toolpath import random_toolpath_gen as tp
