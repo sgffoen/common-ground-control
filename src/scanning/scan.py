@@ -4,9 +4,9 @@ import scipy.interpolate as inp
 import open3d as o3d
 import os
 import numpy as np
-from compas.geometry import Frame, Transformation
+from compas.geometry import Frame, Transformation, Scale
 import compas.utilities as util
-import json
+import json, codecs
 from tkinter import Tk
 from tkinter.filedialog import askdirectory
 from tkinter.constants import S
@@ -14,8 +14,9 @@ import matplotlib.pyplot as plt
 from pylibfreenect2 import setGlobalLogger
 #from scanning.raster_utils import displayArray
 if __name__ == "__main__":
+    print( "Current working dir : %s" % os.getcwd() )
     from raster_utils import EsriGrid
-    from ..data import Feature
+    #from ..data import Feature
 else:
     from .raster_utils import EsriGrid
     from data import Feature
@@ -31,7 +32,8 @@ class ScanData():
         self.intrinsic_params = self.connect.intrinsic_parameters
         self.depth_shape = (int(512), int(424), int(4))
         self.rgb_scan = np.flipud(self.connect.get_frame(ktb.COLOR))
-        self.depth_scan = np.flipud(self.connect.get_frame(ktb.DEPTH))
+        self.depth_for_pcl = self.connect.get_frame(ktb.DEPTH)
+        self.depth_scan = np.flipud(self.depth_for_pcl)
         self.ir_scan = np.flipud(self.connect.get_frame(ktb.IR))
 
     def display_scan(self, img, height = 5):
@@ -69,7 +71,7 @@ class ScanData():
 
 class PointCloud(object):
     def __init__(self, scan):
-        self.depth_input = scan.depth_scan
+        self.depth_input = scan.depth_for_pcl
         self.intrinsic_params = scan.intrinsic_params
 
     def get_pointcloud_transformed(self):
@@ -159,9 +161,9 @@ class PointCloud(object):
             """get robot corner points from sand box with tcp corrected"""
 
             robot_corner_pts, tcp_len = facts["robot_corner_pts"], facts["tcp_len"]
-            robot_corner_pts['pt0'][2] = robot_corner_pts['pt0'][2] - tcp_len
-            robot_corner_pts['ptx'][2] = robot_corner_pts['ptx'][2] - tcp_len
-            robot_corner_pts['pty'][2] = robot_corner_pts['pty'][2] - tcp_len
+            robot_corner_pts['pt0'][2] = robot_corner_pts['pt0'][2]
+            robot_corner_pts['ptx'][2] = robot_corner_pts['ptx'][2]
+            robot_corner_pts['pty'][2] = robot_corner_pts['pty'][2]
             return robot_corner_pts
 
         pcd = self.get_o3d_format(pcl)
@@ -169,13 +171,16 @@ class PointCloud(object):
         pcl_corner_pts = facts["pcl_corner_pts"]
         pcl_frame = Frame.from_points(pcl_corner_pts['pt0'], pcl_corner_pts['ptx'], pcl_corner_pts['pty'])
 
-        robot_corner_pts = get_robot_corner_pts()
+        robot_corner_pts = facts["robot_corner_pts"]
         robot_frame = Frame.from_points(robot_corner_pts['pt0'], robot_corner_pts['ptx'], robot_corner_pts['pty'])
 
-        #S = Scale.from_factors([1000., 1000., 1000.])
+        S = Scale.from_factors([0.9765, 0.9765, 1.0], robot_frame)
         T = Transformation.from_frame_to_frame(pcl_frame, robot_frame)
 
-        pcd.transform(T)
+        pcd.transform(S*T)
+        # flip Z
+        #pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+
         xyz = np.asarray(pcd.points)
 
         # Reshape to correct size
@@ -277,10 +282,18 @@ class HeightMap(PointCloud):
 if __name__ == "__main__":
 
     s = ScanData()
-    s.display_scan(s.rgb_scan)
-    p = PointCloud(s)
-    raw = p.get_pointcloud_raw()
-    p.write_pointcloud(raw, 'raw_pcl_scale')
+    s.display_scan(s.depth_scan)
+    b = s.depth_scan.tolist() # nested lists with same data, indices
+    file_path = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/01_base_scans/file.json" ## your path variable
+    #json.dump(b, codecs.open(file_path, 'w', encoding='utf-8'), separators=(',', ':'), sort_keys=True, indent=4)
+    pcl = PointCloud(s)
+    pcl_r = pcl.get_pointcloud_raw()
+    pcl_t = pcl.get_pointcloud_transformed()
+    #pcl.write_pointcloud(pcl_t, 'pcl2_base_transformed_and_scaled_21-07-2021')
+
+    #p = PointCloud(s)
+    #raw = p.get_pointcloud_raw()
+    #p.write_pointcloud(raw, 'raw_pcl_scale')
     #s.pointcloud.get_mesh()
     #hm = HeightMap(s.depth_scan, s.intrinsic_params)
     #hm.display_height()

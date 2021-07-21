@@ -1,10 +1,11 @@
-from data.training import TrainingData
+from data import TrainingData, Feature
 from argparser import parse_args
 from scanning import ScanData, HeightMap, PointCloud
 import scanning
 import time
 import UR as ur
 import toolpath as tp
+import scanning.scan
 
 ITERATION = 50
 
@@ -31,7 +32,7 @@ def training(env):
         heightmap = HeightMap(scan)
 
         # 4. store data
-        data.raw_scan_data = scan
+        data.scan_data = scan
         data.pointcloud = pcl_obj
         data.heightmap = heightmap
 
