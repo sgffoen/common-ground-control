@@ -61,7 +61,11 @@ class ScanData():
         return img[crop_ids['yStart'] : crop_ids['yEnd'], crop_ids['xStart'] : crop_ids['xEnd']]
 
     def resize_1mmpixel(self, img):
-        return img
+        xmin, ymin, zmin = __FACTS__.feature_bounds['min_bound']
+        xmax, ymax, zmax = __FACTS__.feature_bounds['max_bound']
+        dim = (int(ymax - ymin)), (int(xmax - xmin)),  # ny, nx
+        resized = cv2.resize(img, dim, interpolation = cv2.INTER_CUBIC)
+        return resized
 
     def get_feature(self, img):
         cropped = self.crop_box(img)
@@ -320,10 +324,11 @@ class HeightMap(PointCloud):
 if __name__ == "__main__":
 
     s = ScanData()
+    s.get_feature(s.rgb_scan).imshow()
     #s.display_scan(s.depth_scan)
-    p = PointCloud(s)
-    pcl = p.get_feature()
-    p.write_pointcloud(pcl, "sand_flat")
+    #p = PointCloud(s)
+    #pcl = p.get_feature()
+    #p.write_pointcloud(pcl, "sand_flat")
     #m = p.get_mesh_feature()
     #p.write_mesh(m, 'sandtest_mesh_1')
     #hm = HeightMap(s)

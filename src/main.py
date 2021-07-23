@@ -84,6 +84,8 @@ def main():
         ur.ur_helper.execute_toolpath(toolpath.ctrl_frames,
                                       z_center_toolpathbox2D=0,
                                       excavation_time=0.5)
+    elif run_mode == 'calibrate':
+        scanning.img_calibration()
 
     else:
         print("Run mode is not identified")

@@ -1,9 +1,9 @@
 {
     "crop_idx":{
-       "xStart":50,
-       "xEnd":445,
-       "yStart":95,
-       "yEnd":345
+       "xStart":85,
+       "xEnd":429,
+       "yStart":97,
+       "yEnd":323
     },
     "pcl_corner_pts":{
         "pt0":[
