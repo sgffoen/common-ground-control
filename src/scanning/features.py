@@ -37,14 +37,22 @@ class Feature(object):
             cv2.imwrite(path, frame)
         cv2.imwrite(path, self.feature)
 
-    def save_featureframe(self, fname, path=None):
-        f = self.get_featureframe()
+    def save_featureframe(self, fname, path=None, frame_corner_pts=None):
+        f = self.get_featureframe(frame_corner_pts)
         self.save(fname=fname, path=path, frame=f)
 
-    def get_featureframe(self):
-        pass
-
-
+    def get_featureframe(self, frame_corner_pts):
+        pts_from = np.float32(frame_corner_pts)
+        pts_to = np.float32([[0, 0],
+                            [self.frame_shape[0], 0],
+                            [self.frame_shape[0], self.frame_shape[1]],
+                            [0, self.frame_shape[1]]])
+        M = cv2.getPerspectiveTransform(pts_from, pts_to)
+        feature_frame = cv2.warpPerspective(self.feature,
+                                            M,
+                                            (self.frame_shape[0],
+                                             self.frame_shape[1]))
+        return feature_frame
 
 if __name__ == "__main__":
     pass

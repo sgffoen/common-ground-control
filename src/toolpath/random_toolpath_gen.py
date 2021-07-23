@@ -39,15 +39,15 @@ class Toolpath():
         self.thickness = thickness
         self.iteration = iteration
         self.id = id
+        self.parent_folder = parent_folder
 
         self.ctrl_pts_list = []
         self.ctrl_frames = []
 
-        self.parent_folder = parent_folder
-
     def generate_ctrl_pts_tuple(self):
         self.z_min = 0
         self.z_max = 130
+
         if self.level == '1.0':
             length = 255
             step = length / (self.num_ctrl_pts - 1)
@@ -146,27 +146,36 @@ class Toolpath():
 
     class Dimension():
         def __init__(self):
-            self.sandbox_size_x = None
-            self.sandbox_size_y = None
-            self.frame_size_x = None
-            self.frame_size_y = None
-            self.frame_size_z = None
-            self.offset_x_min = None
-            self.offset_x_max = None
-            self.offset_y_min = None
-            self.offset_y_max = None
+            pass
+
+        def get_feature_bounds(self):
+            (self.f_bounds_xmin,
+             self.f_bounds_ymin,
+             self.f_bounds_zmin) = facts['feature_bounds']['min_bound']
+            (self.f_bounds_xmax,
+             self.f_bounds_ymax,
+             self.f_bounds_zmax) = facts['feature_bounds']['max_bound']
+            self.feature_xsize = int(abs(self.f_bounds_ymax
+                                         - self.f_bounds_ymin))
+            self.feature_ysize = int(abs(self.f_bounds_xmax
+                                         - self.f_bounds_xmin))
 
         def get_sandbox_size(self):
             # get corner pts
             pts = facts['robot_corner_pts']
-            pt0 = cg.Point(pts['pt0'][0], pts['pt0'][1], pts['pt0'][2])
+            self.pt0 = cg.Point(pts['pt0'][0], pts['pt0'][1], pts['pt0'][2])
             ptx = cg.Point(pts['ptx'][0], pts['ptx'][1], pts['ptx'][2])
             pty = cg.Point(pts['pty'][0], pts['pty'][1], pts['pty'][2])
             # get size
-            self.sandbox_size_x = cg.distance_point_point_xy(pt0, ptx)
-            self.sandbox_size_y = cg.distance_point_point_xy(pt0, pty)
+            self.sandbox_xsize = cg.distance_point_point_xy(self.pt0, ptx)
+            self.sandbox_ysize = cg.distance_point_point_xy(self.pt0, pty)
 
-        def get_frame_size(self):
+        def get_feature_origin(self):
+            self.feature_origin_x = (self.pt0.y - self.f_bounds_ymax)
+            self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)
+            self.feature_origin_z = 0
+
+        def get_feature_frame_size(self):
             self.frame_size_x = facts['fig_size']['x']
             self.frame_size_y = facts['fig_size']['y']
             self.frame_size_z = facts['fig_size']['z']
@@ -176,10 +185,10 @@ class Toolpath():
             x_offset_dist = self.frame_size_x / m.sqrt(2)
             y_offset_dist = self.frame_size_y / m.sqrt(2)
             # set min/max of working area
-            self.offset_x_min = x_offset_dist
-            self.offset_x_max = self.sandbox_size_x - x_offset_dist
-            self.offset_y_min = y_offset_dist
-            self.offset_y_max = self.sandbox_size_y - y_offset_dist
+            self.offset_x_min = x_offset_dist + self.feature_origin_x
+            self.offset_x_max = self.feature_xsize - x_offset_dist
+            self.offset_y_min = y_offset_dist + self.feature_origin_y
+            self.offset_y_max = self.feature_ysize - y_offset_dist
 
     def move_ctrl_frames_to_sandbox2d(self, d):
         # generate target frame to move to
@@ -215,8 +224,8 @@ class Toolpath():
         return rv
 
     def draw_polyline_in_sandbox2d(self, d):
-        img = 255 * np.ones(shape=[m.floor(d.sandbox_size_y),
-                                   m.floor(d.sandbox_size_x),
+        img = 255 * np.ones(shape=[m.floor(d.sandbox_ysize),
+                                   m.floor(d.sandbox_xsize),
                                    3], dtype=np.uint8)
 
         for a, b in cu.pairwise(range(len(self.ctrl_frames))):
@@ -350,20 +359,20 @@ class Toolpath():
 
     def create_json_file(self):
         data = {}
-        data['crop_idx'] = {}
+        data['frame_corner_pts'] = {}
         data['ctrl_frames'] = {}
-        filepath = self.parent_folder + '/' + '{}.json'.format(self.id)
+        filepath = self.parent_folder + '/' + '{}_toolpath.json'.format(self.id)
         with open(filepath, 'w') as o:
             json.dump(data, o, indent=4)
 
     def export_json(self):
         # load json
-        filepath = self.parent_folder + '/' + self.id + '.json'
+        filepath = self.parent_folder + '/' + self.id + '_toolpath.json'
         with open(filepath, 'r') as f:
             data = json.load(f)
         # store crop_idx
         for i, ci in enumerate(self.crop_idx):
-            data['crop_idx'][i] = ci
+            data['frame_corner_pts'][i] = ci
         # store frames
         for j, f in enumerate(self.ctrl_frames):
             frame_num = str(j).zfill(3)
@@ -374,7 +383,7 @@ class Toolpath():
             json.dump(data, o, indent=4)
 
 
-def get_toolpath(level, curve_type, iteration, folder, id):
+def get_toolpath(level, curve_type, iteration, folder, id, show=False):
 
     t = Toolpath(level,
                  curve_type,
@@ -392,8 +401,10 @@ def get_toolpath(level, curve_type, iteration, folder, id):
 
     # get external dimensions
     d = t.Dimension()
+    d.get_feature_bounds()
     d.get_sandbox_size()
-    d.get_frame_size()
+    d.get_feature_origin()
+    d.get_feature_frame_size()
     d.calc_offset_area_sandbox2d()
 
     # transform toolpath into sandbox
@@ -412,24 +423,18 @@ def get_toolpath(level, curve_type, iteration, folder, id):
     t.calc_crop_idx(d)
     t.crop_idx = t.shift_list(t.crop_idx, t.shift_num)
 
-    # # crop img
-    # img_cropped = t.crop_toolpathbox2d_oriented(img, d)
-
-    # '''visualize and export'''
-    # # t.show_frames()
-    # # t.show_img(img)
-    # # t.show_img(img_cropped)
-
-    # # make directory
-    # t.create_scan_identifier()
-
-    # # export img as img
-    # t.export_an_img(img)
-    # t.export_an_img(img_cropped)
-
-    # export ctrl_frames & crop_idx as json
+    # export json
     t.create_json_file()
     t.export_json()
+
+    if show:
+        # crop img
+        img_cropped = t.crop_toolpathbox2d_oriented(img, d)
+
+        # show
+        t.show_frames()
+        t.show_img(img)
+        t.show_img(img_cropped)
 
     return t
 

@@ -2,20 +2,22 @@ import os
 import datetime
 
 class TrainingData(object):
-    def __init__(self, iteration, environment='test', toolpath=None, heightmap=None, pointcloud=None, scan_data=None):
+    def __init__(self, iteration, environment='test', toolpath=None, heightmap=None, pointcloud=None, scan_data=None, frame_corner_pts=None):
         self.toolpath = toolpath
         self.heightmap = heightmap
         self.pointcloud = pointcloud
         self.scan_data = scan_data
-        self.environment_folder = self.get_environment_folder(env=environment)
+        self.environment_folder = self.get_environment_folder(environment=environment)
         self.identifier = self.create_identifier(int(iteration))
-
+        self.frame_corner_pts = frame_corner_pts
 
     def store_data(self):
         dir_raw, dir_processed, dir_train = self.create_iter_dirs()
         # 1. pointcloud
         try:
-            self.pointcloud.write_pointcloud(self.pointcloud.get_pointcloud_transformed())
+            self.pointcloud.write_pointcloud(self.pointcloud.get_pointcloud_transformed(),
+                                             fname=self.identifier + '_pcl',
+                                             path=dir_raw)
         except:
             print("Could not save point cloud for: {}".format(self.create_identifier))
 
@@ -39,14 +41,17 @@ class TrainingData(object):
             rgb_feature = self.scan_data.get_feature(self.scan_data.rgb_scan)
             depth_feature = self.scan_data.get_feature(self.scan_data.depth_scan)
             ir_feature = self.scan_data.get_feature(self.scan_data.ir_scan)
+            toolpath_feature = self.toolpath
             #store features
             rgb_feature.save(fname=self.identifier + '_rgb_feature', path=dir_processed)
             depth_feature.save(fname=self.identifier + '_depth_feature', path=dir_processed)
             ir_feature.save(fname=self.identifier + '_ir_feature', path=dir_processed)
+            toolpath_feature.save(fname=self.identifier + '_toolpath_feature', path=dir_processed)
             #store feature frames
-            rgb_feature.save_featureframe(fname=self.create_identifier + '_rgb_featureframe', path=dir_train)
-            depth_feature.save_featureframe(fname=self.create_identifier + '_depth_featureframe', path=dir_train)
-            ir_feature.save_featureframe(fname=self.create_identifier + '_ir_featureframe', path=dir_train)
+            rgb_feature.save_featureframe(fname=self.create_identifier + '_rgb_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            depth_feature.save_featureframe(fname=self.create_identifier + '_depth_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            ir_feature.save_featureframe(fname=self.create_identifier + '_ir_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            toolpath_feature.save_featureframe(fname=self.create_identifier + '_toolpath_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
         except:
             print("Could not save features for: {}".format(self.identifier))
 
@@ -64,7 +69,7 @@ class TrainingData(object):
         return str(id_num) + '_' + str(datetime.date.today())
 
     def create_iter_dirs(self):
-        dir = self.environment_folder()
+        dir = self.environment_folder
 
         # create folder for raw data
         new_dir = os.path.join(self.identifier, '00_RAW')

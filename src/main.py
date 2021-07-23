@@ -1,6 +1,6 @@
 from data import TrainingData
 from argparser import parse_args
-from scanning import ScanData, HeightMap, PointCloud
+from scanning import ScanData, HeightMap, PointCloud, Feature
 from toolpath import random_toolpath_gen as tp
 import scanning
 import time
@@ -20,18 +20,20 @@ def training(env):
 
         # 1. initiate a new training iteration
         data = TrainingData(iteration=i, environment=env)
-        data.create_iter_dirs()
+        path_name_raw, path_name_processed, path_name_train = data.create_iter_dirs()
         print('scan id: {}'.format(data.identifier))
 
         # 2. get toolpath
-        toolpath = tp.get_toolpath(level='1.0',
+        t = tp.get_toolpath(level='1.0',
                                    curve_type='bezier',
                                    iteration=i,
-                                   folder=data.environment_folder,
+                                   folder=path_name_raw,
                                    id=data.identifier)
+        toolpath = Feature(t.img)
+        data.frame_corner_pts = t.crop_idx
 
         # 3. robot to scan pose
-        ur.ur_helper.scan_pose(scanning_time=7.5)
+        ur.ur_helper.scan_pose(scanning_time=0.5)
 
         # 4. scan and create data
         scan = ScanData()
@@ -39,18 +41,18 @@ def training(env):
         heightmap = HeightMap(scan)
 
         # 5. store data
-        data.toolpath = toolpath.img
+        data.toolpath = toolpath
         data.scan_data = scan
         data.pointcloud = pcl_obj
         data.heightmap = heightmap
-
+        data.store_data()
         print('{}: data is collected and stored'.format(data.identifier))
 
         # adapt toolpath
         adapt_height = None
 
         # execure toolpath
-        ur.execute_toolpath(toolpath.ctrl_frames, adapt_height, excavation_time=30)
+        ur.execute_toolpath(t.ctrl_frames, adapt_height, excavation_time=0.5)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
@@ -78,7 +80,8 @@ def main():
                                    curve_type='bezier',
                                    iteration=0,
                                    folder=backup,
-                                   id=id)
+                                   id=id,
+                                   show=False)
         ur.ur_helper.execute_toolpath(toolpath.ctrl_frames,
                                       z_center_toolpathbox2D=0,
                                       excavation_time=0.5)
