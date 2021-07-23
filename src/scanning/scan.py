@@ -193,14 +193,15 @@ class PointCloud(object):
 
         return pcl
 
-    def get_mesh_feature(self):
+    def get_mesh_feature(self, smooth=False):
         pcd = self.get_o3d_format(self.get_feature())
         pcd.estimate_normals()
-        mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=12)
+        mesh_out, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=12)
         #path = askdirectory(title='Select Folder') # shows dialog box and return the path
+        if smooth is True:
+            mesh_out = mesh_out.filter_smooth_taubin(number_of_iterations=30)
 
-        mesh_smooth = mesh.filter_smooth_taubin(number_of_iterations=20)
-        mesh_smooth.compute_vertex_normals()
+        mesh_out.compute_vertex_normals()
 
         # crop mesh
         # min_bound = __FACTS__.feature_bounds['min_bound']
@@ -208,7 +209,7 @@ class PointCloud(object):
         # bbox = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
         # mesh_out = mesh_smooth.crop(bbox)
 
-        return mesh_smooth
+        return mesh_out
 
     def write_mesh(self, mesh, fname, path=None):
         if path is None:
@@ -231,8 +232,7 @@ class HeightMap(PointCloud):
     def __init__(self, scan):
         super().__init__(scan)
         self.base_height = __FACTS__.base_plate_height
-        self.xmin = 0
-        self.ymin = 0
+        self.max_height = 150.0
         self.height_values = self.get_heightmap()
 
     def get_heightmap(self):
@@ -252,32 +252,57 @@ class HeightMap(PointCloud):
         y = np_v[:,1]
         z = np_v[:,2]
         zi = inp.griddata((x, y), z, (xi, yi), method='nearest')
-        print(zi.shape)
+
         return zi
 
     def write_height2ascii(self, path, cellsize=1.0):
         grid_data = self.height_values
         rows,cols = np.shape(grid_data)
         esri = EsriGrid(
-                        ncols=cols, nrows=rows, xllcorner=self.xmin, yllcorner=self.ymin, cellsize=cellsize, grid_data=grid_data,
+                        ncols=cols,
+                        nrows=rows,
+                        xllcorner=__FACTS__.feature_bounds['min_bound'][0],
+                        yllcorner=__FACTS__.feature_bounds['min_bound'][1],
+                        cellsize=cellsize,
+                        grid_data=grid_data,
                         filepath=path,
                         NODATA_VALUE=-9999)
 
         esri.write_file()
         return esri
 
-    def height2feature(self):
-        h = self.height2gray()
-        return Feature(h)
+    def height2feature(self, denoise=False):
+        im = self.height2image()
+        if denoise is True:
+            im = self.remove_noise(im)
 
-    def height2gray(self):
-        pass
+        return Feature(im)
 
-    def display_height(self):
-        h = self.height_values
-        h[h > -400] = -400
-        h[h < -550] = -550
+    def height2image(self):
+        gray = util.remap_values(self.height_values,
+                                target_min=0, target_max=255,
+                                original_min=self.base_height,
+                                original_max=self.base_height + self.max_height)
 
+        # reshape
+        gray = np.array(gray).reshape(self.height_values.shape)
+        # 8 bit
+        gray = gray.astype(np.uint8)
+        # 3 channels
+        im = np.stack((gray,)*3, axis=-1)
+        # transform (rotate, flip)
+        im = np.flipud(im)
+        im = np.rot90(m=im, k=1)
+
+        return im
+
+    def remove_noise(self, img):
+        """remove noise from image"""
+
+        return cv2.fastNlMeansDenoising(img,None,3,7,21)
+
+    def display(self):
+        h = self.height2image()
         fig = plt.imshow(h, cmap='gray')
         plt.show()
 
@@ -286,12 +311,16 @@ if __name__ == "__main__":
 
     s = ScanData()
     #s.display_scan(s.depth_scan)
-    p = PointCloud(s)
+    #p = PointCloud(s)
     #pcl = p.get_feature()
-    #p.write_pointcloud(pcl, "feature_pcl")
+    #p.write_pointcloud(pcl, "feature_pcl_w_cup")
     #m = p.get_mesh_feature()
-    #p.write_mesh(m, 'test_mesh_20')
+    #p.write_mesh(m, 'sandtest_mesh_1')
     hm = HeightMap(s)
+    #hm.display()
+    hf = hm.height2feature(denoise=True)
+    print(hf.feature.shape)
+    hf.imshow()
 
     #f = p.get_feature()
     #p.write_pointcloud(f, 'test_crop')
