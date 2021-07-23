@@ -168,7 +168,7 @@ class PointCloud(object):
 
             Returns:
             --------
-                pointcloud - numpy array 2D
+                pointcloud - numpy array 3D
 
 
         """
@@ -202,11 +202,20 @@ class PointCloud(object):
         mesh_smooth = mesh.filter_smooth_taubin(number_of_iterations=20)
         mesh_smooth.compute_vertex_normals()
 
+        # crop mesh
+        # min_bound = __FACTS__.feature_bounds['min_bound']
+        # max_bound = __FACTS__.feature_bounds['max_bound']
+        # bbox = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
+        # mesh_out = mesh_smooth.crop(bbox)
+
         return mesh_smooth
 
-    def write_mesh(self, mesh):
-        path = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning"
-        o3d.io.write_triangle_mesh(os.path.join(path, "mesh_poisson12_taubin20.obj"), mesh)
+    def write_mesh(self, mesh, fname, path=None):
+        if path is None:
+            path = askdirectory(title='Select Folder') # shows dialog box and return the path
+        path = os.path.join(path, fname + '.obj')
+        print('Save .obj mesh in: ', path)
+        o3d.io.write_triangle_mesh(path, mesh)
 
     def get_o3d_format(self, pcl):
         """get pointcloud in open3d format"""
@@ -221,6 +230,7 @@ class PointCloud(object):
 class HeightMap(PointCloud):
     def __init__(self, scan):
         super().__init__(scan)
+        self.base_height = __FACTS__.base_plate_height
         self.xmin = 0
         self.ymin = 0
         self.height_values = self.get_heightmap()
@@ -229,8 +239,10 @@ class HeightMap(PointCloud):
         mesh = self.get_mesh_feature()
         v = mesh.vertices
         np_v = np.asarray(v)
-        xmin, ymin, zmin = np.amin(np_v, axis=0)
-        xmax, ymax, zmax = np.amax(np_v, axis=0)
+        xmin, ymin, zmin = __FACTS__.feature_bounds['min_bound']
+        xmax, ymax, zmax = __FACTS__.feature_bounds['max_bound']
+        # xmin, ymin, zmin = np.amin(np_v, axis=0)
+        # xmax, ymax, zmax = np.amax(np_v, axis=0)
         nx = (int(xmax - xmin))
         ny = (int(ymax - ymin))
         xi = np.linspace(xmin, xmax, nx)
@@ -240,6 +252,7 @@ class HeightMap(PointCloud):
         y = np_v[:,1]
         z = np_v[:,2]
         zi = inp.griddata((x, y), z, (xi, yi), method='nearest')
+        print(zi.shape)
         return zi
 
     def write_height2ascii(self, path, cellsize=1.0):
@@ -253,7 +266,7 @@ class HeightMap(PointCloud):
         esri.write_file()
         return esri
 
-    def get_feature(self):
+    def height2feature(self):
         h = self.height2gray()
         return Feature(h)
 
@@ -274,6 +287,12 @@ if __name__ == "__main__":
     s = ScanData()
     #s.display_scan(s.depth_scan)
     p = PointCloud(s)
+    #pcl = p.get_feature()
+    #p.write_pointcloud(pcl, "feature_pcl")
+    #m = p.get_mesh_feature()
+    #p.write_mesh(m, 'test_mesh_20')
+    hm = HeightMap(s)
+
     #f = p.get_feature()
     #p.write_pointcloud(f, 'test_crop')
     #print(np.random.rand(10, 3).shape)
@@ -283,43 +302,15 @@ if __name__ == "__main__":
     #pcl_t = pcl.get_pointcloud_transformed()
     #pcl.write_pointcloud(pcl_t, 'pcl6_base_transformed_and_scaled_21-07-2021')
 
-    #p = PointCloud(s)
-    #raw = p.get_pointcloud_raw()
-    #p.write_pointcloud(raw, 'raw_pcl_scale')
-    #s.pointcloud.get_mesh()
-    #hm = HeightMap(s.depth_scan, s.intrinsic_params)
-    #hm.display_height()
-    #p = PointCloud(s.depth_scan, s.intrinsic_params)
-    #p.write_mesh(p.get_mesh())
+    # def remove_noise(self, input):
+    #     """remove noise from image"""
 
-    # mesh_in = o3d.io.read_triangle_mesh("C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/mesh_smooth.obj")
+    #     t_min, t_max = np.min(input), np.max(input)
+    #     img = input.astype(np.uint8)
+    #     im = cv2.fastNlMeansDenoising(img,None,2,3,3)
+    #     im = np.asarray(im).astype(np.float32)
+    #     depth = util.remap_values(im, target_min=t_min, target_max=t_max, original_min=0.0, original_max=255.)
+    #     depth = np.array(depth).reshape(input.shape)
+    #     return depth
 
-    # mesh_out = mesh_in.filter_smooth_taubin(number_of_iterations=20)
-
-    # v=mesh_out.vertices
-    # np_v = np.asarray(v)
-    # xmin, ymin, zmin = np.amin(np_v, axis=0)
-    # xmax, ymax, zmax = np.amax(np_v, axis=0)
-    # nx = (int(xmax - xmin))
-    # ny = (int(ymax - ymin))
-    # xi = np.linspace(xmin, xmax, nx) # (xmin, xmax, nx)
-    # yi = np.linspace(ymin, ymax, ny)
-    # xi, yi = np.meshgrid(xi, yi)
-    # x = np_v[:,0]
-    # y = np_v[:,1]
-    # z = np_v[:,2]
-    # zi = inp.griddata((x, y), z, (xi, yi), method='nearest')
-    # rows,cols = np.shape(zi)
-    # esri = EsriGrid(
-    #                 ncols=cols, nrows=rows, xllcorner=xmin, yllcorner=ymin, cellsize=1.0, grid_data=zi,
-    #                 filepath="C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/scanning/raster_files/grid_test.asc",
-    #                 NODATA_VALUE=-9999)
-
-    # #esri.write_file()
-    # zi[zi > -500] = -500
-    # zi[zi < -650] = -650
-
-    # #hm = util.remap_values(zi, target_min=0., target_max=255., original_min=-450., original_max=-650)
-    # #hm= np.array(hm).reshape(zi.shape)
-    # fig = plt.imshow(zi, cmap='gray')
-    # plt.show()
+#self.depth_input = self.remove_noise(scan.depth_for_pcl)

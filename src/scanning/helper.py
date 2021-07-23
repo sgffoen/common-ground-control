@@ -1,7 +1,6 @@
 import json
 import os
 
-print(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data', 'facts.json')))
 
 class Facts(object):
     def __init__(self):
