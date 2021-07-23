@@ -139,11 +139,9 @@ class TrainingData(object):
         else:
             dir = self.environment_folder
             prev_id = self.create_identifier(i-1)
-            prev_dir = os.path.join(prev_id, '00_RAW')
-            prev_path = os.path.join(dir, prev_dir)
+            prev_filepath = dir + prev_id + '/00_RAW/' + prev_id + '_toolpath.json'
 
-            filepath = os.path.join(prev_path, '_toolpath.json')
-            with open(filepath, 'r') as f:
+            with open(prev_filepath, 'r') as f:
                 prev_data = json.load(f)
 
             prev_frame_corner_pts = [prev_data['frame_corner_pts']['0'],
