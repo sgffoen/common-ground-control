@@ -224,8 +224,8 @@ class Toolpath():
         return rv
 
     def draw_polyline_in_sandbox2d(self, d):
-        img = 255 * np.ones(shape=[m.floor(d.sandbox_ysize),
-                                   m.floor(d.sandbox_xsize),
+        img = 255 * np.ones(shape=[m.floor(d.feature_ysize),
+                                   m.floor(d.feature_xsize),
                                    3], dtype=np.uint8)
 
         for a, b in cu.pairwise(range(len(self.ctrl_frames))):

@@ -24,13 +24,12 @@ def training(env):
         print('scan id: {}'.format(data.identifier))
 
         # 2. get toolpath
-        t = tp.get_toolpath(level='1.0',
+        toolpath = tp.get_toolpath(level='1.0',
                                    curve_type='bezier',
                                    iteration=i,
                                    folder=path_name_raw,
                                    id=data.identifier)
-        toolpath = Feature(t.img)
-        data.frame_corner_pts = t.crop_idx
+        data.frame_corner_pts = toolpath.crop_idx
 
         # 3. robot to scan pose
         ur.ur_helper.scan_pose(scanning_time=0.5)
@@ -52,7 +51,7 @@ def training(env):
         adapt_height = None
 
         # execure toolpath
-        ur.execute_toolpath(t.ctrl_frames, adapt_height, excavation_time=0.5)
+        ur.execute_toolpath(toolpath.ctrl_frames, adapt_height, excavation_time=0.5)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
