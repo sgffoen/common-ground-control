@@ -221,6 +221,7 @@ class PointCloud(object):
             return mesh_out
 
         else:
+            print("\nMESH RE-USED\n")
             return self.mesh_feature
 
 
@@ -231,6 +232,7 @@ class PointCloud(object):
         path = os.path.join(path, fname + '.obj')
         print('Save .obj mesh in: ', path)
         o3d.io.write_triangle_mesh(path, mesh)
+        print('write mesh complete')
 
     def get_o3d_format(self, pcl):
         """get pointcloud in open3d format"""

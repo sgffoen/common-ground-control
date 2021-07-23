@@ -23,17 +23,17 @@ class TrainingData(object):
                                              fname=self.identifier + '_pcl',
                                              path=dir_raw)
             self.pointcloud.write_pointcloud(self.pointcloud.get_feature(),
-                                             fname=self.create_identifier + '_pcl_feature',
+                                             fname=self.identifier + '_pcl_feature',
                                              path=dir_processed)
         except:
-            print("Could not save point cloud for: {}".format(self.create_identifier))
+            print("Could not save point cloud for: {}".format(self.identifier))
 
         # 2. heightmap
         try:
-            self.heightmap.write_height2ascii(path=os.path.join(dir_processed, self.create_identifier + "_esriGrid.asc"))
-            self.heightmap.write_mesh(mesh=self.heightmap.get_mesh_feature(),
-                                       fname=self.identifier + '_mesh_feature',
-                                       path=dir_processed)
+            self.heightmap.write_height2ascii(path=os.path.join(dir_processed, self.identifier + "_esriGrid.asc"))
+            # self.heightmap.write_mesh(mesh=self.heightmap.get_mesh_feature(),
+            #                            fname=self.identifier + '_mesh_feature',
+            #                            path=dir_processed)
 
         except:
             print("Could not save height map for: {}".format(self.identifier))
@@ -63,10 +63,10 @@ class TrainingData(object):
 
         # store feature frames
         try:
-            rgb_feature.save_featureframe(fname=self.create_identifier + '_rgb_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
-            depth_feature.save_featureframe(fname=self.create_identifier + '_depth_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
-            ir_feature.save_featureframe(fname=self.create_identifier + '_ir_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
-            hm_feature.save_featureframe(fname=self.create_identifier + '_height_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            rgb_feature.save_featureframe(fname=self.identifier + '_rgb_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            depth_feature.save_featureframe(fname=self.identifier + '_depth_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            ir_feature.save_featureframe(fname=self.identifier + '_ir_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            hm_feature.save_featureframe(fname=self.identifier + '_height_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
         except:
             print("Could not save features frames for: {}".format(self.identifier))
 
@@ -74,7 +74,7 @@ class TrainingData(object):
         try:
             toolpath_feature = Feature(self.toolpath.img)
             toolpath_feature.save(fname=self.identifier + '_toolpath_feature', path=dir_processed)
-            toolpath_feature.save_featureframe(fname=self.create_identifier + '_toolpath_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            toolpath_feature.save_featureframe(fname=self.identifier + '_toolpath_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
         except:
             print("Could not save toolpath feature for: {}".format(self.identifier))
 

@@ -1,13 +1,13 @@
 from data import TrainingData
 from argparser import parse_args
-from scanning import ScanData, HeightMap, PointCloud, Feature
+from scanning import ScanData, HeightMap, PointCloud
 from toolpath import random_toolpath_gen as tp
 import scanning
 import time
 import UR as ur
 import scanning.scan
 
-ITERATION = 5
+ITERATION = 3
 
 
 def training(env):
@@ -69,7 +69,7 @@ def main():
         training(environment)
     elif run_mode == 'run':
         run(environment)
-    elif run_mode == 'scan':
+    elif run_mode == 'see':
         ur.ur_helper.scan_pose(scanning_time=0.1)
         scanning.live_scan_stream()
     elif run_mode == 'toolpath':

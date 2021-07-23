@@ -33,9 +33,10 @@ class Feature(object):
             path = askdirectory(title='Select Folder') # shows dialog box and return the path
         path = os.path.join(path, fname + '.png')
         print('Save PNG image in: ', path)
-        if frame:
+        if frame is None:
+            cv2.imwrite(path, self.feature)
+        else:
             cv2.imwrite(path, frame)
-        cv2.imwrite(path, self.feature)
 
     def save_featureframe(self, fname, path=None, frame_corner_pts=None):
         f = self.get_featureframe(frame_corner_pts)
@@ -52,6 +53,7 @@ class Feature(object):
                                             M,
                                             (self.frame_shape[0],
                                              self.frame_shape[1]))
+
         return feature_frame
 
 if __name__ == "__main__":
