@@ -32,11 +32,13 @@ def training(env):
         data.frame_corner_pts = toolpath.crop_idx
 
         # 3. robot to scan pose
-        ur.ur_helper.scan_pose(scanning_time=0.5)
+        ur.ur_helper.scan_pose(scanning_time=20.0)
 
         # 4. scan and create data
         scan = ScanData()
         pcl_obj = PointCloud(scan)
+
+
         heightmap = HeightMap(scan)
 
         # 5. store data
@@ -51,7 +53,7 @@ def training(env):
         adapt_height = None
 
         # execure toolpath
-        ur.execute_toolpath(toolpath.ctrl_frames, adapt_height, excavation_time=0.5)
+        ur.execute_toolpath(toolpath.ctrl_frames, adapt_height, excavation_time=40.0)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
