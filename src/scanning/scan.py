@@ -74,6 +74,7 @@ class PointCloud(object):
     def __init__(self, scan):
         self.depth_input = scan.depth_for_pcl
         self.intrinsic_params = scan.intrinsic_params
+        self.mesh_feature = None
 
     def get_pointcloud_transformed(self):
         ptcld = self.get_pointcloud_raw()
@@ -194,22 +195,31 @@ class PointCloud(object):
         return pcl
 
     def get_mesh_feature(self, smooth=False):
-        pcd = self.get_o3d_format(self.get_feature())
-        pcd.estimate_normals()
-        mesh_out, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=12)
-        #path = askdirectory(title='Select Folder') # shows dialog box and return the path
-        if smooth is True:
-            mesh_out = mesh_out.filter_smooth_taubin(number_of_iterations=30)
 
-        mesh_out.compute_vertex_normals()
+        if self.mesh_feature is None:
 
-        # crop mesh
-        # min_bound = __FACTS__.feature_bounds['min_bound']
-        # max_bound = __FACTS__.feature_bounds['max_bound']
-        # bbox = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
-        # mesh_out = mesh_smooth.crop(bbox)
+            pcd = self.get_o3d_format(self.get_feature())
+            pcd.estimate_normals()
+            mesh_out, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=12)
+            #path = askdirectory(title='Select Folder') # shows dialog box and return the path
+            if smooth is True:
+                mesh_out = mesh_out.filter_smooth_taubin(number_of_iterations=30)
 
-        return mesh_out
+            mesh_out.compute_vertex_normals()
+
+            # crop mesh
+            # min_bound = __FACTS__.feature_bounds['min_bound']
+            # max_bound = __FACTS__.feature_bounds['max_bound']
+            # bbox = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
+            # mesh_out = mesh_smooth.crop(bbox)
+
+            self.mesh_feature = mesh_out
+            return mesh_out
+
+        else:
+            return self.mesh_feature
+
+
 
     def write_mesh(self, mesh, fname, path=None):
         if path is None:
@@ -271,7 +281,7 @@ class HeightMap(PointCloud):
         esri.write_file()
         return esri
 
-    def height2feature(self, denoise=False):
+    def height2feature(self, denoise=True):
         im = self.height2image()
         if denoise is True:
             im = self.remove_noise(im)
@@ -311,16 +321,15 @@ if __name__ == "__main__":
 
     s = ScanData()
     #s.display_scan(s.depth_scan)
-    #p = PointCloud(s)
-    #pcl = p.get_feature()
-    #p.write_pointcloud(pcl, "feature_pcl_w_cup")
+    p = PointCloud(s)
+    pcl = p.get_feature()
+    p.write_pointcloud(pcl, "sand_flat")
     #m = p.get_mesh_feature()
     #p.write_mesh(m, 'sandtest_mesh_1')
-    hm = HeightMap(s)
+    #hm = HeightMap(s)
     #hm.display()
-    hf = hm.height2feature(denoise=True)
-    print(hf.feature.shape)
-    hf.imshow()
+    #hf = hm.height2feature(denoise=True)
+    #hf.imshow()
 
     #f = p.get_feature()
     #p.write_pointcloud(f, 'test_crop')

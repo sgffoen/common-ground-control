@@ -1,5 +1,9 @@
 import os
 import datetime
+if __name__ == "__main__":
+    pass
+else:
+    from scanning import Feature
 
 class TrainingData(object):
     def __init__(self, iteration, environment='test', toolpath=None, heightmap=None, pointcloud=None, scan_data=None, frame_corner_pts=None):
@@ -18,12 +22,19 @@ class TrainingData(object):
             self.pointcloud.write_pointcloud(self.pointcloud.get_pointcloud_transformed(),
                                              fname=self.identifier + '_pcl',
                                              path=dir_raw)
+            self.pointcloud.write_pointcloud(self.pointcloud.get_feature(),
+                                             fname=self.create_identifier + '_pcl_feature',
+                                             path=dir_processed)
         except:
             print("Could not save point cloud for: {}".format(self.create_identifier))
 
         # 2. heightmap
         try:
             self.heightmap.write_height2ascii(path=os.path.join(dir_processed, self.create_identifier + "_esriGrid.asc"))
+            self.heightmap.write_mesh(mesh=self.heightmap.get_mesh_feature(),
+                                       fname=self.identifier + '_mesh_feature',
+                                       path=dir_processed)
+
         except:
             print("Could not save height map for: {}".format(self.identifier))
 
@@ -41,20 +52,31 @@ class TrainingData(object):
             rgb_feature = self.scan_data.get_feature(self.scan_data.rgb_scan)
             depth_feature = self.scan_data.get_feature(self.scan_data.depth_scan)
             ir_feature = self.scan_data.get_feature(self.scan_data.ir_scan)
-            toolpath_feature = self.toolpath
+            hm_feature = self.heightmap.height2feature()
             #store features
             rgb_feature.save(fname=self.identifier + '_rgb_feature', path=dir_processed)
             depth_feature.save(fname=self.identifier + '_depth_feature', path=dir_processed)
             ir_feature.save(fname=self.identifier + '_ir_feature', path=dir_processed)
-            toolpath_feature.save(fname=self.identifier + '_toolpath_feature', path=dir_processed)
-            #store feature frames
-            rgb_feature.save_featureframe(fname=self.create_identifier + '_rgb_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
-            depth_feature.save_featureframe(fname=self.create_identifier + '_depth_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
-            ir_feature.save_featureframe(fname=self.create_identifier + '_ir_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
-            toolpath_feature.save_featureframe(fname=self.create_identifier + '_toolpath_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            hm_feature.save(fname=self.identifier + '_height_feature', path=dir_processed)
         except:
             print("Could not save features for: {}".format(self.identifier))
 
+        # store feature frames
+        try:
+            rgb_feature.save_featureframe(fname=self.create_identifier + '_rgb_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            depth_feature.save_featureframe(fname=self.create_identifier + '_depth_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            ir_feature.save_featureframe(fname=self.create_identifier + '_ir_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+            hm_feature.save_featureframe(fname=self.create_identifier + '_height_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+        except:
+            print("Could not save features frames for: {}".format(self.identifier))
+
+        # store toolpath
+        try:
+            toolpath_feature = Feature(self.toolpath.img)
+            toolpath_feature.save(fname=self.identifier + '_toolpath_feature', path=dir_processed)
+            toolpath_feature.save_featureframe(fname=self.create_identifier + '_toolpath_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
+        except:
+            print("Could not save toolpath feature for: {}".format(self.identifier))
 
 
     def get_environment_folder(self, environment='test'):
@@ -96,8 +118,6 @@ class TrainingData(object):
             print("Directory " , path_name_train ,  " already exists")
 
         return path_name_raw, path_name_processed, path_name_train
-
-
 
 
 if __name__ == "__main__":
