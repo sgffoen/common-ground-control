@@ -1,7 +1,7 @@
 from data import TrainingData
 from argparser import parse_args
 from scanning import ScanData, HeightMap, PointCloud
-from toolpath import random_toolpath_gen as tp
+from toolpath import random_toolpath_gen, cleaning_toolpath_gen
 import scanning
 import time
 import UR as ur
@@ -24,11 +24,11 @@ def training(env):
         print('scan id: {}'.format(data.identifier))
 
         # 2. get toolpath
-        toolpath = tp.get_toolpath(level='1.0',
-                                   curve_type='bezier',
-                                   iteration=i,
-                                   folder=path_name_raw,
-                                   id=data.identifier)
+        toolpath = random_toolpath_gen.get_toolpath(level='1.0',
+                                                    curve_type='bezier',
+                                                    iteration=i,
+                                                    folder=path_name_raw,
+                                                    id=data.identifier)
         data.frame_corner_pts = toolpath.crop_idx
 
         # 3. robot to scan pose
@@ -75,18 +75,22 @@ def main():
     elif run_mode == 'toolpath':
         backup = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_backup"
         id = "test_0000"
-        toolpath = tp.get_toolpath(level='2.2',
-                                   curve_type='bezier',
-                                   iteration=0,
-                                   folder=backup,
-                                   id=id,
-                                   show=False)
+        toolpath = random_toolpath_gen.get_toolpath(level='2.2',
+                                                    curve_type='bezier',
+                                                    iteration=0,
+                                                    folder=backup,
+                                                    id=id,
+                                                    show=False)
         ur.ur_helper.execute_toolpath(toolpath.ctrl_frames,
                                       z_center_toolpathbox2D=0,
                                       excavation_time=0.5)
     elif run_mode == 'calibrate':
         scanning.img_calibration()
-
+    elif run_mode == 'clean':
+        frames = cleaning_toolpath_gen.clean()
+        ur.ur_helper.execute_toolpath(frames,
+                                      z_center_toolpathbox2D=0,
+                                      excavation_time=0.5)
     else:
         print("Run mode is not identified")
 

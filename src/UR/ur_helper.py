@@ -96,10 +96,10 @@ def execute_toolpath(frames, z_center_toolpathbox2D=0, excavation_time=30):
     frames = uu.add_safety_frames(frames, safety_dist=-200)
     uu.adapt_height_from_pcl(frames, z_center_toolpathbox2D=0)
     # uu.reverse_z_value(frames)
-    script_scan = move_robot_to_frames(frames)
+    script = move_robot_to_frames(frames)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
-                   bytes(script_scan, 'utf-8'))
+                   bytes(script, 'utf-8'))
     time.sleep(excavation_time)
 
 
