@@ -7,7 +7,7 @@ import time
 import UR as ur
 import scanning.scan
 
-ITERATION = 3
+ITERATION = 10
 
 
 def training(env):
@@ -51,7 +51,7 @@ def training(env):
         adapt_height = None
 
         # execure toolpath
-        ur.execute_toolpath(toolpath.ctrl_frames, adapt_height, excavation_time=30)
+        ur.execute_toolpath(toolpath.ctrlframes_feature, adapt_height, excavation_time=30)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))

@@ -49,7 +49,7 @@ class Toolpath():
         self.z_max = 130
 
         if self.level == '1.0':
-            length = 255
+            length = 200
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
@@ -167,12 +167,12 @@ class Toolpath():
             ptx = cg.Point(pts['ptx'][0], pts['ptx'][1], pts['ptx'][2])
             pty = cg.Point(pts['pty'][0], pts['pty'][1], pts['pty'][2])
             # get size
-            self.sandbox_xsize = cg.distance_point_point_xy(self.pt0, ptx)
-            self.sandbox_ysize = cg.distance_point_point_xy(self.pt0, pty)
+            self.sandbox_xsize = cg.distance_point_point_xy(self.pt0, ptx)  # 1135
+            self.sandbox_ysize = cg.distance_point_point_xy(self.pt0, pty)  # 737
 
         def get_feature_origin(self):
-            self.feature_origin_x = (self.pt0.y - self.f_bounds_ymax)
-            self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)
+            self.feature_origin_x = (self.pt0.y - self.f_bounds_ymax)  # 587 - 570 = 17
+            self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)  # (-338) - (-352) = 14
             self.feature_origin_z = 0
 
         def get_feature_frame_size(self):
@@ -182,19 +182,21 @@ class Toolpath():
 
         def calc_offset_area_sandbox2d(self):
             # calculate half of diagonal length of toolpathbox2d
-            x_offset_dist = self.frame_size_x / m.sqrt(2)
-            y_offset_dist = self.frame_size_y / m.sqrt(2)
+            x_offset_dist = (self.frame_size_x * m.sqrt(2)) / 2
+            y_offset_dist = (self.frame_size_y * m.sqrt(2)) / 2
             # set min/max of working area
-            self.offset_x_min = x_offset_dist + self.feature_origin_x
+            self.offset_x_min = x_offset_dist
             self.offset_x_max = self.feature_xsize - x_offset_dist
-            self.offset_y_min = y_offset_dist + self.feature_origin_y
+            self.offset_y_min = y_offset_dist
             self.offset_y_max = self.feature_ysize - y_offset_dist
 
     def move_ctrl_frames_to_sandbox2d(self, d):
         # generate target frame to move to
         frame_to_x = r.randint(int(d.offset_x_min), int(d.offset_x_max))
         frame_to_y = r.randint(int(d.offset_y_min), int(d.offset_y_max))
-        frame_to_center = cg.Point(frame_to_x, frame_to_y, 0)
+        frame_to_center = cg.Point(frame_to_x,
+                                   frame_to_y,
+                                   0)
         frame_to = cg.Frame(frame_to_center,
                             cg.Vector.Xaxis(),
                             cg.Vector.Yaxis())
@@ -210,6 +212,21 @@ class Toolpath():
         T = cg.Transformation.from_frame_to_frame(frame_from, frame_to)
         for ctrl_frame in self.ctrl_frames:
             ctrl_frame.transform(T)
+
+    def move_ctrl_frames_to_feature(self, d):
+        framefrom = cg.Frame(cg.Point(0, 0, 0),
+                             cg.Vector.Xaxis(),
+                             cg.Vector.Yaxis())
+        frameto = cg.Frame(cg.Point(d.feature_origin_x,
+                                    d.feature_origin_y,
+                                    d.feature_origin_z),
+                           cg.Vector.Xaxis(),
+                           cg.Vector.Yaxis())
+        T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
+        self.ctrlframes_feature = []
+        for ctrl_frame in self.ctrl_frames:
+            f = ctrl_frame.transformed(T)
+            self.ctrlframes_feature.append(f)
 
     def show_frames(self):
         viewer = App()
@@ -231,11 +248,11 @@ class Toolpath():
         for a, b in cu.pairwise(range(len(self.ctrl_frames))):
             pt_s = self.ctrl_frames[a].point
             pt_e = self.ctrl_frames[b].point
-            # z = self.remapValue(pt_s[2], self.z_min, self.z_max, 0, 255)
+            z = self.remapValue(pt_s[2], self.z_min, self.z_max, 0, 255)
             cv2.line(img,
                      (int(pt_s[0]), int(pt_s[1])),
                      (int(pt_e[0]), int(pt_e[1])),
-                     color=(0, 0, pt_s[2]),  # red channel for toolpath height
+                     color=(0, 0, z),  # red channel for toolpath height
                      thickness=self.thickness)
         self.img = img
         return img
@@ -409,6 +426,7 @@ def get_toolpath(level, curve_type, iteration, folder, id, show=False):
 
     # transform toolpath into sandbox
     t.move_ctrl_frames_to_sandbox2d(d)
+    t.move_ctrl_frames_to_feature(d)
 
     # generate img
     img = t.draw_polyline_in_sandbox2d(d)

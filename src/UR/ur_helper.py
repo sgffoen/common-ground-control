@@ -2,6 +2,7 @@
 import math as m
 import time
 import json
+import compas.geometry as cg
 
 if __name__ == "__main__":
     import compas_simple_comm as uc
@@ -76,8 +77,7 @@ def scan_pose(scanning_time=7.5):
     time.sleep(scanning_time)
 
 
-def test_pose(frame, z_center_toolpathbox2D=0):
-    uu.adapt_height_from_pcl(frame, z_center_toolpathbox2D=0)
+def test_pose(frame):
     script_test = move_robot_to_a_frame(frame)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
@@ -103,5 +103,11 @@ def execute_toolpath(frames, z_center_toolpathbox2D=0, excavation_time=30):
     time.sleep(excavation_time)
 
 
+def cleaning_path():
+    pass
+
+
 if __name__ == "__main__":
-    scan_pose()
+    center = cg.Point(0, 500, -5)
+    frame = cg.Frame(center, cg.Vector.Xaxis(), cg.Vector.Yaxis())
+    test_pose(frame)

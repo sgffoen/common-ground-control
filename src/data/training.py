@@ -16,6 +16,7 @@ class TrainingData(object):
         self.identifier = self.create_identifier(int(iteration))
         self.frame_corner_pts = frame_corner_pts
         self.prev_frame_corner_pts = self.get_previous_frame_corner_pts(iteration)
+        self.prev_processed_dir = self.get_prev_processd_dir(iteration)
 
     def store_data(self):
         dir_raw, dir_processed, dir_train = self.create_iter_dirs()
@@ -75,10 +76,10 @@ class TrainingData(object):
         # store previous feature frames
         if self.prev_frame_corner_pts != None:
             try:
-                rgb_feature.save_featureframe(fname=self.identifier + '_rgb_prevfeatureframe', path=dir_processed, frame_corner_pts=self.prev_frame_corner_pts)
-                depth_feature.save_featureframe(fname=self.identifier + '_depth_prevfeatureframe', path=dir_processed, frame_corner_pts=self.prev_frame_corner_pts)
-                ir_feature.save_featureframe(fname=self.identifier + '_ir_prevfeatureframe', path=dir_processed, frame_corner_pts=self.prev_frame_corner_pts)
-                hm_feature.save_featureframe(fname=self.identifier + '_height_prevfeatureframe', path=dir_processed, frame_corner_pts=self.prev_frame_corner_pts)
+                rgb_feature.save_featureframe(fname=self.prev_id + '_rgb_featureframe_after', path=self.prev_processed_dir, frame_corner_pts=self.prev_frame_corner_pts)
+                depth_feature.save_featureframe(fname=self.prev_id + '_depth_featureframe_after', path=self.prev_processed_dir, frame_corner_pts=self.prev_frame_corner_pts)
+                ir_feature.save_featureframe(fname=self.prev_id + '_ir_featureframe_after', path=self.prev_processed_dir, frame_corner_pts=self.prev_frame_corner_pts)
+                hm_feature.save_featureframe(fname=self.prev_id + '_height_featureframe_after', path=self.prev_processed_dir, frame_corner_pts=self.prev_frame_corner_pts)
             except:
                 print("Could not save previous features frames for: {}".format(self.identifier))
 
@@ -138,8 +139,8 @@ class TrainingData(object):
             return None
         else:
             dir = self.environment_folder
-            prev_id = self.create_identifier(i-1)
-            prev_filepath = dir + prev_id + '/00_RAW/' + prev_id + '_toolpath.json'
+            self.prev_id = self.create_identifier(i-1)
+            prev_filepath = dir + self.prev_id + '/00_RAW/' + self.prev_id + '_toolpath.json'
 
             with open(prev_filepath, 'r') as f:
                 prev_data = json.load(f)
@@ -150,6 +151,11 @@ class TrainingData(object):
                                      prev_data['frame_corner_pts']['3']]
             return prev_frame_corner_pts
 
+    def get_prev_processd_dir(self, i):
+        dir = self.environment_folder
+        prev_id = self.create_identifier(i-1)
+        prev_filepath = dir + prev_id + '/01_processed'
+        return prev_filepath
 
 if __name__ == "__main__":
 
