@@ -7,7 +7,7 @@ import time
 import UR as ur
 import scanning.scan
 
-ITERATION = 10
+ITERATION = 300
 
 
 def training(env):
@@ -55,6 +55,17 @@ def training(env):
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
+
+        # cleaning at every 100 iteration
+        if i % 100 == 99:
+            print('#############  cleaning {}  #############\n'.format(i))
+            ur.ur_helper.scan_pose(scanning_time=10)
+            c_frames = cleaning_toolpath_gen.clean()
+            ur.ur_helper.execute_toolpath(c_frames,
+                                          z_center_toolpathbox2D=0,
+                                          excavation_time=120)
+            print('\n#############  cleaning {} done  #############\n\n'.format(i))
+
     print('Total fabrication time: ', (time.time()-start)/60, ' min')
 
 

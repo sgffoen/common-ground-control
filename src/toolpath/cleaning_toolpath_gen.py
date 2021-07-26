@@ -43,7 +43,7 @@ def clean(type='along_x'):
             f_start = cg.Frame(y_start, cg.Vector.Xaxis(), cg.Vector.Yaxis())
             f_end = cg.Frame(y_end, cg.Vector.Xaxis(), cg.Vector.Yaxis())
 
-            if i % 2 is 0:
+            if i % 2 == 0:
                 xaxis = cg.Vector(m.cos(m.radians(-__ANGLE__)), m.sin(m.radians(-__ANGLE__)), 0)
                 yaxis = cg.Vector(-m.sin(m.radians(-__ANGLE__)), m.cos(m.radians(-__ANGLE__)), 0)
                 f_start = cg.Frame(y_start, xaxis, yaxis)
@@ -66,7 +66,7 @@ def clean(type='along_x'):
             f_start = cg.Frame(x_start, cg.Vector.Xaxis(), cg.Vector.Yaxis())
             f_end = cg.Frame(x_end, cg.Vector.Xaxis(), cg.Vector.Yaxis())
 
-            if i % 2 is 0:
+            if i % 2 == 0:
                 xaxis = cg.Vector(m.sin(m.radians(-__ANGLE__)), -m.cos(m.radians(-__ANGLE__)), 0)
                 yaxis = cg.Vector(m.cos(m.radians(-__ANGLE__)), m.sin(m.radians(-__ANGLE__)), 0)
                 f_start = cg.Frame(x_start, xaxis, yaxis)
