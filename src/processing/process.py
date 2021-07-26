@@ -105,44 +105,47 @@ class ImgProcessing():
 
 
 if __name__ == "__main__":
-    __IMGNUM__ = 1
+    __IMGNUM__ = 284
+    __DELETE__ = False
 
-    for i in range(__IMGNUM__):
-        ip = ImgProcessing(environment='test', iteration=i)
-        ip.create_test_dir()
+    if not __DELETE__:
+        for i in range(__IMGNUM__):
+            ip = ImgProcessing(environment='test', iteration=i)
+            ip.create_test_dir()
 
-        # save rgb img
-        rgb_img_left = ip.img_overlay(ip.rgb_fframe, ip.toolpath_fframe)
-        rgb_img_out = ip.horizontal_stack(rgb_img_left, ip.rgb_fframe_after)
-        ip.save_img(rgb_img_out, 'rgb2rgb')
+            # save rgb img
+            rgb_img_left = ip.img_overlay(ip.rgb_fframe, ip.toolpath_fframe)
+            rgb_img_out = ip.horizontal_stack(rgb_img_left, ip.rgb_fframe_after)
+            ip.save_img(rgb_img_out, 'rgb2rgb')
 
-        # save height img
-        height_img_left = ip.img_overlay(ip.height_fframe, ip.toolpath_fframe)
-        height_img_out = ip.horizontal_stack(height_img_left, ip.height_fframe_after)
-        ip.save_img(height_img_out, 'height2height')
+            # save height img
+            height_img_left = ip.img_overlay(ip.height_fframe, ip.toolpath_fframe)
+            height_img_out = ip.horizontal_stack(height_img_left, ip.height_fframe_after)
+            ip.save_img(height_img_out, 'height2height')
 
-        # edit channel
-        height_fframe_rgb = ip.chennel_edit(ip.height_fframe)
-        height_fframe_after_rgb = ip.chennel_edit(ip.height_fframe_after)
+            # edit channel
+            height_fframe_rgb = ip.chennel_edit(ip.height_fframe)
+            height_fframe_after_rgb = ip.chennel_edit(ip.height_fframe_after)
 
-        # save edited imgs
-        # height2rgb
-        height2rgb = ip.horizontal_stack(height_img_left, ip.rgb_fframe_after)
-        ip.save_img(height2rgb, 'height2rgb')
-        # rgb2height
-        rgb2height = ip.horizontal_stack(rgb_img_left, ip.height_fframe_after)
-        ip.save_img(rgb2height, 'rgb2height')
-        # g2b
-        g_left = ip.img_overlay(height_fframe_rgb[1], ip.toolpath_fframe)
-        g2b = ip.horizontal_stack(g_left, height_fframe_after_rgb[2])
-        ip.save_img(g2b, 'g2b')
-        # g2b
-        b_left = ip.img_overlay(height_fframe_rgb[2], ip.toolpath_fframe)
-        b2g = ip.horizontal_stack(b_left, height_fframe_after_rgb[1])
-        ip.save_img(b2g, 'b2g')
+            # save edited imgs
+            # height2rgb
+            height2rgb = ip.horizontal_stack(height_img_left, ip.rgb_fframe_after)
+            ip.save_img(height2rgb, 'height2rgb')
+            # rgb2height
+            rgb2height = ip.horizontal_stack(rgb_img_left, ip.height_fframe_after)
+            ip.save_img(rgb2height, 'rgb2height')
+            # g2b
+            g_left = ip.img_overlay(height_fframe_rgb[1], ip.toolpath_fframe)
+            g2b = ip.horizontal_stack(g_left, height_fframe_after_rgb[2])
+            ip.save_img(g2b, 'g2b')
+            # g2b
+            b_left = ip.img_overlay(height_fframe_rgb[2], ip.toolpath_fframe)
+            b2g = ip.horizontal_stack(b_left, height_fframe_after_rgb[1])
+            ip.save_img(b2g, 'b2g')
 
     # run if you want to DELETE 03_test dir you made above
-    # for i in range(__IMGNUM__):
-    #     ip = ImgProcessing(environment='test', iteration=i)
-    #     path_to_delete = ip.get_dir('test')
-    #     shutil.rmtree(path_to_delete, ignore_errors=False, onerror=None)
+    else:
+        for i in range(__IMGNUM__):
+            ip = ImgProcessing(environment='test', iteration=i)
+            path_to_delete = ip.get_dir('test')
+            shutil.rmtree(path_to_delete, ignore_errors=False, onerror=None)
