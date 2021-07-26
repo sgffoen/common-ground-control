@@ -9,8 +9,6 @@ import math as m
 import numpy as np
 import cv2
 import json
-import datetime
-import os
 
 
 # set global facts
@@ -31,33 +29,38 @@ class Toolpath():
                  num_ctrl_pts,
                  segments_num,
                  thickness,
-                 iteration):
+                 iteration,
+                 parent_folder,
+                 id):
         self.level = level
         self.curve_type = curve_type
         self.num_ctrl_pts = num_ctrl_pts
         self.segments_num = segments_num
         self.thickness = thickness
         self.iteration = iteration
+        self.id = id
+        self.parent_folder = parent_folder
 
         self.ctrl_pts_list = []
         self.ctrl_frames = []
 
-        self.parent_folder = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/00_test/02_toolpath"
-
     def generate_ctrl_pts_tuple(self):
+        self.z_min = 0
+        self.z_max = 130
+
         if self.level == '1.0':
-            length = 255
+            length = 200
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = 0
-                z = 255
+                z = 75.0
                 self.ctrl_pts_list.append((x, y, z))
 
         elif self.level == '1.1':
             length = r.randrange(30, 255)
             step = length / (self.num_ctrl_pts - 1)
-            z = r.randrange(0, 255)
+            z = r.randrange(self.z_min, self.z_max)
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = 0
@@ -69,7 +72,7 @@ class Toolpath():
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = 0
-                z = r.randrange(0, 255)
+                z = r.randrange(self.z_min, self.z_max)
                 self.ctrl_pts_list.append((x, y, z))
 
         elif self.level == '2.0':
@@ -77,14 +80,14 @@ class Toolpath():
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
-                y = r.randrange(0, 100)
-                z = 255
+                y = r.randrange(50, 255)
+                z = 0
                 self.ctrl_pts_list.append((x, y, z))
 
         elif self.level == '2.1':
             length = r.randrange(30, 255)
             step = length / (self.num_ctrl_pts - 1)
-            z = r.randrange(0, 255)
+            z = r.randrange(self.z_min, self.z_max)
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = r.randrange(50, 200)
@@ -96,7 +99,7 @@ class Toolpath():
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = r.randrange(50, 200)
-                z = r.randrange(0, 255)
+                z = r.randrange(self.z_min, self.z_max)
                 self.ctrl_pts_list.append((x, y, z))
 
     def tuple_to_compas_frame(self):
@@ -143,46 +146,57 @@ class Toolpath():
 
     class Dimension():
         def __init__(self):
-            self.sandbox_size_x = None
-            self.sandbox_size_y = None
-            self.frame_size_x = None
-            self.frame_size_y = None
-            self.frame_size_z = None
-            self.offset_x_min = None
-            self.offset_x_max = None
-            self.offset_y_min = None
-            self.offset_y_max = None
+            pass
+
+        def get_feature_bounds(self):
+            (self.f_bounds_xmin,
+             self.f_bounds_ymin,
+             self.f_bounds_zmin) = facts['feature_bounds']['min_bound']
+            (self.f_bounds_xmax,
+             self.f_bounds_ymax,
+             self.f_bounds_zmax) = facts['feature_bounds']['max_bound']
+            self.feature_xsize = int(abs(self.f_bounds_ymax
+                                         - self.f_bounds_ymin))
+            self.feature_ysize = int(abs(self.f_bounds_xmax
+                                         - self.f_bounds_xmin))
 
         def get_sandbox_size(self):
             # get corner pts
             pts = facts['robot_corner_pts']
-            pt0 = cg.Point(pts['pt0'][0], pts['pt0'][1], pts['pt0'][2])
+            self.pt0 = cg.Point(pts['pt0'][0], pts['pt0'][1], pts['pt0'][2])
             ptx = cg.Point(pts['ptx'][0], pts['ptx'][1], pts['ptx'][2])
             pty = cg.Point(pts['pty'][0], pts['pty'][1], pts['pty'][2])
             # get size
-            self.sandbox_size_x = cg.distance_point_point_xy(pt0, ptx)
-            self.sandbox_size_y = cg.distance_point_point_xy(pt0, pty)
+            self.sandbox_xsize = cg.distance_point_point_xy(self.pt0, ptx)  # 1135
+            self.sandbox_ysize = cg.distance_point_point_xy(self.pt0, pty)  # 737
 
-        def get_frame_size(self):
+        def get_feature_origin(self):
+            self.feature_origin_x = (self.pt0.y - self.f_bounds_ymax)  # 587 - 570 = 17
+            self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)  # (-338) - (-352) = 14
+            self.feature_origin_z = 0
+
+        def get_feature_frame_size(self):
             self.frame_size_x = facts['fig_size']['x']
             self.frame_size_y = facts['fig_size']['y']
             self.frame_size_z = facts['fig_size']['z']
 
         def calc_offset_area_sandbox2d(self):
             # calculate half of diagonal length of toolpathbox2d
-            x_offset_dist = self.frame_size_x / m.sqrt(2)
-            y_offset_dist = self.frame_size_y / m.sqrt(2)
+            x_offset_dist = (self.frame_size_x * m.sqrt(2)) / 2
+            y_offset_dist = (self.frame_size_y * m.sqrt(2)) / 2
             # set min/max of working area
             self.offset_x_min = x_offset_dist
-            self.offset_x_max = self.sandbox_size_x - x_offset_dist
+            self.offset_x_max = self.feature_xsize - x_offset_dist
             self.offset_y_min = y_offset_dist
-            self.offset_y_max = self.sandbox_size_y - y_offset_dist
+            self.offset_y_max = self.feature_ysize - y_offset_dist
 
     def move_ctrl_frames_to_sandbox2d(self, d):
         # generate target frame to move to
         frame_to_x = r.randint(int(d.offset_x_min), int(d.offset_x_max))
         frame_to_y = r.randint(int(d.offset_y_min), int(d.offset_y_max))
-        frame_to_center = cg.Point(frame_to_x, frame_to_y, 0)
+        frame_to_center = cg.Point(frame_to_x,
+                                   frame_to_y,
+                                   0)
         frame_to = cg.Frame(frame_to_center,
                             cg.Vector.Xaxis(),
                             cg.Vector.Yaxis())
@@ -199,6 +213,21 @@ class Toolpath():
         for ctrl_frame in self.ctrl_frames:
             ctrl_frame.transform(T)
 
+    def move_ctrl_frames_to_feature(self, d):
+        framefrom = cg.Frame(cg.Point(0, 0, 0),
+                             cg.Vector.Xaxis(),
+                             cg.Vector.Yaxis())
+        frameto = cg.Frame(cg.Point(d.feature_origin_x,
+                                    d.feature_origin_y,
+                                    d.feature_origin_z),
+                           cg.Vector.Xaxis(),
+                           cg.Vector.Yaxis())
+        T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
+        self.ctrlframes_feature = []
+        for ctrl_frame in self.ctrl_frames:
+            f = ctrl_frame.transformed(T)
+            self.ctrlframes_feature.append(f)
+
     def show_frames(self):
         viewer = App()
         for g in self.ctrl_frames:
@@ -207,20 +236,25 @@ class Toolpath():
 
     # image processing from here
 
+    def remapValue(self, v, ori_Min, ori_Max, targetMin, targetMax):
+        rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
+        return rv
+
     def draw_polyline_in_sandbox2d(self, d):
-        img = 255 * np.ones(shape=[m.floor(d.sandbox_size_y),
-                                   m.floor(d.sandbox_size_x),
+        img = 255 * np.ones(shape=[m.floor(d.feature_ysize),
+                                   m.floor(d.feature_xsize),
                                    3], dtype=np.uint8)
 
         for a, b in cu.pairwise(range(len(self.ctrl_frames))):
             pt_s = self.ctrl_frames[a].point
             pt_e = self.ctrl_frames[b].point
+            z = self.remapValue(pt_s[2], self.z_min, self.z_max, 0, 255)
             cv2.line(img,
                      (int(pt_s[0]), int(pt_s[1])),
                      (int(pt_e[0]), int(pt_e[1])),
-                     color=(0, 0, pt_s[2]),  # red channel for toolpath height
+                     color=(0, 0, z),  # red channel for toolpath height
                      thickness=self.thickness)
-
+        self.img = img
         return img
 
     def calc_contour(self, img):
@@ -239,7 +273,7 @@ class Toolpath():
         self.rect = cv2.minAreaRect(self.cnt)
         self.corner_pts_orient_float = cv2.boxPoints(self.rect)
 
-    def calc_crop_idx(self):
+    def calc_crop_idx(self, d):
         centroid, ratio, angle = self.rect
         fig_size_diagonal = (d.frame_size_x * m.sqrt(2)) / 2
 
@@ -295,8 +329,8 @@ class Toolpath():
     def calc_dot_toolpath_and_bbox(self):
         # check orientation of toolpath and crop_area
         self.toolpath_dir.unitize()
-        self.edge1_dir.unitize()
-        self.edge2_dir.unitize()
+        # self.edge1_dir.unitize()
+        # self.edge2_dir.unitize()
         self.dot1 = cg.dot_vectors_xy(self.toolpath_dir, self.edge1_dir)
         self.dot2 = cg.dot_vectors_xy(self.toolpath_dir, self.edge2_dir)
 
@@ -319,7 +353,7 @@ class Toolpath():
         collection_to_shift.rotate(shift_num)
         return list(collection_to_shift)
 
-    def crop_toolpathbox2d_oriented(self, img):
+    def crop_toolpathbox2d_oriented(self, img, d):
         pts_from = np.float32(self.crop_idx)
         pts_to = np.float32([[0, 0],
                             [d.frame_size_x, 0],
@@ -340,27 +374,22 @@ class Toolpath():
         filename = self.parent_folder + '/' + self.id + '.png'
         cv2.imwrite(filename, img_to_save)
 
-    def create_scan_identifier(self):
-        id_num = str(self.iteration).zfill(5)
-        self.id = str(datetime.date.today()) + '_' + str(id_num)
-
     def create_json_file(self):
         data = {}
-        data['crop_idx'] = {}
+        data['frame_corner_pts'] = {}
         data['ctrl_frames'] = {}
-        filepath = self.parent_folder + '/' + '{}.json'.format(self.id)
+        filepath = self.parent_folder + '/' + '{}_toolpath.json'.format(self.id)
         with open(filepath, 'w') as o:
             json.dump(data, o, indent=4)
 
     def export_json(self):
         # load json
-        filepath = self.parent_folder + '/' + self.id + '.json'
+        filepath = self.parent_folder + '/' + self.id + '_toolpath.json'
         with open(filepath, 'r') as f:
             data = json.load(f)
         # store crop_idx
-        print(len(self.crop_idx))
         for i, ci in enumerate(self.crop_idx):
-            data['crop_idx'][i] = ci
+            data['frame_corner_pts'][i] = ci
         # store frames
         for j, f in enumerate(self.ctrl_frames):
             frame_num = str(j).zfill(3)
@@ -371,14 +400,16 @@ class Toolpath():
             json.dump(data, o, indent=4)
 
 
-if __name__ == "__main__":
+def get_toolpath(level, curve_type, iteration, folder, id, show=False):
 
-    t = Toolpath(level='1.0',
-                 curve_type='polyline',
+    t = Toolpath(level,
+                 curve_type,
                  num_ctrl_pts=5,
                  segments_num=50,
                  thickness=2,
-                 iteration=0)
+                 iteration=iteration,
+                 parent_folder=folder,
+                 id=id)
 
     # generate toolpath
     t.generate_ctrl_pts_tuple()
@@ -387,12 +418,15 @@ if __name__ == "__main__":
 
     # get external dimensions
     d = t.Dimension()
+    d.get_feature_bounds()
     d.get_sandbox_size()
-    d.get_frame_size()
+    d.get_feature_origin()
+    d.get_feature_frame_size()
     d.calc_offset_area_sandbox2d()
 
     # transform toolpath into sandbox
     t.move_ctrl_frames_to_sandbox2d(d)
+    t.move_ctrl_frames_to_feature(d)
 
     # generate img
     img = t.draw_polyline_in_sandbox2d(d)
@@ -404,24 +438,24 @@ if __name__ == "__main__":
     t.calc_toolpath_box_dir()
     t.calc_dot_toolpath_and_bbox()
     t.calc_shift_number_bbox_corner()
-    t.calc_crop_idx()
+    t.calc_crop_idx(d)
     t.crop_idx = t.shift_list(t.crop_idx, t.shift_num)
 
-    # crop img
-    img_cropped = t.crop_toolpathbox2d_oriented(img)
-
-    '''visualize and export'''
-    # t.show_frames()
-    # t.show_img(img)
-    # t.show_img(img_cropped)
-
-    # make directory
-    t.create_scan_identifier()
-
-    # export img as img
-    t.export_an_img(img)
-    t.export_an_img(img_cropped)
-
-    # export ctrl_frames & crop_idx as json
+    # export json
     t.create_json_file()
     t.export_json()
+
+    if show:
+        # crop img
+        img_cropped = t.crop_toolpathbox2d_oriented(img, d)
+
+        # show
+        t.show_frames()
+        t.show_img(img)
+        t.show_img(img_cropped)
+
+    return t
+
+
+if __name__ == "__main__":
+    pass

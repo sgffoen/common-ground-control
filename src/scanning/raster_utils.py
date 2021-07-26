@@ -1,20 +1,38 @@
-import matplotlib.pyplot as plt
-
-def displayArray(data, height=5):
-    """
-    Display a 3D numpy array containing [r,g,b] values per pixel
-    -
-    Input /
-    data = 3D numpy array
-    height = maximum height to keep display ratio
-    """
-    plt.figure(figsize=(height * (data.shape[1] / data.shape[0]), height))
-    plt.imshow(data, cmap = 'copper')
-    plt.tight_layout()
-    plt.axis('off')
-    plt.show()
+import os
 
 
-if __name__=="__main__":
-    pass
+class EsriGrid(object):
+    def __init__(self, ncols, nrows, xllcorner, yllcorner, cellsize, grid_data, filepath, NODATA_VALUE=-9999):
+        self.ncols = ncols
+        self.nrows = nrows
+        self.xllcorner = xllcorner
+        self.yllcorner = yllcorner
+        self.cellsize = cellsize
+        self.NODATA_VALUE = NODATA_VALUE
+        self.grid_data = grid_data
+        self.filepath = filepath
 
+    def read_file(self):
+        f = open(self.filepath, "r")
+        return f
+
+    def write_file(self):
+        f = open(self.filepath, "w")
+
+        # create file header
+        f.write("ncols {}\n".format(self.ncols))
+        f.write("nrows {}\n".format(self.nrows))
+        f.write("xllcorner     {}\n".format(self.xllcorner))
+        f.write("yllcorner     {}\n".format(self.yllcorner))
+        f.write("cellsize      {}\n".format(self.cellsize))
+        f.write("NODATA_value  {}\n".format(self.NODATA_VALUE))
+
+        # write data rows
+        for row in range(self.nrows):
+            for col in range(self.ncols):
+                f.write("{} ".format(self.grid_data[row, col] if self.grid_data[row, col] != 0 else self.NODATA_VALUE ))
+            # new row
+            f.write("\n")
+
+        # close file
+        f.close()

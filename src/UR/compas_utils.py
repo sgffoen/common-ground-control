@@ -43,11 +43,11 @@ def get_robot_corner_pts():
     pt_o = cg.Point(facts['robot_corner_pts']['pt0'][0],
                     facts['robot_corner_pts']['pt0'][1],
                     facts['robot_corner_pts']['pt0'][2])
-    pt_x = cg.Point(facts['robot_corner_pts']['ptx'][0],
+    pt_x = cg.Point(facts['robot_corner_pts']['pt0'][0],
                     facts['robot_corner_pts']['ptx'][1],
                     facts['robot_corner_pts']['ptx'][2])
     pt_y = cg.Point(facts['robot_corner_pts']['pty'][0],
-                    facts['robot_corner_pts']['pty'][1],
+                    facts['robot_corner_pts']['pt0'][1],
                     facts['robot_corner_pts']['pty'][2])
     return pt_o, pt_x, pt_y
 

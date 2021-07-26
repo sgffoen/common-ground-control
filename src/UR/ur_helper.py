@@ -1,16 +1,22 @@
 # LIBRARIES
-from UR import compas_simple_comm as uc
-from UR import compas_simple_ur_script as us
-from UR import compas_utils as uu
-
 import math as m
 import time
 import json
+import compas.geometry as cg
+
+if __name__ == "__main__":
+    import compas_simple_comm as uc
+    import compas_simple_ur_script as us
+    import compas_utils as uu
+else:
+    from UR import compas_simple_comm as uc
+    from UR import compas_simple_ur_script as us
+    from UR import compas_utils as uu
+
 
 # fact sheet
 with open('data/facts.json') as f:
     facts = json.load(f)
-
 
 # FUNCTIONS
 
@@ -63,7 +69,6 @@ def move_robot_to_frames(frames,
 
 
 def scan_pose(scanning_time=7.5):
-    print('scanning START')
     scan_frame = uu.get_scan_frame()
     script_scan = move_robot_to_a_frame(scan_frame)
     uc.send_script(facts['robot_ip'],
@@ -72,8 +77,7 @@ def scan_pose(scanning_time=7.5):
     time.sleep(scanning_time)
 
 
-def test_pose(frame, z_center_toolpathbox2D=0):
-    uu.adapt_height_from_pcl(frame, z_center_toolpathbox2D=0)
+def test_pose(frame):
     script_test = move_robot_to_a_frame(frame)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
@@ -81,7 +85,6 @@ def test_pose(frame, z_center_toolpathbox2D=0):
 
 
 def calibration_pose():
-    print('scanning START')
     scan_frame = uu.get_calibration_frame()
     script_scan = move_robot_to_a_frame(scan_frame)
     uc.send_script(facts['robot_ip'],
@@ -89,16 +92,22 @@ def calibration_pose():
                    bytes(script_scan, 'utf-8'))
 
 
-def execute_toolpath(frames, z_center_toolpathbox2D=0):
-    print('toolpath START')
-    frames = uu.add_safety_frames(frames)
+def execute_toolpath(frames, z_center_toolpathbox2D=0, excavation_time=30):
+    frames = uu.add_safety_frames(frames, safety_dist=-200)
     uu.adapt_height_from_pcl(frames, z_center_toolpathbox2D=0)
-    uu.reverse_z_value(frames)
-    script_scan = move_robot_to_frames(frames)
+    # uu.reverse_z_value(frames)
+    script = move_robot_to_frames(frames)
     uc.send_script(facts['robot_ip'],
                    facts['ur_server_port'],
-                   bytes(script_scan, 'utf-8'))
+                   bytes(script, 'utf-8'))
+    time.sleep(excavation_time)
+
+
+def cleaning_path():
+    pass
 
 
 if __name__ == "__main__":
-    pass
+    center = cg.Point(0, 500, -5)
+    frame = cg.Frame(center, cg.Vector.Xaxis(), cg.Vector.Yaxis())
+    test_pose(frame)
