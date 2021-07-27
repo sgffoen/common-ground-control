@@ -49,7 +49,7 @@ class Toolpath():
         self.z_max = 130
 
         if self.level == '1.0':
-            length = 200
+            length = 180
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
@@ -137,12 +137,15 @@ class Toolpath():
 
     def rotate_ctrl_frames(self):
         # set angle
-        degree = r.randint(-180, 180)
+        degree = r.randint(-180, 0)
         # get rotation center
         R = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(),
                                             m.radians(degree))
         for f in self.ctrl_frames:
             f.transform(R)
+        toggle = r.randint(0, 1)
+        if toggle:
+            self.ctrl_frames.reverse()
 
     class Dimension():
         def __init__(self):
