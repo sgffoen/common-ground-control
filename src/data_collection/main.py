@@ -7,7 +7,8 @@ import time
 import UR as ur
 import scanning.scan
 
-ITERATION = 300
+ITERATION = 500
+START = 0
 
 
 def training(env):
@@ -15,7 +16,7 @@ def training(env):
     print("starting training mode")
     print("environment: {} \n".format(env))
 
-    for i in range(ITERATION):
+    for i in range(START, START+ITERATION):
         print('#############  iteration {}  #############\n'.format(i))
 
         # 1. initiate a new training iteration
@@ -51,7 +52,7 @@ def training(env):
         adapt_height = None
 
         # execure toolpath
-        ur.execute_toolpath(toolpath.ctrlframes_feature, adapt_height, excavation_time=30)
+        ur.execute_toolpath(toolpath.ctrlframes_feature, adapt_height, excavation_time=25)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
@@ -63,7 +64,7 @@ def training(env):
             c_frames = cleaning_toolpath_gen.clean()
             ur.ur_helper.execute_toolpath(c_frames,
                                           z_center_toolpathbox2D=0,
-                                          excavation_time=120)
+                                          excavation_time=125)
             print('\n#############  cleaning {} done  #############\n\n'.format(i))
 
     print('Total fabrication time: ', (time.time()-start)/60, ' min')
