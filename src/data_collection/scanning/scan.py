@@ -271,8 +271,9 @@ class HeightMap(PointCloud):
 
         return zi
 
-    def write_height2ascii(self, path, cellsize=1.0):
-        grid_data = self.height_values
+    def write_height2ascii(self, path, grid_data=None, cellsize=1.0):
+        if grid_data is None:
+            grid_data = self.height_values
         rows,cols = np.shape(grid_data)
         esri = EsriGrid(
                         ncols=cols,
@@ -316,6 +317,21 @@ class HeightMap(PointCloud):
         """remove noise from image"""
 
         return cv2.fastNlMeansDenoising(img,None,2,15,21)
+
+    def height2mesh(self):
+        pass
+
+    def image2height(self, img):
+        gray = np.asarray(img)
+        print(gray.shape)
+        height = util.remap_values(gray,
+                        target_min=self.base_height, target_max=self.base_height + self.max_height,
+                        original_min=0,
+                        original_max=255)
+
+        height = np.array(height).reshape(img.shape)
+        height = height[:,:,0]
+        return height
 
     def display(self):
         h = self.height2image()
