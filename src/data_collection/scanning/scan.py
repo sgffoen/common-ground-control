@@ -315,7 +315,7 @@ class HeightMap(PointCloud):
     def remove_noise(self, img):
         """remove noise from image"""
 
-        return cv2.fastNlMeansDenoising(img,None,3,7,21)
+        return cv2.fastNlMeansDenoising(img,None,2,15,21)
 
     def display(self):
         h = self.height2image()
