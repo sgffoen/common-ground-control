@@ -27,7 +27,6 @@ def training(env):
         # 2. get toolpath
         toolpath = random_toolpath_gen.get_toolpath(level='1.0',
                                                     curve_type='bezier',
-                                                    iteration=i,
                                                     folder=path_name_raw,
                                                     id=data.identifier)
         data.frame_corner_pts = toolpath.crop_idx

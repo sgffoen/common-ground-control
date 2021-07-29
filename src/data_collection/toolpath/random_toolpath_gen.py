@@ -29,7 +29,6 @@ class Toolpath():
                  num_ctrl_pts,
                  segments_num,
                  thickness,
-                 iteration,
                  parent_folder,
                  id):
         self.level = level
@@ -37,7 +36,6 @@ class Toolpath():
         self.num_ctrl_pts = num_ctrl_pts
         self.segments_num = segments_num
         self.thickness = thickness
-        self.iteration = iteration
         self.id = id
         self.parent_folder = parent_folder
 
@@ -403,14 +401,13 @@ class Toolpath():
             json.dump(data, o, indent=4)
 
 
-def get_toolpath(level, curve_type, iteration, folder, id, show=False):
+def get_toolpath(level, curve_type, folder, id, show=False):
 
     t = Toolpath(level,
                  curve_type,
                  num_ctrl_pts=5,
                  segments_num=50,
                  thickness=2,
-                 iteration=iteration,
                  parent_folder=folder,
                  id=id)
 
