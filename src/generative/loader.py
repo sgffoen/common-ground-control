@@ -11,7 +11,7 @@ def get_environment_folder(environment='test'):
 
 def create_identifier(iter):
     id_num = str(iter).zfill(5)
-    return str(id_num) + '_' + "2021-07-26"
+    return str(id_num) + '_' + "2021-07-27"
     # return str(id_num) + '_' + str(datetime.date.today())
 
 

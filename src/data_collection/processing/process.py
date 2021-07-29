@@ -21,7 +21,8 @@ class ImgProcessing():
 
     def create_identifier(self):
         id_num = str(self.iteration).zfill(5)
-        return str(id_num) + '_' + str(datetime.date.today())
+        return str(id_num) + '_' + "2021-07-27"
+        # return str(id_num) + '_' + str(datetime.date.today())
 
     def create_test_dir(self):
         # create folder for training data
@@ -105,7 +106,7 @@ class ImgProcessing():
 
 
 if __name__ == "__main__":
-    __IMGNUM__ = 284
+    __IMGNUM__ = 400
     __DELETE__ = False
 
     if not __DELETE__:
