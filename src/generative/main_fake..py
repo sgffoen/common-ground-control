@@ -4,38 +4,38 @@ import os
 import datetime
 import shutil
 
-from loader import get_img_path, create_dataset_dir
+from loader import get_img_path, create_dataset_dir, get_environment_folder
 from training import ML
 
 
 # RUN CODE #
-BUFFER_SIZE = 400  # The facade training set consist of 400 images
+BUFFER_SIZE = 10  # The facade training set consist of 400 images
 BATCH_SIZE = 1  # The batch size of 1 produced better results for the U-Net in the original pix2pix experiment
-environment = 'test'
+environment = 'production'
 iteration = 0
-type = 'height2rgb'
+type = 'height2height'
 data_num = int(BUFFER_SIZE / 2)
 
 
-# create new directory for data set
-new_dir_train = create_dataset_dir(env=environment, iter=1, data='train')
-new_dir_test = create_dataset_dir(env=environment, iter=1, data='test')
-
 
 # copy img into one folder
-COLLECT = False
-if COLLECT:
-    for i in range(data_num):
-        filepath = get_img_path(environment, i, type)
-        shutil.copy(filepath, new_dir_train)
+COLLECT = True
+# if COLLECT:
+#     for i in range(data_num):
+#         filepath = get_img_path(environment, i, type)
+#         shutil.copy(filepath, new_dir_train)
 
-    for i in range(data_num, data_num*2):
-        filepath = get_img_path(environment, i, type)
-        shutil.copy(filepath, new_dir_test)
+#     for i in range(data_num, data_num*2):
+#         filepath = get_img_path(environment, i, type)
+#         shutil.copy(filepath, new_dir_test)
+
+# create new directory for data set
+new_dir_train = create_dataset_dir(env=environment, iter=0, data='train', type=type)
+new_dir_test = create_dataset_dir(env=environment, iter=0, data='test', type=type)
 
 
 # create directory for save predicted img
-save_path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_training/data"
+save_path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/01_training_log/" + type
 try:
     os.mkdir(save_path)
 except FileExistsError:

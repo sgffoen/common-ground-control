@@ -3,7 +3,7 @@ import cv2
 import datetime
 import os
 import shutil
-
+import time
 
 class ImgProcessing():
     def __init__(self, environment, iteration):
@@ -21,8 +21,8 @@ class ImgProcessing():
 
     def create_identifier(self):
         id_num = str(self.iteration).zfill(5)
-        return str(id_num) + '_' + "2021-07-27"
-        # return str(id_num) + '_' + str(datetime.date.today())
+        return str(id_num) + '_' + "2021-07-29"
+        # return str(id_num) + '_' + str(dateime.date.today())
 
     def create_test_dir(self):
         # create folder for training data
@@ -84,7 +84,7 @@ class ImgProcessing():
 
     def get_save_path(self, type):
         # get filepath
-        filedir = self.get_dir('test')
+        filedir = self.get_dir('training')
         if type == 'rgb2rgb':
             filename = self.id + '_rgb2rgb_training.png'
         elif type == 'height2height':
@@ -106,13 +106,16 @@ class ImgProcessing():
 
 
 if __name__ == "__main__":
-    __IMGNUM__ = 400
+    __IMGNUM__ = 861
     __DELETE__ = False
 
     if not __DELETE__:
+        start = time.time()
         for i in range(__IMGNUM__):
-            ip = ImgProcessing(environment='test', iteration=i)
-            ip.create_test_dir()
+            if i%100 == 0:
+                print('iteration: ', i, '\n')
+            ip = ImgProcessing(environment='production', iteration=i)
+            # ip.create_test_dir()
 
             # save rgb img
             rgb_img_left = ip.img_overlay(ip.rgb_fframe, ip.toolpath_fframe)
@@ -143,6 +146,8 @@ if __name__ == "__main__":
             b_left = ip.img_overlay(height_fframe_rgb[2], ip.toolpath_fframe)
             b2g = ip.horizontal_stack(b_left, height_fframe_after_rgb[1])
             ip.save_img(b2g, 'b2g')
+        end = time.time()
+        print((end - start)/60)
 
     # run if you want to DELETE 03_test dir you made above
     else:

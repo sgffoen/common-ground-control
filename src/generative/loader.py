@@ -7,22 +7,24 @@ def get_environment_folder(environment='test'):
         return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/00_test/"
     elif environment == 'production':
         return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production/"
+    elif environment == 'gan':
+        return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/"
 
 
 def create_identifier(iter):
     id_num = str(iter).zfill(5)
-    return str(id_num) + '_' + "2021-07-27"
+    return str(id_num) + '_' + "2021-07-29"
     # return str(id_num) + '_' + str(datetime.date.today())
 
 
 def get_dir(dir, id):
-    new_dir = id + '/' + '03_test'
+    new_dir = id + '/' + '02_production'
     path_name_raw = dir + new_dir
     return path_name_raw
 
 
 def get_img_path(env, iter, type):
-    dir = get_environment_folder(environment='test')
+    dir = get_environment_folder(environment=env)
     id = create_identifier(iter)
     filedir = get_dir(dir, id)
 
@@ -42,7 +44,7 @@ def get_img_path(env, iter, type):
     return filepath
 
 
-def create_dataset_dir(env, iter, data):
+def create_dataset_dir(env, iter, data, type):
     dir = get_environment_folder(env)
     id = create_identifier(iter)
 

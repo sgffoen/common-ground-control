@@ -11,7 +11,7 @@ class ML():
         self.IMG_HEIGHT = 256
         self.OUTPUT_CHANNELS = 3  # BUILD THE GENERATOR (modified U-Net)
         self.LAMBDA = 100  # DEFINE the generator loss
-        self.checkpoint_prefix = os.path.join('G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_training/data/training_checkpoints', "ckpt")
+        self.checkpoint_prefix = os.path.join('G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/01_training_log/data/training_checkpoints', "ckpt")
         self.checkpoint = None
         self.loss_object = None
         self.generator_optimizer = None
