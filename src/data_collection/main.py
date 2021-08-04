@@ -9,23 +9,24 @@ import scanning.scan
 import os
 import json
 
-ITERATION = 3
-START = 0
+__ITERATION__ = 3
+__START__ = 0
 __FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
 
 
 def training(env):
     max_id = meta_data(env)
+    start_id = max_id + 1
 
     start = time.time()
     print("starting training mode")
     print("environment: {} \n".format(env))
 
-    for i in range(START, START+ITERATION):
+    for i in range(__START__, __START__+__ITERATION__):
         print('#############  iteration {}  #############\n'.format(i))
 
         # 1. initiate a new training iteration
-        data = TrainingData(iteration=i+max_id, environment=env)
+        data = TrainingData(iteration=start_id+i, environment=env)
         path_name_raw, path_name_processed, path_name_train = data.create_iter_dirs()
         print('scan id: {}'.format(data.identifier))
 
@@ -61,9 +62,8 @@ def training(env):
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
         # update meta data
-        new_max_scan_id = max_id + 1 + i
         time_spend = (time.time()-start)/60
-        meta_data(env=env, max_id=new_max_scan_id , time=time_spend, tp_level=toolpath.level)
+        meta_data(env=env, max_id=start_id+i, time=time_spend, tp_level=toolpath.level)
 
         # cleaning at every 100 iteration
         if i % 100 == 99:
