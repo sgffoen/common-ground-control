@@ -63,7 +63,7 @@ def training(env):
         print('\n#############  iteration {} done  #############\n\n'.format(i))
         # update meta data
         time_spend = (time.time()-start)/60
-        meta_data(env=env, max_id=start_id+i, time=time_spend, tp_level=toolpath.level)
+        meta_data(env=env, new_max_id=start_id+i, time=time_spend, tp_level=toolpath.level)
 
         # cleaning at every 100 iteration
         if i % 100 == 99:

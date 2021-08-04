@@ -43,20 +43,23 @@ class Toolpath():
         self.ctrl_frames = []
 
     def generate_ctrl_pts_tuple(self):
-        self.z_min = 0
-        self.z_max = 130
+        self.y_min = 30
+        self.y_max = 180
+        self.z_min = 50
+        self.z_max = 100
+        self.l_min = 30
+        self.l_max = 180
 
-        if self.level == '1.0':
-            length = 180
-            step = length / (self.num_ctrl_pts - 1)
+        if self.level == '1-0':
+            step = self.l_max / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = 0
                 z = 75.0
                 self.ctrl_pts_list.append((x, y, z))
 
-        elif self.level == '1.1':
-            length = r.randrange(30, 255)
+        elif self.level == '1-1':
+            length = r.randrange(self.l_min, self.l_max)
             step = length / (self.num_ctrl_pts - 1)
             z = r.randrange(self.z_min, self.z_max)
             for i in range(self.num_ctrl_pts):
@@ -64,8 +67,8 @@ class Toolpath():
                 y = 0
                 self.ctrl_pts_list.append((x, y, z))
 
-        elif self.level == '1.2':
-            length = r.randrange(30, 255)
+        elif self.level == '1-2':
+            length = r.randrange(self.l_min, self.l_max)
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
@@ -73,30 +76,30 @@ class Toolpath():
                 z = r.randrange(self.z_min, self.z_max)
                 self.ctrl_pts_list.append((x, y, z))
 
-        elif self.level == '2.0':
-            length = r.randrange(30, 255)
+        elif self.level == '2-0':
+            length = r.randrange(self.l_min, self.l_max)
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
-                y = r.randrange(50, 255)
+                y = r.randrange(self.y_min, self.y_max)
                 z = 0
                 self.ctrl_pts_list.append((x, y, z))
 
-        elif self.level == '2.1':
-            length = r.randrange(30, 255)
+        elif self.level == '2-1':
+            length = r.randrange(self.l_min, self.l_max)
             step = length / (self.num_ctrl_pts - 1)
             z = r.randrange(self.z_min, self.z_max)
             for i in range(self.num_ctrl_pts):
                 x = i * step
-                y = r.randrange(50, 200)
+                y = r.randrange(self.y_min, self.y_max)
                 self.ctrl_pts_list.append((x, y, z))
 
-        elif self.level == '2.2':
-            length = r.randrange(30, 255)
+        elif self.level == '2-2':
+            length = r.randrange(self.l_min, self.l_max)
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
-                y = r.randrange(50, 200)
+                y = r.randrange(self.y_min, self.y_max)
                 z = r.randrange(self.z_min, self.z_max)
                 self.ctrl_pts_list.append((x, y, z))
 
@@ -379,6 +382,10 @@ class Toolpath():
         data = {}
         data['frame_corner_pts'] = {}
         data['ctrl_frames'] = {}
+        data['lvl'] = {}
+        data['num_ctrl_pts'] = {}
+        data['curve_type'] = {}
+        data['thickness'] = {}
         filepath = self.parent_folder + '/' + '{}_toolpath.json'.format(self.id)
         with open(filepath, 'w') as o:
             json.dump(data, o, indent=4)
@@ -396,6 +403,11 @@ class Toolpath():
             frame_num = str(j).zfill(3)
             frame_key = 'f_{}'.format(frame_num)
             data['ctrl_frames'][frame_key] = f.to_jsonstring()
+        # store curve info
+        data['lvl'] = self.level
+        data['num_ctrl_pts'] = self.num_ctrl_pts
+        data['thickness'] = self.thickness
+        data['curve_type'] = self.curve_type
         # export and overwrite json
         with open(filepath, 'w') as o:
             json.dump(data, o, indent=4)
