@@ -8,15 +8,16 @@ else:
 
 class TrainingData(object):
     def __init__(self, iteration, environment='test', toolpath=None, heightmap=None, pointcloud=None, scan_data=None, frame_corner_pts=None):
+        self.scan_num = iteration
         self.toolpath = toolpath
         self.heightmap = heightmap
         self.pointcloud = pointcloud
         self.scan_data = scan_data
         self.environment_folder = self.get_environment_folder(environment=environment)
-        self.identifier = self.create_identifier(int(iteration))
+        self.identifier = self.create_identifier(int(self.scan_num))
         self.frame_corner_pts = frame_corner_pts
-        self.prev_frame_corner_pts = self.get_previous_frame_corner_pts(iteration)
-        self.prev_processed_dir = self.get_prev_processd_dir(iteration)
+        self.prev_frame_corner_pts = self.get_previous_frame_corner_pts(self.scan_num)
+        self.prev_processed_dir = self.get_prev_processd_dir(self.scan_num)
 
     def store_data(self):
         dir_raw, dir_processed, dir_train = self.create_iter_dirs()
@@ -90,8 +91,6 @@ class TrainingData(object):
             toolpath_feature.save_featureframe(fname=self.identifier + '_toolpath_featureframe', path=dir_processed, frame_corner_pts=self.frame_corner_pts)
         except:
             print("Could not save toolpath feature for: {}".format(self.identifier))
-
-
 
 
     def get_environment_folder(self, environment='test'):

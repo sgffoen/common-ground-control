@@ -6,12 +6,17 @@ import scanning
 import time
 import UR as ur
 import scanning.scan
+import os
+import json
 
-ITERATION = 500
+ITERATION = 3
 START = 0
+__FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
 
 
 def training(env):
+    max_id = meta_data(env)
+
     start = time.time()
     print("starting training mode")
     print("environment: {} \n".format(env))
@@ -20,7 +25,7 @@ def training(env):
         print('#############  iteration {}  #############\n'.format(i))
 
         # 1. initiate a new training iteration
-        data = TrainingData(iteration=i, environment=env)
+        data = TrainingData(iteration=i+max_id, environment=env)
         path_name_raw, path_name_processed, path_name_train = data.create_iter_dirs()
         print('scan id: {}'.format(data.identifier))
 
@@ -55,6 +60,10 @@ def training(env):
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
+        # update meta data
+        new_max_scan_id = max_id + 1 + i
+        time_spend = (time.time()-start)/60
+        meta_data(env=env, max_id=new_max_scan_id , time=time_spend, tp_level=toolpath.level)
 
         # cleaning at every 100 iteration
         if i % 100 == 99:
@@ -104,6 +113,36 @@ def main():
                                       excavation_time=0.5)
     else:
         print("Run mode is not identified")
+
+
+def meta_data(env, new_max_id=None, time=None, tp_level=None):
+    filepath = os.path.join(__FOLDER__, "00_data_collection", ("00_test" if env=='test' else "01_production"), "meta.json")
+    with open(filepath, 'r') as f:
+        data = json.load(f)
+
+    max_scan_id = data['max_scan_id']
+
+    if new_max_id is not None:
+        data["max_scan_id"] = new_max_id
+        # export and overwrite json
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
+
+    if time is not None:
+        training_time = float(data["total_training_time"]) + time
+        data["total_training_time"] = training_time
+        # export and overwrite json
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
+
+    if tp_level is not None:
+        num = data["toolpath_lvls"][tp_level]
+        data["toolpath_lvls"][tp_level] = int(num+1)
+        # export and overwrite json
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
+
+    return max_scan_id
 
 
 if __name__ == "__main__":
