@@ -8,7 +8,7 @@ def parse_args():
 
     parser.add_argument('-r',
                         '--run_mode',
-                        help="run mode (process=img processsing/dataset=create dataset/learn=run ml)",
+                        help="run mode (hello=hello cgc/process=img processsing/dataset=create dataset/learn=run ml)",
                         type=str
                         )
     parser.add_argument('-e',

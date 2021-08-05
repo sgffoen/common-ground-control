@@ -5,7 +5,19 @@ from pix2pix import ML
 import tensorflow as tf
 import datetime
 import time
+import json
 import os
+
+
+__FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
+
+
+def hello_cgc(env, lvl, img_type):
+    print('\n\nHello cgc, this is a test.\n')
+    print('\nenv: ', env)
+    print('\nlvl: ', lvl)
+    print('\nimg_type: ', img_type)
+    print('\n\n.....fin, enjoy cgc\n')
 
 
 def processing(env):
@@ -13,7 +25,9 @@ def processing(env):
     print("starting processing mode")
     print("environment: {} \n".format(env))
 
-    for i in range(m.total_iter-1):
+    max_id = meta_data(env)
+
+    for i in range(max_id-1):
         # 1. accessing data_collection path/img
         data = LearningData(i, env)
         data.get_iter_dirs(i)
@@ -55,7 +69,7 @@ def processing(env):
         p.save_img(b2g, data.get_save_path('b2g'))
 
         if i % 50 == 0:
-            print('processing id: {} / {}'.format(i, m.total_iter))
+            print('processing id: {} / {}'.format(i, max_id))
 
     print('\nTotal processing time: ', (time.time()-start)/60, ' min')
 
@@ -65,24 +79,26 @@ def datasetting(env, lvl):
     print("starting datasetting mode")
     print("environment: {} \n".format(env))
 
-    for i in range(m.total_iter-1):
+    max_id = meta_data(env)
+
+    for i in range(max_id-1):
         # 1. accessing data_collection path/img/json
         data = LearningData(i, env)
         data.get_iter_dirs(i)
         data.get_fframe()
         if lvl == 'all':
-            curve_level = 'all'
+            curve_lvl = 'all'
         else:
-            curve_level = data.get_toolpath_level()
+            curve_lvl = data.get_toolpath_level()
 
         # 2. create new dir for dataset
-        data.create_dataset_dir()
+        data.create_dataset_dir(lvl=curve_lvl)
 
         # 3. copy imgs to new directory
         data.store_data()
 
         if i % 50 == 0:
-            print('datasetting id: {} / {}'.format(i, m.total_iter))
+            print('datasetting id: {} / {}'.format(i, max_id))
 
     print('\nTotal datasetting time: ', (time.time()-start)/60, ' min')
 
@@ -171,7 +187,9 @@ def main():
     run_mode, environment, level, img_type = parse_args()
 
     # gan
-    if run_mode == 'process':
+    if run_mode == 'hello':
+        hello_cgc(environment, level, img_type)
+    elif run_mode == 'process':
         processing(environment)
     elif run_mode == 'dataset':
         datasetting(environment, level)
@@ -180,6 +198,36 @@ def main():
     # else
     else:
         print("Run mode is not identified")
+
+
+def meta_data(env, new_max_id=None, time=None, tp_level=None):
+    filepath = os.path.join(__FOLDER__, "00_data_collection", ("00_test" if env=='test' else "01_production"), "meta.json")
+    with open(filepath, 'r') as f:
+        data = json.load(f)
+
+    max_scan_id = data['max_scan_id']
+
+    if new_max_id is not None:
+        data["max_scan_id"] = new_max_id
+        # export and overwrite json
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
+
+    if time is not None:
+        training_time = float(data["total_training_time"]) + time
+        data["total_training_time"] = training_time
+        # export and overwrite json
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
+
+    if tp_level is not None:
+        num = data["toolpath_lvls"][tp_level]
+        data["toolpath_lvls"][tp_level] = int(num+1)
+        # export and overwrite json
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
+
+    return max_scan_id
 
 
 if __name__ == "__main__":

@@ -103,12 +103,12 @@ class LearningData(object):
         filepath = filedir + '/' + filename
         return filepath
 
-    def create_dataset_dir(self):
+    def create_dataset_dir(self, lvl):
         dir = self.gan_folder
         new_dir = os.path.join(dir, '00_dataset')
 
         # create folder for a parent folder
-        dataset_dir = os.path.join(new_dir, 'dataset_lvl_{}'.format(self.lvl))
+        dataset_dir = os.path.join(new_dir, 'dataset_lvl_{}'.format(lvl))
         try:
             os.makedirs(dataset_dir)
         except FileExistsError:
