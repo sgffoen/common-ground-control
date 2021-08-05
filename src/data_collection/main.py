@@ -9,14 +9,17 @@ import scanning.scan
 import os
 import json
 
-__ITERATION__ = 3
+__ITERATION__ = 500
 __START__ = 0
 __FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
 
 
 def training(env):
     max_id = meta_data(env)
-    start_id = max_id + 1
+    if max_id == 0:
+        start_id = max_id
+    else:
+        start_id = max_id + 1
 
     start = time.time()
     print("starting training mode")
@@ -31,7 +34,7 @@ def training(env):
         print('scan id: {}'.format(data.identifier))
 
         # 2. get toolpath
-        toolpath = random_toolpath_gen.get_toolpath(level='1.0',
+        toolpath = random_toolpath_gen.get_toolpath(level='1-0',
                                                     curve_type='bezier',
                                                     folder=path_name_raw,
                                                     id=data.identifier)
@@ -95,7 +98,7 @@ def main():
     elif run_mode == 'toolpath':
         backup = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_backup"
         id = "test_0000"
-        toolpath = random_toolpath_gen.get_toolpath(level='2.2',
+        toolpath = random_toolpath_gen.get_toolpath(level='2-2',
                                                     curve_type='bezier',
                                                     iteration=0,
                                                     folder=backup,
