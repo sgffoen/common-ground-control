@@ -318,23 +318,19 @@ class ML():
             tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=step//1000)
             tf.summary.scalar('disc_loss', disc_loss, step=step//1000)
 
-    def checkpoint_dir(self, log_dir):
-        checkpoint_dir = os.path.join(log_dir, 'training_checkpoints')
-        self.checkpoint_prefix = os.path.join(checkpoint_dir, 'ckpt')
-
-    def fit(self, train_ds, test_ds, log_dir, steps):
+    def fit(self, train_ds, test_ds, ckpt_dir, model_dir, plot_dir, steps):
         start = time.time()
         example_input, example_target = next(iter(test_ds.take(1)))
-        self.checkpoint_dir(log_dir)
+        checkpoint_prefix = os.path.join(ckpt_dir, 'ckpt')
 
         for self.step, (input_image, target) in train_ds.repeat().take(steps).enumerate():
             if (self.step) % 1000 == 0:
                 display.clear_output(wait=True)
 
                 if self.step != 0:
-                    print(f'Time taken for 1000 steps: {time.time()-start} sec\n')
+                    print(f'Time taken for 1000 steps: {(time.time()-start)/60} min\n')
 
-                self.generate_images(self.generator, example_input, example_target, log_dir+'/plots')
+                self.generate_images(self.generator, example_input, example_target, plot_dir)
                 print(f"Step: {self.step//1000}k")
 
             self.train_step(input_image, target, self.step)
@@ -345,4 +341,6 @@ class ML():
 
             # Save (checkpoint) the model every 1k steps
             if (self.step + 1) % 1000 == 0:
-                self.checkpoint.save(file_prefix=self.checkpoint_prefix)
+                self.checkpoint.save(file_prefix=checkpoint_prefix)
+
+        self.generator.save(model_dir)

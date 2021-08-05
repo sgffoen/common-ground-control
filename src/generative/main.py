@@ -17,7 +17,7 @@ def hello_cgc(env, lvl, img_type):
     print('\nenv: ', env)
     print('\nlvl: ', lvl)
     print('\nimg_type: ', img_type)
-    print('\n\n.....fin, enjoy cgc\n')
+    print('\n\n..........fin, enjoy cgc\n')
 
 
 def processing(env):
@@ -27,7 +27,7 @@ def processing(env):
 
     max_id = meta_data(env)
 
-    for i in range(max_id-1):
+    for i in range(max_id):
         # 1. accessing data_collection path/img
         data = LearningData(i, env)
         data.get_iter_dirs(i)
@@ -69,19 +69,19 @@ def processing(env):
         p.save_img(b2g, data.get_save_path('b2g'))
 
         if i % 50 == 0:
-            print('processing id: {} / {}'.format(i, max_id))
+            print('\nprocessing id: {} / {}\n'.format(i, max_id))
 
-    print('\nTotal processing time: ', (time.time()-start)/60, ' min')
+    print('\nTotal processing time: ', (time.time()-start)/60, ' min\n\n')
 
 
 def datasetting(env, lvl):
     start = time.time()
-    print("starting datasetting mode")
+    print("starting data setting mode")
     print("environment: {} \n".format(env))
 
     max_id = meta_data(env)
 
-    for i in range(max_id-1):
+    for i in range(max_id):
         # 1. accessing data_collection path/img/json
         data = LearningData(i, env)
         data.get_iter_dirs(i)
@@ -98,21 +98,24 @@ def datasetting(env, lvl):
         data.store_data()
 
         if i % 50 == 0:
-            print('datasetting id: {} / {}'.format(i, max_id))
+            print('\ndata setting id: {} / {}\n'.format(i, max_id))
 
-    print('\nTotal datasetting time: ', (time.time()-start)/60, ' min')
+    print('\nTotal data setting time: ', (time.time()-start)/60, ' min\n\n')
 
 
-def learning(env, lvl, img_type):
+def learning(lvl, img_type):
     start = time.time()
     print("starting leaning mode")
-    print("environment: {} \n".format(env))
 
-    # 1. set parameters
-    ld = LearningData(lvl, img_type=img_type)
+    # 0. set environment / level / img_type
+    ld = LearningData(lvl=lvl, img_type=img_type)
 
-    # 2. get dir of dataset
+    # 1. get dir of dataset
     ld.get_dataset_dir()
+
+    # 2. create dir for save process
+    ld.create_learning_dir()
+    ld.create_json()
 
     # 3. call ML
     ml = ML(BUFFER_SIZE=10,
@@ -120,10 +123,10 @@ def learning(env, lvl, img_type):
     img_path = ld.get_random_img_path()
     print('\ntest image: ', img_path, '\n')
     inp, re = ml.load(img_path)
-    ml.save_fig(path=(ld.plot_dir + '/input.png'), img=inp/255.)
-    ml.save_fig(path=(ld.plot_dir + '/real.png'), img=re/255.)
+    ml.save_fig(path=(ld.plots_dir + '/input.png'), img=inp/255.)
+    ml.save_fig(path=(ld.plots_dir + '/real.png'), img=re/255.)
     # inspect some of preprocessed output
-    ml.preprocess_sample(inp, re, path=(ld.plot_dir+'/preprocess.png'))
+    ml.preprocess_sample(inp, re, path=(ld.plots_dir+'/preprocess.png'))
 
     # 4. build and input pipeline
     train_dataset = tf.data.Dataset.list_files(ld.train_dir + '/*.png')
@@ -147,21 +150,21 @@ def learning(env, lvl, img_type):
 
     # 7. set generator / loss
     generator = ml.Generator()
-    filepath = os.path.join(ld.plot_dir, "generator_model.png")
+    filepath = os.path.join(ld.plots_dir, "generator_model.png")
     tf.keras.utils.plot_model(generator, to_file=filepath, show_shapes=True, dpi=64)
     # generator test
     gen_output = generator(inp[tf.newaxis, ...], training=False)
-    ml.save_fig(path=(ld.plot_dir + '/gen_test.png'), img=gen_output[0, ...])
+    ml.save_fig(path=(ld.plots_dir + '/gen_test.png'), img=gen_output[0, ...])
     # generator loss
     ml.loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
     # 8. set discriminator / loss
     discriminator = ml.Discriminator()
-    filepath = os.path.join(ld.plot_dir, "discriminator_model.png")
+    filepath = os.path.join(ld.plots_dir, "discriminator_model.png")
     tf.keras.utils.plot_model(ml.discriminator, to_file=filepath, show_shapes=True, dpi=64)
     # discriminator test
     disc_out = discriminator([inp[tf.newaxis, ...], gen_output], training=False)
-    ml.save_fig(path=(ld.plot_dir + '/disc_test.png'), img=disc_out[0, ..., -1], disc=True)
+    ml.save_fig(path=(ld.plots_dir + '/disc_test.png'), img=disc_out[0, ..., -1], disc=True)
     # discriminator loss
     ml.generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
     ml.discriminator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
@@ -172,15 +175,18 @@ def learning(env, lvl, img_type):
 
     # 9. run generator
     for example_input, example_target in test_dataset.take(1):
-        ml.generate_images(ml.generator, example_input, example_target, ld.plot_dir)
+        ml.generate_images(ml.generator, example_input, example_target, ld.plots_dir)
 
     # 10. learning
     ml.summary_writer = tf.summary.create_file_writer(
-        ld.log_dir + "/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-    ml.fit(train_dataset, test_dataset, ld.log_dir, steps=1001)
+        ld.fit_dir + "/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    ml.fit(train_dataset, test_dataset, ld.ckpt_dir, ld.model_dir, ld.plots_dir, steps=1001)
+
+    # 11. save params
+    ld.export_json(ml)
 
     # fin
-    print('\nTotal learning time: ', (time.time()-start)/60, ' min')
+    print('\nTotal learning time: ', (time.time()-start)/60, ' min\n\n')
 
 
 def main():
@@ -194,7 +200,7 @@ def main():
     elif run_mode == 'dataset':
         datasetting(environment, level)
     elif run_mode == 'learn':
-        learning(environment, level, img_type)
+        learning(level, img_type)
     # else
     else:
         print("Run mode is not identified")

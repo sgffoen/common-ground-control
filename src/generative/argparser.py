@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument('-l',
                         '--level',
                         help="level of toolpath (all/1-0/1-1/1-2/2-0/2-1/2-2)",
-                        default='1.0',
+                        default='1-0',
                         type=str
                         )
     parser.add_argument('-t',

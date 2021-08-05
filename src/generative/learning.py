@@ -14,7 +14,7 @@ class LearningData(object):
         self.lvl = lvl
         self.img_type = img_type
 
-    def get_environment_folder(environment='test'):
+    def get_environment_folder(self, environment='test'):
         if environment == 'test':
             return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/00_test/"
         elif environment == 'production':
@@ -22,7 +22,7 @@ class LearningData(object):
         else:
             return None
 
-    def get_gan_folder():
+    def get_gan_folder(self):
         return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/"
 
     def create_identifier(self, iter, delta=0):
@@ -39,6 +39,7 @@ class LearningData(object):
         # check the existence of the parent folder
         i = 0
         while not os.path.isdir(parent_folder):
+            print('\nback to the {} days ago...\n'.format(i))
             i += 1
             dir = self.env_folder
             self.id = self.create_identifier(iteration, delta=i)
@@ -120,12 +121,10 @@ class LearningData(object):
         c2c_dir = os.path.join(dataset_dir, 'c2c')
         self.c2c_train_dir = os.path.join(c2c_dir, 'train')
         self.c2c_test_dir = os.path.join(c2c_dir, 'test')
-        c2c_logs_dir = os.path.join(c2c_dir, 'logs')
         try:
             os.makedirs(c2c_dir)
             os.makedirs(self.c2c_train_dir)
             os.makedirs(self.c2c_test_dir)
-            os.makedirs(c2c_logs_dir)
         except FileExistsError:
             pass
             # print("Directory ", c2c_dir, " already exists")
@@ -134,12 +133,10 @@ class LearningData(object):
         h2h_dir = os.path.join(dataset_dir, 'h2h')
         self.h2h_train_dir = os.path.join(h2h_dir, 'train')
         self.h2h_test_dir = os.path.join(h2h_dir, 'test')
-        h2h_logs_dir = os.path.join(h2h_dir, 'logs')
         try:
             os.makedirs(h2h_dir)
             os.makedirs(self.h2h_train_dir)
             os.makedirs(self.h2h_test_dir)
-            os.makedirs(h2h_logs_dir)
         except FileExistsError:
             pass
             # print("Directory ", h2h_dir, " already exists")
@@ -148,12 +145,10 @@ class LearningData(object):
         h2c_dir = os.path.join(dataset_dir, 'h2c')
         self.h2c_train_dir = os.path.join(h2c_dir, 'train')
         self.h2c_test_dir = os.path.join(h2c_dir, 'test')
-        h2c_logs_dir = os.path.join(h2c_dir, 'logs')
         try:
             os.makedirs(h2c_dir)
             os.makedirs(self.h2c_train_dir)
             os.makedirs(self.h2c_test_dir)
-            os.makedirs(h2c_logs_dir)
         except FileExistsError:
             pass
             # print("Directory ", h2c_dir, " already exists")
@@ -162,12 +157,10 @@ class LearningData(object):
         c2h_dir = os.path.join(dataset_dir, 'c2h')
         self.c2h_train_dir = os.path.join(c2h_dir, 'train')
         self.c2h_test_dir = os.path.join(c2h_dir, 'test')
-        c2h_logs_dir = os.path.join(c2h_dir, 'logs')
         try:
             os.makedirs(c2h_dir)
             os.makedirs(self.c2h_train_dir)
             os.makedirs(self.c2h_test_dir)
-            os.makedirs(c2h_logs_dir)
         except FileExistsError:
             pass
             # print("Directory ", c2h_dir, " already exists")
@@ -176,12 +169,10 @@ class LearningData(object):
         b2g_dir = os.path.join(dataset_dir, 'b2g')
         self.b2g_train_dir = os.path.join(b2g_dir, 'train')
         self.b2g_test_dir = os.path.join(b2g_dir, 'test')
-        b2g_logs_dir = os.path.join(b2g_dir, 'logs')
         try:
             os.makedirs(b2g_dir)
             os.makedirs(self.b2g_train_dir)
             os.makedirs(self.b2g_test_dir)
-            os.makedirs(b2g_logs_dir)
         except FileExistsError:
             pass
             # print("Directory ", b2g_dir, " already exists")
@@ -190,12 +181,10 @@ class LearningData(object):
         g2b_dir = os.path.join(dataset_dir, 'g2b')
         self.g2b_train_dir = os.path.join(g2b_dir, 'train')
         self.g2b_test_dir = os.path.join(g2b_dir, 'test')
-        g2b_logs_dir = os.path.join(g2b_dir, 'logs')
         try:
             os.makedirs(g2b_dir)
             os.makedirs(self.g2b_train_dir)
             os.makedirs(self.g2b_test_dir)
-            os.makedirs(g2b_logs_dir)
         except FileExistsError:
             pass
             # print("Directory ", g2b_dir, " already exists")
@@ -291,18 +280,87 @@ class LearningData(object):
         datatype_dir = os.path.join(dataset_dir, self.img_type)
         self.train_dir = os.path.join(datatype_dir, 'train')
         self.test_dir = os.path.join(datatype_dir, 'test')
-        self.log_dir = os.path.join(datatype_dir, 'logs')
-
-        self.plot_dir = os.path.join(self.log_dir, "plots")
-        try:
-            os.mkdir(self.plot_dir)
-        except FileExistsError:
-            print("Directory ", self.plot_dir,  " already exists")
 
     def get_random_img_path(self):
         fname = random.choice(os.listdir(self.test_dir))
         img_path = os.path.join(self.test_dir, fname)
         return img_path
+
+    def create_model_id(self):
+
+        # load meta
+        ganpath = self.get_gan_folder()
+        modelpath = os.path.join(ganpath, '01_models')
+        filepath = os.path.join(modelpath, 'ml_meta.json')
+        with open(filepath, 'r') as i:
+            meta = json.load(i)
+
+        # create id
+        iter = meta['max_model_iter']
+        id = self.create_identifier(iter)
+
+        # update meta
+        meta['max_model_iter'] = iter + 1
+        with open(filepath, 'w') as o:
+            json.dump(meta, o, indent=4)
+
+        return id
+
+    def create_learning_dir(self):
+        dir = self.get_gan_folder()
+        path = os.path.join(dir, '01_models')
+        self.model_id = self.create_model_id()
+
+        # create parent folder
+        self.parent_dir = os.path.join(path, self.model_id)
+        try:
+            os.mkdir(self.parent_dir)
+        except FileExistsError:
+            print('Directory ', self.parent_dir, ' already exisits')
+        # create model folder
+        self.model_dir = os.path.join(self.parent_dir, 'model')
+        try:
+            os.mkdir(self.model_dir)
+        except FileExistsError:
+            print('Directory ', self.model_dir, ' already exisits')
+        # create plots folder
+        self.plots_dir = os.path.join(self.parent_dir, 'plots')
+        try:
+            os.mkdir(self.plots_dir)
+        except FileExistsError:
+            print('Directory ', self.plots_dir, ' already exisits')
+        # create fit folder
+        self.fit_dir = os.path.join(self.parent_dir, 'fit')
+        try:
+            os.mkdir(self.fit_dir)
+        except FileExistsError:
+            print('Directory ', self.fit_dir, ' already exisits')
+        # create checkpoint folder
+        self.ckpt_dir = os.path.join(self.parent_dir, 'training_checkpoints')
+        try:
+            os.mkdir(self.ckpt_dir)
+        except FileExistsError:
+            print('Directory ', self.ckpt_dir, ' already exisits')
+
+    def create_json(self):
+        data = {}
+        data['test'] = {}
+
+        filepath = os.path.join(self.parent_dir, 'model_params.json')
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
+
+    def export_json(self, ml):
+        filepath = os.path.join(self.parent_dir, 'model_params.json')
+        with open(filepath, 'r') as i:
+            data = json.load(i)
+
+        # do something
+        data['test'] = 'test'
+        # data['ml'] = ml.SOMETHING
+
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
 
 
 if __name__ == '__main__':

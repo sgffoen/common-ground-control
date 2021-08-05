@@ -34,10 +34,11 @@ class Processing():
 
     def save_img(self, img_to_save, filepath):
         if os.path.isfile(filepath):
-            print('file: {} already exists'.format(filepath))
+            pass
+            # print('file: {} already exists'.format(filepath))
         else:
             cv2.imwrite(filepath, img_to_save)
-            print('Save PNG image in: {}'.format(filepath))
+            # print('Save PNG image in: {}'.format(filepath))
 
 
 if __name__ == "__main__":
