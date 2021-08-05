@@ -3,7 +3,7 @@ description
 """
 # LIBRARIES
 
-from compas_view2.app import App
+# from compas_view2.app import App
 from collections import deque
 import compas.geometry as cg
 import compas.utilities as cu

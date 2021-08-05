@@ -2,7 +2,7 @@
 
 
 import compas.geometry as cg
-from compas_view2.app import App
+# from compas_view2.app import App
 import math
 import json
 
@@ -320,11 +320,11 @@ def check_arguments(function):
     return decorated
 
 
-def run_viewer(geos):
-    viewer = App()
-    for g in geos:
-        viewer.add(g)
-    viewer.run()
+# def run_viewer(geos):
+#     viewer = App()
+#     for g in geos:
+#         viewer.add(g)
+#     viewer.run()
 
 
 if __name__ == "__main__":

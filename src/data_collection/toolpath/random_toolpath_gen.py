@@ -1,6 +1,6 @@
 # LIBRARIES
 
-from compas_view2.app import App
+# from compas_view2.app import App
 from collections import deque
 import compas.geometry as cg
 import compas.utilities as cu
@@ -232,11 +232,11 @@ class Toolpath():
             f = ctrl_frame.transformed(T)
             self.ctrlframes_feature.append(f)
 
-    def show_frames(self):
-        viewer = App()
-        for g in self.ctrl_frames:
-            viewer.add(g)
-        viewer.run()
+    # def show_frames(self):
+    #     viewer = App()
+    #     for g in self.ctrl_frames:
+    #         viewer.add(g)
+    #     viewer.run()
 
     # image processing from here
 
@@ -462,7 +462,7 @@ def get_toolpath(level, curve_type, folder, id, show=False):
         img_cropped = t.crop_toolpathbox2d_oriented(img, d)
 
         # show
-        t.show_frames()
+        # t.show_frames()
         t.show_img(img)
         t.show_img(img_cropped)
 
