@@ -34,7 +34,7 @@ def training(env):
         print('scan id: {}'.format(data.identifier))
 
         # 2. get toolpath
-        toolpath = random_toolpath_gen.get_toolpath(level='1-0',
+        toolpath = random_toolpath_gen.get_toolpath(level='1-1',
                                                     curve_type='bezier',
                                                     folder=path_name_raw,
                                                     id=data.identifier)
