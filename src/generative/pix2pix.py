@@ -6,18 +6,42 @@ from IPython import display
 
 
 class ML():
-    def __init__(self):
+    def __init__(self, BUFFER_SIZE, BATCH_SIZE):
+        # The facade training set consist of 400 images
+        self.BUFFER_SIZE = BUFFER_SIZE
+        # The batch size of 1 produced better results for the U-Net in the original pix2pix experiment
+        self.BATCH_SIZE = BATCH_SIZE
+        # amount of data
+        self.data_num = int(BUFFER_SIZE / 2)
         self.IMG_WIDTH = 256
         self.IMG_HEIGHT = 256
         self.OUTPUT_CHANNELS = 3  # BUILD THE GENERATOR (modified U-Net)
         self.LAMBDA = 100  # DEFINE the generator loss
-        self.checkpoint_prefix = os.path.join('G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/01_training_log/data/training_checkpoints', "ckpt")
         self.checkpoint = None
         self.loss_object = None
         self.generator_optimizer = None
         self.discriminator_optimizer = None
         self.summary_writer = None
         self.step = 0
+
+    def save_fig(self, path, img, disc=False):
+        plt.figure()
+        plt.axis()
+        if disc:
+            plt.imshow(img, vmin=-20, vmax=20, cmap='RdBu_r')
+            plt.colorbar
+        else:
+            plt.imshow(img)
+        plt.savefig(path)
+
+    def preprocess_sample(self, inp, re, path):
+        plt.figure(figsize=(6, 6))
+        for i in range(4):
+            rj_inp, rj_re = self.random_jitter(inp, re)
+            plt.subplot(2, 2, i + 1)
+            plt.imshow(rj_inp / 255.0)
+            plt.axis('off')
+        plt.savefig(path)
 
     def load(self, img_path):
         # Read and decode an image file to a uint8 tensor
@@ -250,7 +274,7 @@ class ML():
 
         return total_disc_loss
 
-    def generate_images(self, model, test_input, tar):
+    def generate_images(self, model, test_input, tar, plot_dir):
         prediction = model(test_input, training=True)
         plt.figure(figsize=(15, 15))
 
@@ -264,7 +288,8 @@ class ML():
             plt.imshow(display_list[i] * 0.5 + 0.5)
             plt.axis('off')
         # plt.show()
-        plt.savefig('G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_training/data/plots/predicted_img_{}.png'.format(self.step))
+        fname = os.path.join(plot_dir, 'predicted_img_{}.png'.format(self.step))
+        plt.savefig(fname)
 
     @tf.function
     def train_step(self, input_image, target, step):
@@ -293,9 +318,14 @@ class ML():
             tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=step//1000)
             tf.summary.scalar('disc_loss', disc_loss, step=step//1000)
 
-    def fit(self, train_ds, test_ds, steps):
+    def checkpoint_dir(self, log_dir):
+        checkpoint_dir = os.path.join(log_dir, 'training_checkpoints')
+        self.checkpoint_prefix = os.path.join(checkpoint_dir, 'ckpt')
+
+    def fit(self, train_ds, test_ds, log_dir, steps):
         start = time.time()
         example_input, example_target = next(iter(test_ds.take(1)))
+        self.checkpoint_dir(log_dir)
 
         for self.step, (input_image, target) in train_ds.repeat().take(steps).enumerate():
             if (self.step) % 1000 == 0:
@@ -304,7 +334,7 @@ class ML():
                 if self.step != 0:
                     print(f'Time taken for 1000 steps: {time.time()-start} sec\n')
 
-                self.generate_images(self.generator, example_input, example_target)
+                self.generate_images(self.generator, example_input, example_target, log_dir+'/plots')
                 print(f"Step: {self.step//1000}k")
 
             self.train_step(input_image, target, self.step)
