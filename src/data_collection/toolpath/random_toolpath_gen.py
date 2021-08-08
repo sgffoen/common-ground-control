@@ -76,6 +76,15 @@ class Toolpath():
                 z = r.randrange(self.z_min, self.z_max)
                 self.ctrl_pts_list.append((x, y, z))
 
+        elif self.level == '1-3':
+            length = r.randrange(self.l_min, self.l_max)
+            step = length / (self.num_ctrl_pts - 1)
+            for i in range(self.num_ctrl_pts):
+                x = i * step
+                y = 0
+                z = r.randrange(self.z_min, self.z_max)
+                self.ctrl_pts_list.append((x, y, z))
+
         elif self.level == '2-0':
             length = r.randrange(self.l_min, self.l_max)
             step = length / (self.num_ctrl_pts - 1)
@@ -417,7 +426,7 @@ def get_toolpath(level, curve_type, folder, id, show=False):
 
     t = Toolpath(level,
                  curve_type,
-                 num_ctrl_pts=2,
+                 num_ctrl_pts=5,
                  segments_num=50,
                  thickness=2,
                  parent_folder=folder,
