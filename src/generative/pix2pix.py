@@ -2,6 +2,7 @@ import tensorflow as tf
 import os
 from matplotlib import pyplot as plt
 import time
+import json
 from IPython import display
 
 
@@ -151,18 +152,32 @@ class ML():
     -> Leaky ReLU) '''
 
     def downsample(self, filters, size, apply_batchnorm=True):
-        initializer = tf.random_normal_initializer(0., 0.02)
+        # params
+        n_min = 0.
+        n_max = 0.02
+        strides = 2
+        padding = 'same'
+        use_bias = False
+
+        # initializer
+        initializer = tf.random_normal_initializer(n_min, n_max)
         result = tf.keras.Sequential()
         result.add(
                 tf.keras.layers.Conv2D(filters,
                                        size,
-                                       strides=2,
-                                       padding='same',
+                                       strides=strides,
+                                       padding=padding,
                                        kernel_initializer=initializer,
-                                       use_bias=False))
+                                       use_bias=use_bias))
         if apply_batchnorm:
             result.add(tf.keras.layers.BatchNormalization())
         result.add(tf.keras.layers.LeakyReLU())
+
+        # save params
+        self.encoder_params = {'random_normal_initializer': [n_min, n_max],
+                               'Conv2D': [strides, padding, use_bias],
+                               'BatchNormalization': None,
+                               'LeakyRelu': None}
 
         return result
 
@@ -173,25 +188,48 @@ class ML():
     -> ReLU) '''
 
     def upsample(self, filters, size, apply_dropout=False):
-        initializer = tf.random_normal_initializer(0., 0.02)
+        # params
+        n_min = 0.
+        n_max = 0.02
+        strides = 2
+        padding = 'same'
+        use_bias = False
+
+        # initializer
+        initializer = tf.random_normal_initializer(n_min, n_max)
         result = tf.keras.Sequential()
         result.add(
                 tf.keras.layers.Conv2DTranspose(filters, size,
-                                                strides=2,
-                                                padding='same',
+                                                strides=strides,
+                                                padding=padding,
                                                 kernel_initializer=initializer,
-                                                use_bias=False))
+                                                use_bias=use_bias))
 
         result.add(tf.keras.layers.BatchNormalization())
         if apply_dropout:
             result.add(tf.keras.layers.Dropout(0.5))
         result.add(tf.keras.layers.ReLU())
 
+        # save params
+        self.decoder_params = {'random_normal_initializer': [n_min, n_max],
+                               'Conv2DTranspose': [strides, padding, use_bias],
+                               'BatchNormalization': None,
+                               'Dropout': 0.5,
+                               'ReLU': None}
+
         return result
 
     def Generator(self):
-        inputs = tf.keras.layers.Input(shape=[256, 256, 3])
+        # params
+        n_min, n_max = 0., 0.02
+        filters = self.OUTPUT_CHANNELS
+        size = 4
+        strides = 2
+        padding = 'same'
+        activation = 'tanh'
 
+        # initialize
+        inputs = tf.keras.layers.Input(shape=[256, 256, 3])
         down_stack = [
                     self.downsample(64, 4, apply_batchnorm=False),  # (batch_size, 128, 128, 64)
                     self.downsample(128, 4),                        # (batch_size, 64, 64, 128)
@@ -202,7 +240,6 @@ class ML():
                     self.downsample(512, 4),                        # (batch_size, 2, 2, 512)
                     self.downsample(512, 4),                        # (batch_size, 1, 1, 512)
                     ]
-
         up_stack = [
                     self.upsample(512, 4, apply_dropout=True),  # (batch_size, 2, 2, 1024)
                     self.upsample(512, 4, apply_dropout=True),  # (batch_size, 4, 4, 1024)
@@ -212,16 +249,14 @@ class ML():
                     self.upsample(128, 4),                      # (batch_size, 64, 64, 256)
                     self.upsample(64, 4),                       # (batch_size, 128, 128, 128)
                     ]
-
-        initializer = tf.random_normal_initializer(0., 0.02)
+        initializer = tf.random_normal_initializer(n_min, n_max)
 
         # (batch_size, 256, 256, 3)
-        last = tf.keras.layers.Conv2DTranspose(self.OUTPUT_CHANNELS,
-                                               4,
+        last = tf.keras.layers.Conv2DTranspose(filters, size,
                                                strides=2,
-                                               padding='same',
+                                               padding=padding,
                                                kernel_initializer=initializer,
-                                               activation='tanh')
+                                               activation=activation)
         x = inputs
 
         # Downsampling through the model
@@ -229,17 +264,19 @@ class ML():
         for down in down_stack:
             x = down(x)
             skips.append(x)
-
         skips = reversed(skips[:-1])
 
         # Upsampling and establishing the skip connections
         for up, skip in zip(up_stack, skips):
             x = up(x)
             x = tf.keras.layers.Concatenate()([x, skip])
-
         x = last(x)
-
         generator = tf.keras.Model(inputs=inputs, outputs=x)
+
+        # save params
+        self.generator_params = {'random_normal_initializer': [n_min, n_max],
+                                 'Conv2DTranspose': [filters, size, strides, padding, activation]}
+
         return generator
 
     def generator_loss(self, disc_generated_output, gen_output, target):
@@ -248,7 +285,6 @@ class ML():
 
         # Mean absolute error
         l1_loss = tf.reduce_mean(tf.abs(target - gen_output))
-
         total_gen_loss = gan_loss + (self.LAMBDA * l1_loss)
 
         return total_gen_loss, gan_loss, l1_loss
@@ -265,19 +301,19 @@ class ML():
         x = tf.keras.layers.concatenate([inp, tar])
 
         down1 = self.downsample(64, 4, False)(x)  # (batch_size, 128, 128, 64)
-        down2 = self.downsample(128, 4)(down1)  # (batch_size, 64, 64, 128)
-        down3 = self.downsample(256, 4)(down2)  # (batch_size, 32, 32, 256)
+        down2 = self.downsample(128, 4)(down1)    # (batch_size, 64, 64, 128)
+        down3 = self.downsample(256, 4)(down2)    # (batch_size, 32, 32, 256)
 
         # (batch_size, 34, 34, 256)
         zero_pad1 = tf.keras.layers.ZeroPadding2D()(down3)
 
         # (batch_size, 31, 31, 512)
-        conv = tf.keras.layers.Conv2D(512, 4, strides=1,
+        conv = tf.keras.layers.Conv2D(512,
+                                      4,
+                                      strides=1,
                                       kernel_initializer=initializer,
                                       use_bias=False)(zero_pad1)
-
         batchnorm1 = tf.keras.layers.BatchNormalization()(conv)
-
         leaky_relu = tf.keras.layers.LeakyReLU()(batchnorm1)
 
         # (batch_size, 33, 33, 512)
@@ -290,6 +326,10 @@ class ML():
                                       kernel_initializer=initializer)(zero_pad2)
 
         discriminator = tf.keras.Model(inputs=[inp, tar], outputs=last)
+
+        # save params
+        self.discriminator_params = {}
+
         return discriminator
 
     def discriminator_loss(self, disc_real_output, disc_generated_output):
@@ -404,5 +444,22 @@ class ML():
                           steps_per_execution=None)
         generator.save(model_dir)
 
-    def load_model(self, model_dir):
-        loaded_model = tf.keras.models.load_model(model_dir)
+    def export_json(self, ld):
+        filepath = os.path.join(ld.parent_dir, 'model_params.json')
+
+        data = {}
+        data['BATCH_SIZE'] = self.BATCH_SIZE
+        data['BUFFER_SIZE'] = self.BUFFER_SIZE
+        data['IMG_WIDTH'] = self.IMG_WIDTH
+        data['IMG_HEIGHT'] = self.IMG_HEIGHT
+        data['LAMBDA'] = self.LAMBDA
+        data['encoder'] = self.encoder_params
+        data['decoder'] = self.decoder_params
+        data['generator'] = self.generator_params
+        data['discriminator'] = self.discriminator_params
+
+        with open(filepath, 'w') as o:
+            json.dump(data, o, indent=4)
+
+    # def load_model(self, model_dir):
+    #     loaded_model = tf.keras.models.load_model(model_dir)

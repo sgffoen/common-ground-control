@@ -125,7 +125,6 @@ def learning(lvl, img_type):
 
     # 2. create dir for save process
     ld.create_learning_dir()
-    ld.create_json()
 
     # 3. call ML
     ml = ML(ld,
@@ -151,21 +150,20 @@ def learning(lvl, img_type):
     test_dataset = test_dataset.map(ml.load_image_test)
     test_dataset = test_dataset.batch(ml.BATCH_SIZE)
 
-    # 5. set decoder
-    down_model = ml.downsample(3, 4)
-    down_result = down_model(tf.expand_dims(inp, 0))
-    print('\ndecoder shape', down_result.shape, '\n')
+    # # 5. set decoder
+    # down_model = ml.downsample(3, 4)
+    # down_result = down_model(tf.expand_dims(inp, 0))
+    # print('\ndecoder shape', down_result.shape, '\n')
 
-    # 6. set encoder
-    up_model = ml.upsample(3, 4)
-    up_result = up_model(down_result)
-    print('\nencoder shape', up_result.shape, '\n')
+    # # 6. set encoder
+    # up_model = ml.upsample(3, 4)
+    # up_result = up_model(down_result)
+    # print('\nencoder shape', up_result.shape, '\n')
 
     # 7. set generator / loss
     generator = ml.Generator()
-    filepath = os.path.join(ld.plots_dir, "generator_model.png")
     tf.keras.utils.plot_model(generator,
-                              to_file=filepath,
+                              to_file=os.path.join(ld.plots_dir, "generator_model.png"),
                               show_shapes=True,
                               dpi=64)
     # generator test
@@ -176,9 +174,8 @@ def learning(lvl, img_type):
 
     # 8. set discriminator / loss
     discriminator = ml.Discriminator()
-    filepath = os.path.join(ld.plots_dir, "discriminator_model.png")
     tf.keras.utils.plot_model(discriminator,
-                              to_file=filepath,
+                              to_file=os.path.join(ld.plots_dir, "discriminator_model.png"),
                               show_shapes=True,
                               dpi=64)
     # discriminator test
@@ -210,8 +207,8 @@ def learning(lvl, img_type):
            steps=1001)
 
     # 10. save params
-    ml.load_model(ld.model_dir)
-    ld.export_json(ml)
+    # ml.load_model(ld.model_dir)
+    ml.export_json(ld)
 
     # fin
     print('\nTotal learning time: ', (time.time()-start)/60, ' min\n\n')

@@ -297,7 +297,7 @@ class LearningData(object):
 
         # create id
         iter = meta['max_model_iter']
-        id = self.create_identifier(iter)
+        id = str(iter).zfill(5)
 
         # update meta
         meta['max_model_iter'] = iter + 1
@@ -341,26 +341,6 @@ class LearningData(object):
             os.mkdir(self.ckpt_dir)
         except FileExistsError:
             print('Directory ', self.ckpt_dir, ' already exisits')
-
-    def create_json(self):
-        data = {}
-        data['test'] = {}
-
-        filepath = os.path.join(self.parent_dir, 'model_params.json')
-        with open(filepath, 'w') as o:
-            json.dump(data, o, indent=4)
-
-    def export_json(self, ml):
-        filepath = os.path.join(self.parent_dir, 'model_params.json')
-        with open(filepath, 'r') as i:
-            data = json.load(i)
-
-        # do something
-        data['test'] = 'test'
-        # data['ml'] = ml.SOMETHING
-
-        with open(filepath, 'w') as o:
-            json.dump(data, o, indent=4)
 
 
 if __name__ == '__main__':
