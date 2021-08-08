@@ -102,7 +102,8 @@ class TrainingData(object):
 
     def create_identifier(self, iter):
         id_num = str(iter).zfill(5)
-        return str(id_num) + '_' + str(datetime.date.today())
+        # return str(id_num) + '_' + str(datetime.date.today())
+        return str(id_num) + '_' + "2021-08-05"
 
     def create_iter_dirs(self):
         dir = self.environment_folder
