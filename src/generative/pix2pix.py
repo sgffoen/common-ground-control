@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import time
 import json
 from IPython import display
+import socket
 
 
 class ML():
@@ -14,7 +15,8 @@ class ML():
                  IMG_WIDTH,
                  IMG_HEIGHT,
                  OUTPUT_CHANNELS,
-                 LAMBDA):
+                 LAMBDA,
+                 STEPS):
         # LearningData
         self.ld = ld
         # The facade training set consist of 400 images
@@ -30,10 +32,12 @@ class ML():
         self.OUTPUT_CHANNELS = OUTPUT_CHANNELS
         # DEFINE the generator loss
         self.LAMBDA = LAMBDA
+        # steps for training
+        self.STEPS = STEPS
         self.loss_object = None
         self.generator_optimizer = None
         self.discriminator_optimizer = None
-        self.summaru_writer = None
+        self.summary_writer = None
 
     def load(self, img_path, save=False):
         # Read and decode an image file to a uint8 tensor
@@ -401,18 +405,17 @@ class ML():
             checkpoint,
             ckpt_dir,
             model_dir,
-            plot_dir,
-            steps):
+            plot_dir):
         start = time.time()
         example_input, example_target = next(iter(test_ds.take(1)))
         checkpoint_prefix = os.path.join(ckpt_dir, 'ckpt')
 
-        for step, (input_image, target) in train_ds.repeat().take(steps).enumerate():
+        for step, (input_image, target) in train_ds.repeat().take(self.STEPS).enumerate():
             if (step) % 1000 == 0:
                 display.clear_output(wait=True)
 
                 if step != 0:
-                    print(f'Time taken for 1000 steps: {(time.time()-start)/60} min\n')
+                    print(f'Time taken for 1000 steps: {int((time.time()-start)/60)} min\n')
 
                 self.generate_images(generator,
                                      example_input,
@@ -431,35 +434,46 @@ class ML():
             if (step+1) % 10 == 0:
                 print('.', end='', flush=True)
 
-            # Save (checkpoint) the model every 1k steps
+            # Save (checkpoint) the model every 1k STEPS
             if (step + 1) % 1000 == 0:
                 checkpoint.save(file_prefix=checkpoint_prefix)
+        return generator
 
-        generator.compile(optimizer=self.generator_optimizer,
-                          loss=self.loss_object,
-                          metrics=None,
-                          loss_weights=None,
-                          weighted_metrics=None,
-                          run_eagerly=None,
-                          steps_per_execution=None)
-        generator.save(model_dir)
+    def save_model(self, model_to_save, path):
+        model_to_save.compile(optimizer=self.generator_optimizer,
+                              loss=self.loss_object,
+                              metrics=None,
+                              loss_weights=None,
+                              weighted_metrics=None,
+                              run_eagerly=None,
+                              steps_per_execution=None)
+        model_to_save.save(path)
+        print('\nmodel is saved to {}'.format(path))
 
-    def export_json(self, ld):
+    def load_model(self, path):
+        try:
+            loaded_model = tf.keras.models.load_model(path)
+            print('model is loaded from {}\n'.format(path))
+            return loaded_model
+        except FileNotFoundError:
+            print('model, {}, does not exist\n'.format(path))
+
+    def export_json(self, ld, fitness_time):
         filepath = os.path.join(ld.parent_dir, 'model_params.json')
 
         data = {}
+        data['host'] = socket.gethostname()
         data['BATCH_SIZE'] = self.BATCH_SIZE
         data['BUFFER_SIZE'] = self.BUFFER_SIZE
         data['IMG_WIDTH'] = self.IMG_WIDTH
         data['IMG_HEIGHT'] = self.IMG_HEIGHT
         data['LAMBDA'] = self.LAMBDA
+        data['steps'] = self.STEPS
         data['encoder'] = self.encoder_params
         data['decoder'] = self.decoder_params
         data['generator'] = self.generator_params
         data['discriminator'] = self.discriminator_params
+        data['fitness_time'] = fitness_time
 
         with open(filepath, 'w') as o:
             json.dump(data, o, indent=4)
-
-    # def load_model(self, model_dir):
-    #     loaded_model = tf.keras.models.load_model(model_dir)

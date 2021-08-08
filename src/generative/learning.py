@@ -297,7 +297,7 @@ class LearningData(object):
 
         # create id
         iter = meta['max_model_iter']
-        id = str(iter).zfill(5)
+        id = self.create_identifier(iter)
 
         # update meta
         meta['max_model_iter'] = iter + 1

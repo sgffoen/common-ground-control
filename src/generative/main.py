@@ -133,7 +133,8 @@ def learning(lvl, img_type):
             IMG_WIDTH=256,
             IMG_HEIGHT=256,
             OUTPUT_CHANNELS=3,
-            LAMBDA=100)
+            LAMBDA=100,
+            STEPS=1001)
 
     # get random image for test
     img_path = ld.get_random_img_path()
@@ -150,17 +151,7 @@ def learning(lvl, img_type):
     test_dataset = test_dataset.map(ml.load_image_test)
     test_dataset = test_dataset.batch(ml.BATCH_SIZE)
 
-    # # 5. set decoder
-    # down_model = ml.downsample(3, 4)
-    # down_result = down_model(tf.expand_dims(inp, 0))
-    # print('\ndecoder shape', down_result.shape, '\n')
-
-    # # 6. set encoder
-    # up_model = ml.upsample(3, 4)
-    # up_result = up_model(down_result)
-    # print('\nencoder shape', up_result.shape, '\n')
-
-    # 7. set generator / loss
+    # 5. set generator / loss
     generator = ml.Generator()
     tf.keras.utils.plot_model(generator,
                               to_file=os.path.join(ld.plots_dir, "generator_model.png"),
@@ -172,7 +163,7 @@ def learning(lvl, img_type):
     # generator loss
     ml.loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
-    # 8. set discriminator / loss
+    # 6. set discriminator / loss
     discriminator = ml.Discriminator()
     tf.keras.utils.plot_model(discriminator,
                               to_file=os.path.join(ld.plots_dir, "discriminator_model.png"),
@@ -192,26 +183,27 @@ def learning(lvl, img_type):
                                      generator=generator,
                                      discriminator=discriminator)
 
-    # 9. learning
+    # 7. learning
     ml.summary_writer = tf.summary.create_file_writer(ld.fit_dir
                                                       + "/"
                                                       + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-    ml.fit(generator,
-           discriminator,
-           train_dataset,
-           test_dataset,
-           checkpoint,
-           ld.ckpt_dir,
-           ld.model_dir,
-           ld.plots_dir,
-           steps=1001)
+    trained_generator = ml.fit(generator,
+                               discriminator,
+                               train_dataset,
+                               test_dataset,
+                               checkpoint,
+                               ld.ckpt_dir,
+                               ld.model_dir,
+                               ld.plots_dir)
 
-    # 10. save params
-    # ml.load_model(ld.model_dir)
-    ml.export_json(ld)
+    # 8. save params
+    ml.save_model(trained_generator, path=ld.model_dir)
+    loaded_model = ml.load_model(ld.model_dir)
+    fitness_time = (time.time()-start)/60
+    ml.export_json(ld, fitness_time)
 
     # fin
-    print('\nTotal learning time: ', (time.time()-start)/60, ' min\n\n')
+    print('\nTotal learning time: ', fitness_time, ' min\n\n')
 
 
 def main():
