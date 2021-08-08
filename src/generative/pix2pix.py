@@ -6,23 +6,63 @@ from IPython import display
 
 
 class ML():
-    def __init__(self, BUFFER_SIZE, BATCH_SIZE):
+    def __init__(self,
+                 ld,
+                 BUFFER_SIZE,
+                 BATCH_SIZE,
+                 IMG_WIDTH,
+                 IMG_HEIGHT,
+                 OUTPUT_CHANNELS,
+                 LAMBDA):
+        # LearningData
+        self.ld = ld
         # The facade training set consist of 400 images
         self.BUFFER_SIZE = BUFFER_SIZE
-        # The batch size of 1 produced better results for the U-Net in the original pix2pix experiment
+        # The batch size of 1 produced better results for-
+        # the U-Net in the original pix2pix experiment
         self.BATCH_SIZE = BATCH_SIZE
         # amount of data
         self.data_num = int(BUFFER_SIZE / 2)
-        self.IMG_WIDTH = 256
-        self.IMG_HEIGHT = 256
-        self.OUTPUT_CHANNELS = 3  # BUILD THE GENERATOR (modified U-Net)
-        self.LAMBDA = 100  # DEFINE the generator loss
-        self.checkpoint = None
+        self.IMG_WIDTH = IMG_WIDTH
+        self.IMG_HEIGHT = IMG_HEIGHT
+        # BUILD THE GENERATOR (modified U-Net)
+        self.OUTPUT_CHANNELS = OUTPUT_CHANNELS
+        # DEFINE the generator loss
+        self.LAMBDA = LAMBDA
         self.loss_object = None
         self.generator_optimizer = None
         self.discriminator_optimizer = None
-        self.summary_writer = None
-        self.step = 0
+        self.summaru_writer = None
+
+    def load(self, img_path, save=False):
+        # Read and decode an image file to a uint8 tensor
+        image = tf.io.read_file(img_path)
+        image = tf.image.decode_jpeg(image)
+
+        # Split each image tensor into two tensors:
+        # - one with a real building facade image
+        # - one with an architecture label image
+        w = tf.shape(image)[1]
+        w = w // 2
+        input_image = image[:, :w, :]
+        real_image = image[:, w:, :]
+
+        # Convert both images to float32 tensors
+        input_image = tf.cast(input_image, tf.float32)
+        real_image = tf.cast(real_image, tf.float32)
+
+        if save:
+            # save process
+            self.save_fig(path=(self.ld.plots_dir+'/input.png'),
+                          img=input_image/255.)
+            self.save_fig(path=(self.ld.plots_dir+'/real.png'),
+                          img=real_image/255.)
+            # inspect some of the preprocessed image
+            self.preprocess_sample(input_image,
+                                   real_image,
+                                   path=(self.ld.plots_dir+'/preprocess.png'))
+
+        return input_image, real_image
 
     def save_fig(self, path, img, disc=False):
         plt.figure()
@@ -43,56 +83,13 @@ class ML():
             plt.axis('off')
         plt.savefig(path)
 
-    def load(self, img_path):
-        # Read and decode an image file to a uint8 tensor
-        image = tf.io.read_file(img_path)
-        image = tf.image.decode_jpeg(image)
-
-        # Split each image tensor into two tensors:
-        # - one with a real building facade image
-        # - one with an architecture label image
-        w = tf.shape(image)[1]
-        w = w // 2
-        input_image = image[:, :w, :]
-        real_image = image[:, w:, :]
-
-        # Convert both images to float32 tensors
-        input_image = tf.cast(input_image, tf.float32)
-        real_image = tf.cast(real_image, tf.float32)
-
-        return input_image, real_image
-
-    def resize(self, input_image, real_image, height, width):
-        input_image = tf.image.resize(input_image,
-                                      [height, width],
-                                      method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        real_image = tf.image.resize(real_image,
-                                     [height, width],
-                                     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-        return input_image, real_image
-
-    def random_crop(self, input_image, real_image):
-        stacked_image = tf.stack([input_image, real_image], axis=0)
-        cropped_image = tf.image.random_crop(stacked_image, size=[2,
-                                                                  self.IMG_HEIGHT,
-                                                                  self.IMG_WIDTH,
-                                                                  3])
-
-        return cropped_image[0], cropped_image[1]
-
-    # Normalizing the images to [-1, 1]
-
-    def normalize(self, input_image, real_image):
-        input_image = (input_image / 127.5) - 1
-        real_image = (real_image / 127.5) - 1
-
-        return input_image, real_image
-
     @tf.function()
     def random_jitter(self, input_image, real_image):
         # Resizing to 286x286
-        input_image, real_image = self.resize(input_image, real_image, 286, 286)
+        input_image, real_image = self.resize(input_image,
+                                              real_image,
+                                              286,
+                                              286)
 
         # Random cropping back to 256x256
         input_image, real_image = self.random_crop(input_image, real_image)
@@ -104,7 +101,32 @@ class ML():
 
         return input_image, real_image
 
+    def resize(self, input_image, real_image, height, width):
+        input_image = tf.image.resize(input_image,
+                                      [height, width],
+                                      method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        real_image = tf.image.resize(real_image,
+                                     [height, width],
+                                     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        return input_image, real_image
+
+    def random_crop(self, input_image, real_image):
+        stacked_image = tf.stack([input_image, real_image], axis=0)
+        cropped_image = tf.image.random_crop(stacked_image,
+                                             size=[2,
+                                                   self.IMG_HEIGHT,
+                                                   self.IMG_WIDTH,
+                                                   3])
+        return cropped_image[0], cropped_image[1]
+
     '''helpers'''
+
+    # Normalizing the images to [-1, 1]
+    def normalize(self, input_image, real_image):
+        input_image = (input_image / 127.5) - 1
+        real_image = (real_image / 127.5) - 1
+
+        return input_image, real_image
 
     def load_image_train(self, image_file):
         input_image, real_image = self.load(image_file)
@@ -123,11 +145,13 @@ class ML():
 
         return input_image, real_image
 
-    '''encoder (Convolution -> Batch normalization -> Leaky ReLU) '''
+    '''encoder
+    (  Convolution
+    -> Batch normalization
+    -> Leaky ReLU) '''
 
     def downsample(self, filters, size, apply_batchnorm=True):
         initializer = tf.random_normal_initializer(0., 0.02)
-
         result = tf.keras.Sequential()
         result.add(
                 tf.keras.layers.Conv2D(filters,
@@ -136,19 +160,20 @@ class ML():
                                        padding='same',
                                        kernel_initializer=initializer,
                                        use_bias=False))
-
         if apply_batchnorm:
             result.add(tf.keras.layers.BatchNormalization())
-
         result.add(tf.keras.layers.LeakyReLU())
 
         return result
 
-    '''decoder (Transposed convolution -> Batch normalization -> Dropout (applied to the first 3 blocks) -> ReLU) '''
+    '''decoder
+    (  Transposed convolution
+    -> Batch normalization
+    -> Dropout (applied to the first 3 blocks)
+    -> ReLU) '''
 
     def upsample(self, filters, size, apply_dropout=False):
         initializer = tf.random_normal_initializer(0., 0.02)
-
         result = tf.keras.Sequential()
         result.add(
                 tf.keras.layers.Conv2DTranspose(filters, size,
@@ -158,10 +183,8 @@ class ML():
                                                 use_bias=False))
 
         result.add(tf.keras.layers.BatchNormalization())
-
         if apply_dropout:
             result.add(tf.keras.layers.Dropout(0.5))
-
         result.add(tf.keras.layers.ReLU())
 
         return result
@@ -171,23 +194,23 @@ class ML():
 
         down_stack = [
                     self.downsample(64, 4, apply_batchnorm=False),  # (batch_size, 128, 128, 64)
-                    self.downsample(128, 4),  # (batch_size, 64, 64, 128)
-                    self.downsample(256, 4),  # (batch_size, 32, 32, 256)
-                    self.downsample(512, 4),  # (batch_size, 16, 16, 512)
-                    self.downsample(512, 4),  # (batch_size, 8, 8, 512)
-                    self.downsample(512, 4),  # (batch_size, 4, 4, 512)
-                    self.downsample(512, 4),  # (batch_size, 2, 2, 512)
-                    self.downsample(512, 4),  # (batch_size, 1, 1, 512)
+                    self.downsample(128, 4),                        # (batch_size, 64, 64, 128)
+                    self.downsample(256, 4),                        # (batch_size, 32, 32, 256)
+                    self.downsample(512, 4),                        # (batch_size, 16, 16, 512)
+                    self.downsample(512, 4),                        # (batch_size, 8, 8, 512)
+                    self.downsample(512, 4),                        # (batch_size, 4, 4, 512)
+                    self.downsample(512, 4),                        # (batch_size, 2, 2, 512)
+                    self.downsample(512, 4),                        # (batch_size, 1, 1, 512)
                     ]
 
         up_stack = [
                     self.upsample(512, 4, apply_dropout=True),  # (batch_size, 2, 2, 1024)
                     self.upsample(512, 4, apply_dropout=True),  # (batch_size, 4, 4, 1024)
                     self.upsample(512, 4, apply_dropout=True),  # (batch_size, 8, 8, 1024)
-                    self.upsample(512, 4),  # (batch_size, 16, 16, 1024)
-                    self.upsample(256, 4),  # (batch_size, 32, 32, 512)
-                    self.upsample(128, 4),  # (batch_size, 64, 64, 256)
-                    self.upsample(64, 4),  # (batch_size, 128, 128, 128)
+                    self.upsample(512, 4),                      # (batch_size, 16, 16, 1024)
+                    self.upsample(256, 4),                      # (batch_size, 32, 32, 512)
+                    self.upsample(128, 4),                      # (batch_size, 64, 64, 256)
+                    self.upsample(64, 4),                       # (batch_size, 128, 128, 128)
                     ]
 
         initializer = tf.random_normal_initializer(0., 0.02)
@@ -216,8 +239,8 @@ class ML():
 
         x = last(x)
 
-        self.generator = tf.keras.Model(inputs=inputs, outputs=x)
-        return self.generator
+        generator = tf.keras.Model(inputs=inputs, outputs=x)
+        return generator
 
     def generator_loss(self, disc_generated_output, gen_output, target):
         gan_loss = self.loss_object(tf.ones_like(disc_generated_output),
@@ -261,20 +284,24 @@ class ML():
         zero_pad2 = tf.keras.layers.ZeroPadding2D()(leaky_relu)
 
         # (batch_size, 30, 30, 1)
-        last = tf.keras.layers.Conv2D(1, 4, strides=1,
+        last = tf.keras.layers.Conv2D(1,
+                                      4,
+                                      strides=1,
                                       kernel_initializer=initializer)(zero_pad2)
 
-        self.discriminator = tf.keras.Model(inputs=[inp, tar], outputs=last)
-        return self.discriminator
+        discriminator = tf.keras.Model(inputs=[inp, tar], outputs=last)
+        return discriminator
 
     def discriminator_loss(self, disc_real_output, disc_generated_output):
-        real_loss = self.loss_object(tf.ones_like(disc_real_output), disc_real_output)
-        generated_loss = self.loss_object(tf.zeros_like(disc_generated_output), disc_generated_output)
+        real_loss = self.loss_object(tf.ones_like(disc_real_output),
+                                     disc_real_output)
+        generated_loss = self.loss_object(tf.zeros_like(disc_generated_output),
+                                          disc_generated_output)
         total_disc_loss = real_loss + generated_loss
 
         return total_disc_loss
 
-    def generate_images(self, model, test_input, tar, plot_dir):
+    def generate_images(self, model, test_input, tar, plot_dir, step):
         prediction = model(test_input, training=True)
         plt.figure(figsize=(15, 15))
 
@@ -288,29 +315,37 @@ class ML():
             plt.imshow(display_list[i] * 0.5 + 0.5)
             plt.axis('off')
         # plt.show()
-        fname = os.path.join(plot_dir, 'predicted_img_{}.png'.format(self.step))
+        fname = os.path.join(plot_dir,
+                             'predicted_img_{}.png'.format(step))
         plt.savefig(fname)
 
     @tf.function
-    def train_step(self, input_image, target, step):
+    def train_step(self, generator, discriminator, input_image, target, step):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            gen_output = self.generator(input_image, training=True)
+            gen_output = generator(input_image, training=True)
 
-            disc_real_output = self.discriminator([input_image, target], training=True)
-            disc_generated_output = self.discriminator([input_image, gen_output], training=True)
+            disc_real_output = discriminator([input_image, target],
+                                             training=True)
+            disc_generated_output = discriminator([input_image, gen_output],
+                                                  training=True)
 
-            gen_total_loss, gen_gan_loss, gen_l1_loss = self.generator_loss(disc_generated_output, gen_output, target)
-            disc_loss = self.discriminator_loss(disc_real_output, disc_generated_output)
+            (gen_total_loss,
+             gen_gan_loss,
+             gen_l1_loss) = self.generator_loss(disc_generated_output,
+                                                gen_output,
+                                                target)
+            disc_loss = self.discriminator_loss(disc_real_output,
+                                                disc_generated_output)
 
         generator_gradients = gen_tape.gradient(gen_total_loss,
-                                                self.generator.trainable_variables)
+                                                generator.trainable_variables)
         discriminator_gradients = disc_tape.gradient(disc_loss,
-                                                     self.discriminator.trainable_variables)
+                                                     discriminator.trainable_variables)
 
         self.generator_optimizer.apply_gradients(zip(generator_gradients,
-                                                 self.generator.trainable_variables))
+                                                 generator.trainable_variables))
         self.discriminator_optimizer.apply_gradients(zip(discriminator_gradients,
-                                                     self.discriminator.trainable_variables))
+                                                     discriminator.trainable_variables))
 
         with self.summary_writer.as_default():
             tf.summary.scalar('gen_total_loss', gen_total_loss, step=step//1000)
@@ -318,29 +353,56 @@ class ML():
             tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=step//1000)
             tf.summary.scalar('disc_loss', disc_loss, step=step//1000)
 
-    def fit(self, train_ds, test_ds, ckpt_dir, model_dir, plot_dir, steps):
+    def fit(self,
+            generator,
+            discriminator,
+            train_ds,
+            test_ds,
+            checkpoint,
+            ckpt_dir,
+            model_dir,
+            plot_dir,
+            steps):
         start = time.time()
         example_input, example_target = next(iter(test_ds.take(1)))
         checkpoint_prefix = os.path.join(ckpt_dir, 'ckpt')
 
-        for self.step, (input_image, target) in train_ds.repeat().take(steps).enumerate():
-            if (self.step) % 1000 == 0:
+        for step, (input_image, target) in train_ds.repeat().take(steps).enumerate():
+            if (step) % 1000 == 0:
                 display.clear_output(wait=True)
 
-                if self.step != 0:
+                if step != 0:
                     print(f'Time taken for 1000 steps: {(time.time()-start)/60} min\n')
 
-                self.generate_images(self.generator, example_input, example_target, plot_dir)
-                print(f"Step: {self.step//1000}k")
+                self.generate_images(generator,
+                                     example_input,
+                                     example_target,
+                                     plot_dir,
+                                     step)
+                print(f"Step: {step//1000}k")
 
-            self.train_step(input_image, target, self.step)
+            self.train_step(generator,
+                            discriminator,
+                            input_image,
+                            target,
+                            step)
 
             # Training step
-            if (self.step+1) % 10 == 0:
+            if (step+1) % 10 == 0:
                 print('.', end='', flush=True)
 
             # Save (checkpoint) the model every 1k steps
-            if (self.step + 1) % 1000 == 0:
-                self.checkpoint.save(file_prefix=checkpoint_prefix)
+            if (step + 1) % 1000 == 0:
+                checkpoint.save(file_prefix=checkpoint_prefix)
 
-        self.generator.save(model_dir)
+        generator.compile(optimizer=self.generator_optimizer,
+                          loss=self.loss_object,
+                          metrics=None,
+                          loss_weights=None,
+                          weighted_metrics=None,
+                          run_eagerly=None,
+                          steps_per_execution=None)
+        generator.save(model_dir)
+
+    def load_model(self, model_dir):
+        loaded_model = tf.keras.models.load_model(model_dir)

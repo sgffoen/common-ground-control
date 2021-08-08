@@ -37,21 +37,27 @@ def processing(env):
         p = Processing()
 
         # c2c (rgb2rgb)
-        toolpath_on_rgb = p.img_overlay(data.rgb_fframe, data.toolpath_fframe)
-        c2c = p.horizontal_stack(toolpath_on_rgb, data.rgb_fframe_after)
+        toolpath_on_rgb = p.img_overlay(data.rgb_fframe,
+                                        data.toolpath_fframe)
+        c2c = p.horizontal_stack(toolpath_on_rgb,
+                                 data.rgb_fframe_after)
         p.save_img(c2c, data.get_save_path('c2c'))
 
         # h2h (height2height)
-        toolpath_on_height = p.img_overlay(data.height_fframe, data.toolpath_fframe)
-        h2h = p.horizontal_stack(toolpath_on_height, data.height_fframe_after)
+        toolpath_on_height = p.img_overlay(data.height_fframe,
+                                           data.toolpath_fframe)
+        h2h = p.horizontal_stack(toolpath_on_height,
+                                 data.height_fframe_after)
         p.save_img(h2h, data.get_save_path('h2h'))
 
         # h2c (height2rgb)
-        h2c = p.horizontal_stack(toolpath_on_height, data.rgb_fframe_after)
+        h2c = p.horizontal_stack(toolpath_on_height,
+                                 data.rgb_fframe_after)
         p.save_img(h2c, data.get_save_path('h2c'))
 
         # c2h (rgb2height)
-        c2h = p.horizontal_stack(toolpath_on_rgb, data.height_fframe_after)
+        c2h = p.horizontal_stack(toolpath_on_rgb,
+                                 data.height_fframe_after)
         p.save_img(c2h, data.get_save_path('c2h'))
 
         # split channel
@@ -59,13 +65,17 @@ def processing(env):
         height_fframe_after_split = p.chennel_edit(data.height_fframe_after)
 
         # g2b
-        toolpath_on_green = p.img_overlay(height_fframe_split[1], data.toolpath_fframe)
-        g2b = p.horizontal_stack(toolpath_on_green, height_fframe_after_split[2])
+        toolpath_on_green = p.img_overlay(height_fframe_split[1],
+                                          data.toolpath_fframe)
+        g2b = p.horizontal_stack(toolpath_on_green,
+                                 height_fframe_after_split[2])
         p.save_img(g2b, data.get_save_path('g2b'))
 
         # g2b
-        toolpath_on_blue = p.img_overlay(height_fframe_split[2], data.toolpath_fframe)
-        b2g = p.horizontal_stack(toolpath_on_blue, height_fframe_after_split[1])
+        toolpath_on_blue = p.img_overlay(height_fframe_split[2],
+                                         data.toolpath_fframe)
+        b2g = p.horizontal_stack(toolpath_on_blue,
+                                 height_fframe_after_split[1])
         p.save_img(b2g, data.get_save_path('b2g'))
 
         if i % 50 == 0:
@@ -118,19 +128,22 @@ def learning(lvl, img_type):
     ld.create_json()
 
     # 3. call ML
-    ml = ML(BUFFER_SIZE=10,
-            BATCH_SIZE=1,)
+    ml = ML(ld,
+            BUFFER_SIZE=10,
+            BATCH_SIZE=1,
+            IMG_WIDTH=256,
+            IMG_HEIGHT=256,
+            OUTPUT_CHANNELS=3,
+            LAMBDA=100)
+
+    # get random image for test
     img_path = ld.get_random_img_path()
-    print('\ntest image: ', img_path, '\n')
-    inp, re = ml.load(img_path)
-    ml.save_fig(path=(ld.plots_dir + '/input.png'), img=inp/255.)
-    ml.save_fig(path=(ld.plots_dir + '/real.png'), img=re/255.)
-    # inspect some of preprocessed output
-    ml.preprocess_sample(inp, re, path=(ld.plots_dir+'/preprocess.png'))
+    inp, re = ml.load(img_path, save=True)
 
     # 4. build and input pipeline
     train_dataset = tf.data.Dataset.list_files(ld.train_dir + '/*.png')
-    train_dataset = train_dataset.map(ml.load_image_train, num_parallel_calls=tf.data.AUTOTUNE)
+    train_dataset = train_dataset.map(ml.load_image_train,
+                                      num_parallel_calls=tf.data.AUTOTUNE)
     train_dataset = train_dataset.shuffle(ml.BUFFER_SIZE)
     train_dataset = train_dataset.batch(ml.BATCH_SIZE)
 
@@ -151,7 +164,10 @@ def learning(lvl, img_type):
     # 7. set generator / loss
     generator = ml.Generator()
     filepath = os.path.join(ld.plots_dir, "generator_model.png")
-    tf.keras.utils.plot_model(generator, to_file=filepath, show_shapes=True, dpi=64)
+    tf.keras.utils.plot_model(generator,
+                              to_file=filepath,
+                              show_shapes=True,
+                              dpi=64)
     # generator test
     gen_output = generator(inp[tf.newaxis, ...], training=False)
     ml.save_fig(path=(ld.plots_dir + '/gen_test.png'), img=gen_output[0, ...])
@@ -161,28 +177,40 @@ def learning(lvl, img_type):
     # 8. set discriminator / loss
     discriminator = ml.Discriminator()
     filepath = os.path.join(ld.plots_dir, "discriminator_model.png")
-    tf.keras.utils.plot_model(ml.discriminator, to_file=filepath, show_shapes=True, dpi=64)
+    tf.keras.utils.plot_model(discriminator,
+                              to_file=filepath,
+                              show_shapes=True,
+                              dpi=64)
     # discriminator test
-    disc_out = discriminator([inp[tf.newaxis, ...], gen_output], training=False)
-    ml.save_fig(path=(ld.plots_dir + '/disc_test.png'), img=disc_out[0, ..., -1], disc=True)
+    disc_out = discriminator([inp[tf.newaxis, ...], gen_output],
+                             training=False)
+    ml.save_fig(path=(ld.plots_dir + '/disc_test.png'),
+                img=disc_out[0, ..., -1],
+                disc=True)
     # discriminator loss
     ml.generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
     ml.discriminator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
-    ml.checkpoint = tf.train.Checkpoint(generator_optimizer=ml.generator_optimizer,
-                                        discriminator_optimizer=ml.discriminator_optimizer,
-                                        generator=ml.generator,
-                                        discriminator=ml.discriminator)
+    checkpoint = tf.train.Checkpoint(generator_optimizer=ml.generator_optimizer,
+                                     discriminator_optimizer=ml.discriminator_optimizer,
+                                     generator=generator,
+                                     discriminator=discriminator)
 
-    # 9. run generator
-    for example_input, example_target in test_dataset.take(1):
-        ml.generate_images(ml.generator, example_input, example_target, ld.plots_dir)
+    # 9. learning
+    ml.summary_writer = tf.summary.create_file_writer(ld.fit_dir
+                                                      + "/"
+                                                      + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    ml.fit(generator,
+           discriminator,
+           train_dataset,
+           test_dataset,
+           checkpoint,
+           ld.ckpt_dir,
+           ld.model_dir,
+           ld.plots_dir,
+           steps=1001)
 
-    # 10. learning
-    ml.summary_writer = tf.summary.create_file_writer(
-        ld.fit_dir + "/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-    ml.fit(train_dataset, test_dataset, ld.ckpt_dir, ld.model_dir, ld.plots_dir, steps=1001)
-
-    # 11. save params
+    # 10. save params
+    ml.load_model(ld.model_dir)
     ld.export_json(ml)
 
     # fin
@@ -207,7 +235,10 @@ def main():
 
 
 def meta_data(env, new_max_id=None, time=None, tp_level=None):
-    filepath = os.path.join(__FOLDER__, "00_data_collection", ("00_test" if env=='test' else "01_production"), "meta.json")
+    filepath = os.path.join(__FOLDER__,
+                            "00_data_collection",
+                            ("00_test" if env == 'test' else "01_production"),
+                            "meta.json")
     with open(filepath, 'r') as f:
         data = json.load(f)
 
