@@ -91,7 +91,7 @@ class Toolpath():
             for i in range(self.num_ctrl_pts):
                 x = i * step
                 y = r.randrange(self.y_min, self.y_max)
-                z = 0
+                z = 75.0
                 self.ctrl_pts_list.append((x, y, z))
 
         elif self.level == '2-1':
