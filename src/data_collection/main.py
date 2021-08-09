@@ -60,7 +60,7 @@ def training(env):
         adapt_height = None
 
         # execure toolpath
-        ur.execute_toolpath(toolpath.ctrlframes_feature, adapt_height, excavation_time=25)
+        ur.execute_toolpath(toolpath.ctrlframes_feature, adapt_height, excavation_time=45)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))
