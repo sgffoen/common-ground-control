@@ -16,7 +16,7 @@ def browse_dir():
     return dir_name
 
 
-def image_loader(show=False):
+def load_image(show=False):
     filename = browse_file()
     loaded_img = cv2.imread(filename)
 
@@ -25,6 +25,15 @@ def image_loader(show=False):
         cv2.waitKey(0)
 
     return loaded_img
+
+
+def crop_image(img, path):
+    # Cropping an image
+    cropped_image = img[0:256, 0:256]
+
+    # Save the cropped image
+    fname = path + '/' + 'cropped_img.png'
+    cv2.imwrite(fname, cropped_image)
 
 
 def cal_MSE(img1, img2):
@@ -45,22 +54,16 @@ def load_model():
 
 def generate_images(model, test_input, save_dir, show=False):
 
-    w = test_input.shape[1]
-    w = int(w // 2)
-    input_image = test_input[:, :w, :]
-    real_image = test_input[:, w:, :]
-    print(input_image.shape)
-
-    input_image = np.reshape(input_image, [1, 256, 256, 3])  # 1 is BATCH_SIZE
+    input_image = np.reshape(test_input, [1, 256, 256, 3])  # 1 is BATCH_SIZE
 
     prediction = model(input_image, training=False)
     plt.figure(figsize=(15, 15))
 
-    print(input_image[0].shape, real_image.shape, prediction[0].shape)
-    display_list = [input_image[0], real_image, prediction[0]]
-    title = ['Input Image', 'Ground Truth', 'Predicted Image']
+    print(input_image[0].shape, prediction[0].shape)
+    display_list = [input_image[0], prediction[0]]
+    title = ['Input Image', 'Predicted Image']
 
-    for i in range(3):
+    for i in range(2):
         plt.subplot(1, 3, i+1)
         plt.title(title[i])
         # Getting the pixel values in the [0, 1] range to plot.
@@ -74,14 +77,15 @@ def generate_images(model, test_input, save_dir, show=False):
 
 
 if __name__ == '__main__':
-    # img1 = image_loader()
-    # img2 = image_loader()
+    # img1 = load_image()
+    # img2 = load_image()
     # print(img1.shape, img2.shape)
 
     # mse = cal_MSE(img1, img2)
     # print(mse)
 
     loaded_model = load_model()
-    test_input = image_loader()
-    save_dir = browse_dir()
+    test_input = load_image()
+    save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test"
+    # crop_image(test_input, save_dir)
     generate_images(loaded_model, test_input, save_dir)
