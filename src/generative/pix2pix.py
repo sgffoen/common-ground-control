@@ -447,7 +447,16 @@ class ML():
                               weighted_metrics=None,
                               run_eagerly=None,
                               steps_per_execution=None)
-        model_to_save.save(path)
+
+        model_to_save.save(filepath=path,
+                           overwrite=True,
+                           include_optimizer=True,
+                           save_format='tf',
+                           signatures=None,
+                           options=None,
+                           save_traces=True
+                           )
+
         print('\nmodel is saved to {}'.format(path))
 
     def load_model(self, path):
