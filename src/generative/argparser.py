@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument('-e',
                         '--environment',
                         help="environment to run in (test/production)",
-                        default='test',
+                        default='production',
                         type=str
                         )
     parser.add_argument('-l',

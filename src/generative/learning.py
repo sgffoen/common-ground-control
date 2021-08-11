@@ -329,12 +329,12 @@ class LearningData(object):
             os.mkdir(self.plots_dir)
         except FileExistsError:
             print('Directory ', self.plots_dir, ' already exisits')
-        # create fit folder
-        self.fit_dir = os.path.join(self.parent_dir, 'fit')
+        # create logging folder
+        self.log_dir = os.path.join(self.parent_dir, 'log')
         try:
-            os.mkdir(self.fit_dir)
+            os.mkdir(self.log_dir)
         except FileExistsError:
-            print('Directory ', self.fit_dir, ' already exisits')
+            print('Directory ', self.log_dir, ' already exisits')
         # create checkpoint folder
         self.ckpt_dir = os.path.join(self.parent_dir, 'training_checkpoints')
         try:

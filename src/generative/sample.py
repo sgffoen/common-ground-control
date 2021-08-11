@@ -456,4 +456,4 @@ def fit(train_ds, test_ds, steps):
             checkpoint.save(file_prefix=checkpoint_prefix)
 
 
-fit(train_dataset, test_dataset, steps=40000)
+fit(train_dataset, test_dataset, steps=100)

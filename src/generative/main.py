@@ -3,6 +3,7 @@ from learning import LearningData
 from process import Processing
 from pix2pix import ML
 import tensorflow as tf
+from tensorflow import keras
 import datetime
 import time
 import json
@@ -134,7 +135,7 @@ def learning(lvl, img_type):
             IMG_HEIGHT=256,
             OUTPUT_CHANNELS=3,
             LAMBDA=100,
-            STEPS=1001)
+            STEPS=10)
 
     # get random image for test
     img_path = ld.get_random_img_path()
@@ -184,7 +185,7 @@ def learning(lvl, img_type):
                                      discriminator=discriminator)
 
     # 7. learning
-    ml.summary_writer = tf.summary.create_file_writer(ld.fit_dir
+    ml.summary_writer = tf.summary.create_file_writer(ld.log_dir
                                                       + "/"
                                                       + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     trained_generator = ml.fit(generator,
@@ -223,7 +224,7 @@ def main():
         print("Run mode is not identified")
 
 
-def meta_data(env, new_max_id=None, time=None, tp_level=None):
+def meta_data(env):
     filepath = os.path.join(__FOLDER__,
                             "00_data_collection",
                             ("00_test" if env == 'test' else "01_production"),
@@ -233,28 +234,9 @@ def meta_data(env, new_max_id=None, time=None, tp_level=None):
 
     max_scan_id = data['max_scan_id']
 
-    if new_max_id is not None:
-        data["max_scan_id"] = new_max_id
-        # export and overwrite json
-        with open(filepath, 'w') as o:
-            json.dump(data, o, indent=4)
-
-    if time is not None:
-        training_time = float(data["total_training_time"]) + time
-        data["total_training_time"] = training_time
-        # export and overwrite json
-        with open(filepath, 'w') as o:
-            json.dump(data, o, indent=4)
-
-    if tp_level is not None:
-        num = data["toolpath_lvls"][tp_level]
-        data["toolpath_lvls"][tp_level] = int(num+1)
-        # export and overwrite json
-        with open(filepath, 'w') as o:
-            json.dump(data, o, indent=4)
-
     return max_scan_id
 
 
 if __name__ == "__main__":
     main()
+
