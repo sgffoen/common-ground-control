@@ -263,7 +263,7 @@ class LearningData(object):
         # load meta
         ganpath = self.get_gan_folder()
         modelpath = os.path.join(ganpath, '01_models')
-        filepath = os.path.join(modelpath, 'ml_meta.json')
+        filepath = os.path.join(modelpath, 'model_meta.json')
         with open(filepath, 'r') as i:
             meta = json.load(i)
 

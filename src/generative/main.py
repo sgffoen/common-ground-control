@@ -143,7 +143,7 @@ def learning(lvl, img_type):
             IMG_HEIGHT=256,
             OUTPUT_CHANNELS=3,
             LAMBDA=100,
-            STEPS=10)
+            STEPS=40000)
 
     # get random image for test
     img_path = ld.get_random_img_path()
