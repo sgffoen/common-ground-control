@@ -87,7 +87,7 @@ def processing(env):
 
         if i % 100 == 0:
             lap = (time.time()-start)/60
-            print('\nprocessing id: {} / {}\n LAP-TIME: {}\n'.format(i, max_id, lap))
+            print('\nprocessing id: {} / {}\nLAP-TIME: {}\n'.format(i, max_id, lap))
 
     print('\nTotal processing time: ', (time.time()-start)/60, ' min\n\n')
 
@@ -115,8 +115,9 @@ def datasetting(env, lvl):
         # 3. copy imgs to new directory
         data.store_data()
 
-        if i % 50 == 0:
-            print('\ndata setting id: {} / {}\n'.format(i, max_id))
+        if i % 100 == 0:
+            lap = (time.time()-start)/60
+            print('\ndataset id: {} / {}\nLAP-TIME: {}\n'.format(i, max_id, lap))
 
     print('\nTotal data setting time: ', (time.time()-start)/60, ' min\n\n')
 
