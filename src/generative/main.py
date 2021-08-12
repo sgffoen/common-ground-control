@@ -7,6 +7,7 @@ from tensorflow import keras
 import datetime
 import time
 import json
+import cv2
 import os
 
 
@@ -65,22 +66,28 @@ def processing(env):
         height_fframe_split = p.chennel_edit(data.height_fframe)
         height_fframe_after_split = p.chennel_edit(data.height_fframe_after)
 
-        # g2b
-        toolpath_on_green = p.img_overlay(height_fframe_split[1],
-                                          data.toolpath_fframe)
-        g2b = p.horizontal_stack(toolpath_on_green,
-                                 height_fframe_after_split[2])
-        p.save_img(g2b, data.get_save_path('g2b'))
+        # turn white into black (255 to 0)
+        toolpath_on_black = p.white2black(data.toolpath_fframe)
 
-        # g2b
-        toolpath_on_blue = p.img_overlay(height_fframe_split[2],
-                                         data.toolpath_fframe)
-        b2g = p.horizontal_stack(toolpath_on_blue,
-                                 height_fframe_after_split[1])
-        p.save_img(b2g, data.get_save_path('b2g'))
+        # gb2gb
+        toolpath_on_bg = p.img_addition(height_fframe_split[3],
+                                        toolpath_on_black)
+        # toolpath_on_green = p.img_overlay(height_fframe_split[1],
+        #                                   data.toolpath_fframe)
+        gb2gb = p.horizontal_stack(toolpath_on_bg,
+                                   height_fframe_after_split[3])
+        p.save_img(gb2gb, data.get_save_path('gb2gb'))
 
-        if i % 50 == 0:
-            print('\nprocessing id: {} / {}\n'.format(i, max_id))
+        # # g2b
+        # toolpath_on_blue = p.img_overlay(height_fframe_split[2],
+        #                                  data.toolpath_fframe)
+        # b2g = p.horizontal_stack(toolpath_on_blue,
+        #                          height_fframe_after_split[1])
+        # p.save_img(b2g, data.get_save_path('b2g'))
+
+        if i % 100 == 0:
+            lap = (time.time()-start)/60
+            print('\nprocessing id: {} / {}\n LAP-TIME: {}\n'.format(i, max_id, lap))
 
     print('\nTotal processing time: ', (time.time()-start)/60, ' min\n\n')
 

@@ -15,7 +15,8 @@ class Processing():
         r_img = cv2.merge([zeros, zeros, r])
         g_img = cv2.merge([zeros, g, zeros])
         b_img = cv2.merge([b, zeros, zeros])
-        return [r_img, g_img, b_img]
+        bg_img = cv2.merge([b, g, zeros])
+        return [r_img, g_img, b_img, bg_img]
 
     def img_overlay(self, base_img, mask_img):
         gray_img = cv2.cvtColor(mask_img, cv2.COLOR_BGR2GRAY)
@@ -28,17 +29,33 @@ class Processing():
         img_overlay = cv2.add(base, mask)
         return img_overlay
 
+    def img_addition(self, img1, img2):
+        arr_add = np.add(img1, img2)
+        return arr_add
+
     def horizontal_stack(self, img_left, img_right):
         img_h_stack = np.hstack((img_left, img_right))
         return img_h_stack
 
     def save_img(self, img_to_save, filepath):
-        if os.path.isfile(filepath):
-            pass
-            # print('file: {} already exists'.format(filepath))
-        else:
-            cv2.imwrite(filepath, img_to_save)
+        # if os.path.isfile(filepath):
+        #     pass
+        #     # print('file: {} already exists'.format(filepath))
+        # else:
+        cv2.imwrite(filepath, img_to_save)
             # print('Save PNG image in: {}'.format(filepath))
+
+    def white2black(self, img):
+        for i in range(256):
+            for j in range(256):
+                if img[i][j][2] < 255:
+                    img[i][j][0] = 0
+                    img[i][j][1] = 0
+                else:
+                    img[i][j][0] = 0
+                    img[i][j][1] = 0
+                    img[i][j][2] = 0
+        return img
 
 
 if __name__ == "__main__":

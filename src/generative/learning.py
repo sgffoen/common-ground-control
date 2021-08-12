@@ -39,7 +39,7 @@ class LearningData(object):
         # check the existence of the parent folder
         i = 0
         while not os.path.isdir(parent_folder):
-            print('\nback to the {} days ago...\n'.format(i))
+            # print('\nback to the {} days ago...\n'.format(i))
             i += 1
             dir = self.env_folder
             self.id = self.create_identifier(iteration, delta=i)
@@ -97,10 +97,8 @@ class LearningData(object):
             filename = self.id + '_h2c_training.png'
         elif type == 'c2h':
             filename = self.id + '_c2h_training.png'
-        elif type == 'g2b':
-            filename = self.id + '_g2b_training.png'
-        elif type == 'b2g':
-            filename = self.id + '_b2g_training.png'
+        elif type == 'gb2gb':
+            filename = self.id + '_gb2gb_training.png'
         filepath = filedir + '/' + filename
         return filepath
 
@@ -165,26 +163,14 @@ class LearningData(object):
             pass
             # print("Directory ", c2h_dir, " already exists")
 
-        # b2g
-        b2g_dir = os.path.join(dataset_dir, 'b2g')
-        self.b2g_train_dir = os.path.join(b2g_dir, 'train')
-        self.b2g_test_dir = os.path.join(b2g_dir, 'test')
+        # gb2gb
+        gb2gb_dir = os.path.join(dataset_dir, 'gb2gb')
+        self.gb2gb_train_dir = os.path.join(gb2gb_dir, 'train')
+        self.gb2gb_test_dir = os.path.join(gb2gb_dir, 'test')
         try:
-            os.makedirs(b2g_dir)
-            os.makedirs(self.b2g_train_dir)
-            os.makedirs(self.b2g_test_dir)
-        except FileExistsError:
-            pass
-            # print("Directory ", b2g_dir, " already exists")
-
-        # g2b
-        g2b_dir = os.path.join(dataset_dir, 'g2b')
-        self.g2b_train_dir = os.path.join(g2b_dir, 'train')
-        self.g2b_test_dir = os.path.join(g2b_dir, 'test')
-        try:
-            os.makedirs(g2b_dir)
-            os.makedirs(self.g2b_train_dir)
-            os.makedirs(self.g2b_test_dir)
+            os.makedirs(gb2gb_dir)
+            os.makedirs(self.gb2gb_train_dir)
+            os.makedirs(self.gb2gb_test_dir)
         except FileExistsError:
             pass
             # print("Directory ", g2b_dir, " already exists")
@@ -247,27 +233,13 @@ class LearningData(object):
             # print("File ", path_to, ' already exists')
 
         # g2b
-        path_from = self.get_save_path(type='g2b')
+        path_from = self.get_save_path(type='gb2gb')
         if self.iter % 2 == 0:
             # save to train
-            path_to = self.g2b_train_dir
+            path_to = self.gb2gb_train_dir
         else:
             # save to test
-            path_to = self.g2b_test_dir
-        try:
-            shutil.copy(path_from, path_to)
-        except shutil.SameFileError:
-            pass
-            # print("File ", path_to, ' already exists')
-
-        # b2g
-        path_from = self.get_save_path(type='b2g')
-        if self.iter % 2 == 0:
-            # save to train
-            path_to = self.b2g_train_dir
-        else:
-            # save to test
-            path_to = self.b2g_test_dir
+            path_to = self.gb2gb_test_dir
         try:
             shutil.copy(path_from, path_to)
         except shutil.SameFileError:
@@ -276,8 +248,8 @@ class LearningData(object):
 
     def get_dataset_dir(self):
         dir = os.path.join(self.gan_folder, '00_dataset')
-        dataset_dir = os.path.join(dir, 'dataset_lvl_{}'.format(self.lvl))
-        datatype_dir = os.path.join(dataset_dir, self.img_type)
+        self.dataset_dir = os.path.join(dir, 'dataset_lvl_{}'.format(self.lvl))
+        datatype_dir = os.path.join(self.dataset_dir, self.img_type)
         self.train_dir = os.path.join(datatype_dir, 'train')
         self.test_dir = os.path.join(datatype_dir, 'test')
 

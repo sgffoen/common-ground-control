@@ -472,6 +472,7 @@ class ML():
 
         data = {}
         data['host'] = socket.gethostname()
+        data['data_set'] = ld.dataset_dir
         data['BATCH_SIZE'] = self.BATCH_SIZE
         data['BUFFER_SIZE'] = self.BUFFER_SIZE
         data['IMG_WIDTH'] = self.IMG_WIDTH
