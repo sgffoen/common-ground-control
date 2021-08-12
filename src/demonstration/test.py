@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tkinter.filedialog import askopenfilename, askdirectory
 import cv2
+import json
 import numpy as np
 from matplotlib import pyplot as plt
 import os
@@ -122,28 +123,59 @@ def generate_images(model, test_input, tar, plot_dir, step=0):
     plt.savefig(fname)
 
 
+def call_fact():
+    dir = os.getcwd()
+    fname = "data_collection/data/facts.json"
+    path = os.path.join(dir, fname)
+    with open(path) as f:
+        facts = json.load(f)
+    return facts
+
+def get_feature_center(facts):
+    (f_bounds_xmin,
+    f_bounds_ymin,
+    f_bounds_zmin) = facts['feature_bounds']['min_bound']
+    (f_bounds_xmax,
+    f_bounds_ymax,
+    f_bounds_zmax) = facts['feature_bounds']['max_bound']
+
+    x = (f_bounds_xmax - f_bounds_xmin)/2
+    y = (f_bounds_ymax - f_bounds_ymin)/2
+    z = (f_bounds_zmax - f_bounds_zmin)/2
+    return [y, x, z]
+
+def get_fframe_range(fact, feature_center):
+    xsize = facts['fig_size']['x']
+    ysize = facts['fig_size']['y']
+
+    topleft = feature_center
+    pass
+
 if __name__ == '__main__':
     # load 2 image to compare
-    img1 = load_image()
-    img2 = load_image()
-    print(img1.shape, img2.shape)
+    # img1 = load_image()
+    # img2 = load_image()
+    # print(img1.shape, img2.shape)
 
     # calc z value difference
-    arr_diff = cal_zdiff(img1, img2)
-    print(arr_diff.shape)
+    # arr_diff = cal_zdiff(img1, img2)
+    # print(arr_diff.shape)
 
     # differenr type of difference
     # mse = cal_MSE(img1, img2)
     # print(mse)
 
     # get min & max difference
-    min, max = get_minmax(arr_diff)
-    print(min, max)
+    # min, max = get_minmax(arr_diff)
+    # print(min, max)
 
     # save difference image
-    save_path = browse_dir()
-    save_fig(arr_diff, save_path)
+    # save_path = browse_dir()
+    # save_fig(arr_diff, save_path)
 
+    facts = call_fact()
+    feature_center = get_feature_center(facts)
+    print(feature_center)
 
     # loaded_model = load_model()
     # image_path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/00000_2021-08-05_h2h_training.png"
