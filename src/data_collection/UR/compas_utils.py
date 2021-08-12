@@ -5,9 +5,11 @@ import compas.geometry as cg
 # from compas_view2.app import App
 import math
 import json
+import os
 
 # set global facts
-with open('data/facts.json') as f:
+path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data', 'facts.json'))
+with open(path) as f:
     facts = json.load(f)
 
 

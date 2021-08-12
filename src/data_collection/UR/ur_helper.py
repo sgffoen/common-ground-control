@@ -2,6 +2,7 @@
 import math as m
 import time
 import json
+import os
 import compas.geometry as cg
 
 if __name__ == "__main__":
@@ -13,10 +14,11 @@ else:
     from UR import compas_simple_ur_script as us
     from UR import compas_utils as uu
 
-
-# fact sheet
-with open('data/facts.json') as f:
+# set global facts
+path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data', 'facts.json'))
+with open(path) as f:
     facts = json.load(f)
+
 
 # FUNCTIONS
 
@@ -108,6 +110,7 @@ def cleaning_path():
 
 
 if __name__ == "__main__":
-    center = cg.Point(0, 500, -5)
-    frame = cg.Frame(center, cg.Vector.Xaxis(), cg.Vector.Yaxis())
-    test_pose(frame)
+    # center = cg.Point(0, 500, -5)
+    # frame = cg.Frame(center, cg.Vector.Xaxis(), cg.Vector.Yaxis())
+    # test_pose(frame)
+    pass
