@@ -281,27 +281,6 @@ def draw_polyline_in_sandbox2d(ctrl_frames, facts):
 if __name__ == '__main__':
     save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test"
 
-    # load 2 image to compare
-    # img1 = load_image()
-    # img2 = load_image()
-    # print(img1.shape, img2.shape)
-
-    # calc z value difference
-    # arr_diff = cal_zdiff(img1, img2)
-    # print(arr_diff.shape)
-
-    # differenr type of difference
-    # mse = cal_MSE(img1, img2)
-    # print(mse)
-
-    # get min & max difference
-    # min, max = get_minmax(arr_diff)
-    # print(min, max)
-
-    # save difference image
-    # save_path = browse_dir()
-    # save_fig(arr_diff, save_path)
-
     # scan and create data
     ur.ur_helper.scan_pose(scanning_time=5)
     data = TrainingData(iteration=0, environment='test')
@@ -333,9 +312,33 @@ if __name__ == '__main__':
     toolpath_fframe = crop_feature(crop_idx, feature)
     save_fig(toolpath_fframe, save_dir)
 
+    # overlay image
+
     # loaded_model = load_model()
     # image_path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/00000_2021-08-05_h2h_training.png"
     # input_img, target_img = load(image_path)
     # input_img, target_img = normalize(input_img, target_img)
     # # crop_image(test_input, save_dir)
     # generate_images(loaded_model, input_img, target_img, save_dir)
+
+    # load 2 image to compare
+    # img1 = load_image()
+    # img2 = load_image()
+    # print(img1.shape, img2.shape)
+
+    # calc z value difference
+    # arr_diff = cal_zdiff(img1, img2)
+    # print(arr_diff.shape)
+
+    # differenr type of difference
+    # mse = cal_MSE(img1, img2)
+    # print(mse)
+
+    # get min & max difference
+    # min, max = get_minmax(arr_diff)
+    # print(min, max)
+
+    # save difference image
+    # save_path = browse_dir()
+    # save_fig(arr_diff, save_path)
+
