@@ -3,8 +3,17 @@ from tkinter.filedialog import askopenfilename, askdirectory
 import cv2
 import json
 import numpy as np
+import random as r
+import compas.geometry as cg
+import compas.utilities as cu
+import math as m
 from matplotlib import pyplot as plt
 import os
+import sys
+sys.path.insert(0, 'C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/01_git/common-ground-control/src/data_collection')
+import UR as ur
+from data import TrainingData
+from scanning import ScanData, HeightMap, PointCloud
 
 
 def browse_file():
@@ -131,6 +140,7 @@ def call_fact():
         facts = json.load(f)
     return facts
 
+
 def get_feature_center(facts):
     (f_bounds_xmin,
     f_bounds_ymin,
@@ -144,14 +154,133 @@ def get_feature_center(facts):
     z = (f_bounds_zmax - f_bounds_zmin)/2
     return [y, x, z]
 
-def get_fframe_range(fact, feature_center):
+
+def get_fframe_bounds(facts, feature_center):
     xsize = facts['fig_size']['x']
     ysize = facts['fig_size']['y']
 
-    topleft = feature_center
-    pass
+    xmin = feature_center[0] - (xsize/2)
+    xmax = feature_center[0] + (xsize/2)
+    ymin = feature_center[1] - (ysize/2)
+    ymax = feature_center[1] + (ysize/2)
+
+    x_range = [xmin, xmax]
+    y_range = [ymin, ymax]
+
+    return [x_range, y_range]
+
+
+def get_fframe_corner(fframe_bounds):
+    topleft = [fframe_bounds[0][0], fframe_bounds[1][0]]
+    topright = [fframe_bounds[0][1], fframe_bounds[1][0]]
+    bottomleft = [fframe_bounds[0][0], fframe_bounds[1][1]]
+    bottomright = [fframe_bounds[0][1], fframe_bounds[1][1]]
+
+    return [topleft, topright, bottomright, bottomleft]
+
+
+def get_corp_idx(corners):
+    idx = []
+    for c in corners:
+        coord = []
+        for i in c:
+            coord.append(int(i))
+        idx.append(coord)
+    return idx
+
+
+def crop_feature(crop_idx, img):
+    pts_from = np.float32(crop_idx)
+    pts_to = np.float32([[0, 0],
+                        [facts['fig_size']['x'], 0],
+                        [facts['fig_size']['x'], facts['fig_size']['y']],
+                        [0, facts['fig_size']['y']]])
+    M = cv2.getPerspectiveTransform(pts_from, pts_to)
+    img_cropped = cv2.warpPerspective(img,
+                                        M,
+                                        (int(facts['fig_size']['x']),
+                                        int(facts['fig_size']['x'])))
+    return img_cropped
+
+
+def generate_ctrl_pts(fframe_bounds, num):
+    ctrl_pts_list = []
+    num_ctrl_pts = num
+    for i in range(num_ctrl_pts):
+        x = r.randrange(int(fframe_bounds[0][0]), int(fframe_bounds[0][1]))
+        y = r.randrange(int(fframe_bounds[1][0]), int(fframe_bounds[1][1]))
+        z = r.randrange(50, 100)
+        ctrl_pts_list.append((x, y, z))
+    return ctrl_pts_list
+
+
+def tuple_to_compas_frame(ctrl_pts_list, curve_type='bezier', segments_num=50):
+    ctrl_frames = []
+    ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in ctrl_pts_list]
+
+    if curve_type == 'polyline':
+        polyline = cg.Polyline(ctrl_pts)
+        pts_on_curve = polyline.divide_polyline(segments_num)
+
+    elif curve_type == 'bezier':
+        curve = cg.Bezier(ctrl_pts)
+        pts_on_curve = []
+        step = 1 / (segments_num-1)
+        for i in range(segments_num):
+            t = step * i
+            pt_on_curve = curve.point(t)
+            pts_on_curve.append(pt_on_curve)
+
+    for a, b in cu.pairwise(range(len(pts_on_curve))):
+        # get first pt
+        pta = cg.Point(pts_on_curve[a][0],
+                        pts_on_curve[a][1],
+                        pts_on_curve[a][2])
+        # get end pt
+        ptb = cg.Point(pts_on_curve[b][0],
+                        pts_on_curve[b][1],
+                        pts_on_curve[b][2])
+        # calc axis on xy plane
+        xaxis = cg.Vector.from_start_end(pta, ptb)
+        yaxis = cg.Vector.Zaxis().cross(xaxis)
+        # flatten vectors
+        xaxis.z = 0.
+        yaxis.z = 0.
+        ctrl_frames.append(cg.Frame(pta, yaxis, -xaxis))
+    return ctrl_frames
+
+
+def remapValue(v, ori_Min, ori_Max, targetMin, targetMax):
+    rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
+    return rv
+
+
+def draw_polyline_in_sandbox2d(ctrl_frames, facts):
+    feature_xsize = int(abs(facts['feature_bounds']['max_bound'][1]
+                            - facts['feature_bounds']['min_bound'][1]))
+    feature_ysize = int(abs(facts['feature_bounds']['max_bound'][0]
+                            - facts['feature_bounds']['min_bound'][0]))
+
+
+    img = 255 * np.ones(shape=[m.floor(feature_ysize),
+                                m.floor(feature_xsize),
+                                3], dtype=np.uint8)
+
+    for a, b in cu.pairwise(range(len(ctrl_frames))):
+        pt_s = ctrl_frames[a].point
+        pt_e = ctrl_frames[b].point
+        z = remapValue(pt_s[2], 50, 100, 0, 255)
+        cv2.line(img,
+                    (int(pt_s[0]), int(pt_s[1])),
+                    (int(pt_e[0]), int(pt_e[1])),
+                    color=(0, 0, z),  # red channel for toolpath height
+                    thickness=2)
+    return img
+
 
 if __name__ == '__main__':
+    save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test"
+
     # load 2 image to compare
     # img1 = load_image()
     # img2 = load_image()
@@ -173,14 +302,40 @@ if __name__ == '__main__':
     # save_path = browse_dir()
     # save_fig(arr_diff, save_path)
 
+    # scan and create data
+    ur.ur_helper.scan_pose(scanning_time=5)
+    data = TrainingData(iteration=0, environment='test')
+    scan = ScanData()
+    pcl_obj = PointCloud(scan)
+    heightmap = HeightMap(scan)
+
+    # store data
+    data.scan_data = scan
+    data.pointcloud = pcl_obj
+    data.heightmap = heightmap
+    data.store_data()
+    print('{}: data is collected and stored'.format(data.identifier))
+    feature = load_image()
+
+    # crop feature into feature_frame
     facts = call_fact()
     feature_center = get_feature_center(facts)
-    print(feature_center)
+    fframe_bounds = get_fframe_bounds(facts, feature_center)
+    corners = get_fframe_corner(fframe_bounds)
+    crop_idx = get_corp_idx(corners)
+    fframe = crop_feature(crop_idx, feature)
+    save_fig(fframe, save_dir)
+
+    # draw toolpath inside the fframe
+    ctrl_pts = generate_ctrl_pts(fframe_bounds, num=5)
+    ctrl_frames = tuple_to_compas_frame(ctrl_pts, curve_type='bezier', segments_num=50)
+    feature = draw_polyline_in_sandbox2d(ctrl_frames, facts)
+    toolpath_fframe = crop_feature(crop_idx, feature)
+    save_fig(toolpath_fframe, save_dir)
 
     # loaded_model = load_model()
     # image_path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/00000_2021-08-05_h2h_training.png"
     # input_img, target_img = load(image_path)
     # input_img, target_img = normalize(input_img, target_img)
-    # save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test"
     # # crop_image(test_input, save_dir)
     # generate_images(loaded_model, input_img, target_img, save_dir)
