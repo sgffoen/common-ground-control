@@ -18,16 +18,19 @@ class Processing():
         bg_img = cv2.merge([b, g, zeros])
         return [r_img, g_img, b_img, bg_img]
 
-    def img_overlay(self, base_img, mask_img):
-        gray_img = cv2.cvtColor(mask_img, cv2.COLOR_BGR2GRAY)
-        ret, mask = cv2.threshold(gray_img, 200, 255, cv2.THRESH_BINARY_INV)
-        mask_inv = cv2.bitwise_not(mask)
+    # def img_overlay(self, base_img, mask_img):
+    #     gray_img = cv2.cvtColor(mask_img, cv2.COLOR_BGR2GRAY)
+    #     ret, mask = cv2.threshold(gray_img, 200, 255, cv2.THRESH_BINARY_INV)
+    #     mask_inv = cv2.bitwise_not(mask)
 
-        base = cv2.bitwise_and(base_img, base_img, mask=mask_inv)
-        mask = cv2.bitwise_and(mask_img, mask_img, mask=mask)
+    #     base = cv2.bitwise_and(base_img, base_img, mask=mask_inv)
+    #     mask = cv2.bitwise_and(mask_img, mask_img, mask=mask)
 
-        img_overlay = cv2.add(base, mask)
-        return img_overlay
+    #     img_overlay = cv2.add(base, mask)
+    #     return img_overlay
+
+    def img_overlay(self, base_img, overlay_img):
+        return base_img + overlay_img
 
     def img_addition(self, img1, img2):
         arr_add = np.add(img1, img2)
@@ -61,6 +64,7 @@ class Processing():
         """
         takes the original training samples and augments new samples by moving the all height pixels up or down
         """
+        pass
 
 
 if __name__ == "__main__":

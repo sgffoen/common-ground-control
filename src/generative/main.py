@@ -13,6 +13,11 @@ import os
 
 __FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
 
+def get_iteration_dirs():
+    iteration_dirs = os.listdir('G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production')
+    iteration_dirs.remove('meta.json')
+    iteration_dirs.sort()
+    return iteration_dirs
 
 def hello_cgc(env, lvl, img_type):
     print('\n\nHello cgc, this is a test.\n')
@@ -27,12 +32,12 @@ def processing(env):
     print("starting processing mode")
     print("environment: {} \n".format(env))
 
-    max_id = meta_data(env)
+    iteration_dirs = get_iteration_dirs()
 
-    for i in range(max_id):
+    for i, id in enumerate(iteration_dirs):
         # 1. accessing data_collection path/img
-        data = LearningData(i, env)
-        data.get_iter_dirs(i)
+        data = LearningData(iter=i, id=id, env=env)
+        data.get_iter_dirs()
         data.get_fframe()
 
         # 2. do processing
@@ -87,7 +92,7 @@ def processing(env):
 
         if i % 100 == 0:
             lap = (time.time()-start)/60
-            print('\nprocessing id: {} / {}\nLAP-TIME: {}\n'.format(i, max_id, lap))
+            print('\nprocessing id: {} / {}\nLAP-TIME: {}\n'.format(i, len(iteration_dirs), lap))
 
     print('\nTotal processing time: ', (time.time()-start)/60, ' min\n\n')
 
@@ -97,12 +102,12 @@ def datasetting(env, lvl):
     print("starting data setting mode")
     print("environment: {} \n".format(env))
 
-    max_id = meta_data(env)
+    iteration_dirs = get_iteration_dirs()
 
-    for i in range(max_id):
-        # 1. accessing data_collection path/img/json
-        data = LearningData(i, env)
-        data.get_iter_dirs(i)
+    for i, id in enumerate(iteration_dirs):
+        # 1. accessing data_collection path/img
+        data = LearningData(iter=i, id=id, env=env)
+        data.get_iter_dirs()
         data.get_fframe()
         if lvl == 'all':
             curve_lvl = 'all'
@@ -117,7 +122,7 @@ def datasetting(env, lvl):
 
         if i % 100 == 0:
             lap = (time.time()-start)/60
-            print('\ndataset id: {} / {}\nLAP-TIME: {}\n'.format(i, max_id, lap))
+            print('\ndataset id: {} / {}\nLAP-TIME: {}\n'.format(i, len(iteration_dirs), lap))
 
     print('\nTotal data setting time: ', (time.time()-start)/60, ' min\n\n')
 
@@ -230,19 +235,6 @@ def main():
     # else
     else:
         print("Run mode is not identified")
-
-
-def meta_data(env):
-    filepath = os.path.join(__FOLDER__,
-                            "00_data_collection",
-                            ("00_test" if env == 'test' else "01_production"),
-                            "meta.json")
-    with open(filepath, 'r') as f:
-        data = json.load(f)
-
-    max_scan_id = data['max_scan_id']
-
-    return max_scan_id
 
 
 if __name__ == "__main__":

@@ -7,8 +7,9 @@ import datetime
 
 
 class LearningData(object):
-    def __init__(self, iter=None, env=None, lvl=None, img_type=None):
+    def __init__(self, iter=None, id=None, env=None, lvl=None, img_type=None):
         self.iter = iter
+        self.id = id
         self.env_folder = self.get_environment_folder(env)
         self.gan_folder = self.get_gan_folder()
         self.lvl = lvl
@@ -25,27 +26,9 @@ class LearningData(object):
     def get_gan_folder(self):
         return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/"
 
-    def create_identifier(self, iter, delta=0):
-        id_num = str(iter).zfill(5)
-        today = datetime.date.today()
-        if delta != 0:
-            today -= datetime.timedelta(days=delta)
-        return str(id_num) + '_' + str(today)
-
-    def get_iter_dirs(self, iteration):
+    def get_iter_dirs(self):
         dir = self.env_folder
-        self.id = self.create_identifier(iteration, delta=0)
         parent_folder = os.path.join(dir, self.id)
-        # check the existence of the parent folder
-        i = 0
-        while not os.path.isdir(parent_folder):
-            # print('\nback to the {} days ago...\n'.format(i))
-            i += 1
-            dir = self.env_folder
-            self.id = self.create_identifier(iteration, delta=i)
-            parent_folder = os.path.join(dir, self.id)
-            if i > 100:
-                raise FileNotFoundError('path: {} does not exist'.format(parent_folder))
 
         self.path_name_raw = os.path.join(parent_folder, '00_RAW')
         self.path_name_processed = os.path.join(parent_folder, '01_processed')
