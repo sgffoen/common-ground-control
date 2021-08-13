@@ -1,5 +1,6 @@
 import numpy as np
 import random as r
+import time
 
 
 class DNA(object):
@@ -43,11 +44,12 @@ def mutation(dna, metation_rate):
 
 
 if __name__ == '__main__':
+    start = time.time()
     population_num = 100
     population = []
     mating_pool = []
     mutation_rate = 0.01
-    generation_num = 100
+    generation_num = 10000
 
     target_arr = np.zeros((10))
     for i in range(target_arr.shape[0]):
@@ -80,16 +82,22 @@ if __name__ == '__main__':
             population[i] = child_dna
             population[i].fit(target_arr)
 
+            if population[i].fitness == 1.0:
+                final_generation = g
+                break
+
     # evaluation
     print("\n{}".format(target_arr))
     print(population[i].genes)
 
     total_fitness = sum([population[i].fitness for i in range(len(population))])
     average_fitness = total_fitness / len(population)
+    calc_time = time.time() - start
 
-    print("total generation: {}".format(generation_num))
+    print("total generation: {}".format(final_generation))
     print("average fitness : {}".format(average_fitness))
     print("total population: {}".format(population_num))
     print("mutation rate   : {}".format(mutation_rate))
+    print("calculation time: {}sec".format(calc_time))
 
     '''until 9.8'''
