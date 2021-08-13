@@ -89,12 +89,12 @@ def aliasing(env):
                                           borderMode=cv2.BORDER_TRANSPARENT)
 
         # check image
-        fig, ax = plt.subplots()
-        im = ax.imshow(img)
-        plt.show()
-        fig, ax = plt.subplots()
-        im = ax.imshow(img_cropped)
-        plt.show()
+        # fig, ax = plt.subplots()
+        # im = ax.imshow(img)
+        # plt.show()
+        # fig, ax = plt.subplots()
+        # im = ax.imshow(img_cropped)
+        # plt.show()
 
         # export images
         filename = data.path_name_processed + '/' + data.id + '_toolpath_feature_fix.png'
@@ -104,7 +104,7 @@ def aliasing(env):
 
         if i % 100 == 0:
             lap = (time.time()-start)/60
-            print('\nfixing id: {} / {}\nLAP-TIME: {}\n'.format(i, max_id, lap))
+            print('\nfixing id: {} / {}\nLAP-TIME: {}\n'.format(i, len(iteration_dirs), lap))
 
     print('\nTotal fixing time: ', (time.time()-start)/60, ' min\n\n')
 
