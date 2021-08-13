@@ -34,7 +34,7 @@ def aliasing(env):
 
     iteration_dirs = get_iteration_dirs()
 
-    for i,id in enumerate(iteration_dirs):
+    for i, id in enumerate(iteration_dirs):
         # 1. accessing data_collection path/img
         data = LearningData(i, id, env)
         data.get_iter_dirs()
@@ -43,13 +43,13 @@ def aliasing(env):
         dir = data.path_name_raw
         fname = data.id + '_toolpath.json'
         fpath = os.path.join(dir, fname)
-        with open(fpath, 'r') as i:
-            facts = json.load(i)
+        with open(fpath, 'r') as o:
+            facts = json.load(o)
 
         # get control frames from json
         ctrl_frames = []
-        for i, c in enumerate(facts['ctrl_frames']):
-            id_num = str(i).zfill(3)
+        for j, c in enumerate(facts['ctrl_frames']):
+            id_num = str(j).zfill(3)
             key = 'f_{}'.format(id_num)
             jsonstring = facts['ctrl_frames'][key]
             frame = cg.Frame.from_jsonstring(jsonstring)
@@ -74,8 +74,8 @@ def aliasing(env):
 
         # crop_toolpathbox2d_oriented(self, img, d):
         crop_idx = []
-        for i in range(4):
-            crop_idx.append(facts['frame_corner_pts'][str(i)])
+        for k in range(4):
+            crop_idx.append(facts['frame_corner_pts'][str(k)])
         pts_from = np.float32(crop_idx)
         pts_to = np.float32([[0, 0],
                             [256, 0],
@@ -87,14 +87,6 @@ def aliasing(env):
                                           (int(256),int(256)),
                                           flags=cv2.WARP_FILL_OUTLIERS,
                                           borderMode=cv2.BORDER_TRANSPARENT)
-
-        # check image
-        # fig, ax = plt.subplots()
-        # im = ax.imshow(img)
-        # plt.show()
-        # fig, ax = plt.subplots()
-        # im = ax.imshow(img_cropped)
-        # plt.show()
 
         # export images
         filename = data.path_name_processed + '/' + data.id + '_toolpath_feature_fix.png'
