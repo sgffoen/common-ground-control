@@ -15,6 +15,7 @@ import UR as ur
 from data import TrainingData
 from scanning import ScanData, HeightMap, PointCloud
 from ga_sample import DNA
+from generative import Processing
 
 
 def browse_file():
@@ -55,18 +56,6 @@ def cal_MSE(img1, img2):
     return mse
 
 
-def crop_image(img, path):
-    # Cropping an image
-    left_image = img[0:256, 0:256]
-    right_image = img[0:256, 256:512]
-
-    # Save the cropped image
-    fname = path + '/' + 'left_img.png'
-    cv.imwrite(fname, left_image)
-    fname = path + '/' + 'right_img.png'
-    cv.imwrite(fname, right_image)
-
-
 def load_model():
     dir_name = browse_dir()
     try:
@@ -101,7 +90,6 @@ def load(img_path, save=False):
 def normalize(input_image, real_image):
     input_image = (input_image / 127.5) - 1
     real_image = (real_image / 127.5) - 1
-
     return input_image, real_image
 
 
@@ -310,12 +298,13 @@ if __name__ == '__main__':
     save_fig(toolpath_fframe, fname)
 
     # overlay image
+    p = Processing
+    input_img = p.img_overlay(fframe, toolpath_fframe)
 
     # loaded_model = load_model()
     # image_path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/00000_2021-08-05_h2h_training.png"
     # input_img, target_img = load(image_path)
     # input_img, target_img = normalize(input_img, target_img)
-    # # crop_image(test_input, save_dir)
     # generate_images(loaded_model, input_img, target_img, save_dir)
 
     # load 2 image to compare
