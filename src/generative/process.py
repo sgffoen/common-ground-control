@@ -32,7 +32,17 @@ class Processing():
     def img_overlay(self, base_img, overlay_img):
         return base_img + overlay_img
 
-    def img_addition(self, img1, img2):
+    def custom_img_addition(self, height_img, toolpath_img):
+        arr = np.zeros([256, 256, 3])
+        for i in range(256):
+            for j in range(256):
+                if toolpath_img[i][j][2] > 0:
+                    arr[i][j] = toolpath_img[i][j]
+                else:
+                    arr[i][j] = height_img[i][j]
+        return arr
+
+    def simple_img_addition(self, img1, img2):
         arr_add = np.add(img1, img2)
         return arr_add
 

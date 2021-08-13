@@ -44,39 +44,39 @@ def processing(env):
         p = Processing()
 
         # c2c (rgb2rgb)
-        toolpath_on_rgb = p.img_overlay(data.rgb_fframe,
-                                        data.toolpath_fframe)
-        c2c = p.horizontal_stack(toolpath_on_rgb,
-                                 data.rgb_fframe_after)
-        p.save_img(c2c, data.get_save_path('c2c'))
+        # toolpath_on_rgb = p.img_overlay(data.rgb_fframe,
+        #                                 data.toolpath_fframe)
+        # c2c = p.horizontal_stack(toolpath_on_rgb,
+        #                          data.rgb_fframe_after)
+        # p.save_img(c2c, data.get_save_path('c2c'))
 
         # h2h (height2height)
-        toolpath_on_height = p.img_overlay(data.height_fframe,
-                                           data.toolpath_fframe)
+        toolpath_on_height = p.custom_img_addition(data.height_fframe,
+                                                   data.toolpath_fframe)
         h2h = p.horizontal_stack(toolpath_on_height,
                                  data.height_fframe_after)
         p.save_img(h2h, data.get_save_path('h2h'))
 
         # h2c (height2rgb)
-        h2c = p.horizontal_stack(toolpath_on_height,
-                                 data.rgb_fframe_after)
-        p.save_img(h2c, data.get_save_path('h2c'))
+        # h2c = p.horizontal_stack(toolpath_on_height,
+        #                          data.rgb_fframe_after)
+        # p.save_img(h2c, data.get_save_path('h2c'))
 
         # c2h (rgb2height)
-        c2h = p.horizontal_stack(toolpath_on_rgb,
-                                 data.height_fframe_after)
-        p.save_img(c2h, data.get_save_path('c2h'))
+        # c2h = p.horizontal_stack(toolpath_on_rgb,
+        #                          data.height_fframe_after)
+        # p.save_img(c2h, data.get_save_path('c2h'))
 
         # split channel
         height_fframe_split = p.channel_edit(data.height_fframe)
         height_fframe_after_split = p.channel_edit(data.height_fframe_after)
 
         # turn white into black (255 to 0)
-        toolpath_on_black = p.white2black(data.toolpath_fframe)
+        # toolpath_on_black = p.white2black(data.toolpath_fframe)
 
         # gb2gb
-        toolpath_on_bg = p.img_addition(height_fframe_split[3],
-                                        toolpath_on_black)
+        toolpath_on_bg = p.simple_img_addition(height_fframe_split[3],
+                                               data.toolpath_fframe)
         # toolpath_on_green = p.img_overlay(height_fframe_split[1],
         #                                   data.toolpath_fframe)
         gb2gb = p.horizontal_stack(toolpath_on_bg,

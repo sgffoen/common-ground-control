@@ -40,7 +40,7 @@ class LearningData(object):
         rgb_fframe_after_fname = os.path.join(self.path_name_processed, self.id + '_rgb_featureframe_after.png')
         height_fframe_fname = os.path.join(self.path_name_processed, self.id + '_height_featureframe.png')
         height_fframe_after_fname = os.path.join(self.path_name_processed, self.id + '_height_featureframe_after.png')
-        toolpath_fframe_fname = os.path.join(self.path_name_processed, self.id + '_toolpath_featureframe.png')
+        toolpath_fframe_fname = os.path.join(self.path_name_processed, self.id + '_toolpath_featureframe_fix.png')
 
         if os.path.isfile(rgb_fframe_fname):
             self.rgb_fframe = cv2.imread(rgb_fframe_fname)
@@ -76,13 +76,13 @@ class LearningData(object):
         if type == 'c2c':
             filename = self.id + '_c2c_training.png'
         elif type == 'h2h':
-            filename = self.id + '_h2h_training.png'
+            filename = self.id + '_h2h_training_fix.png'
         elif type == 'h2c':
             filename = self.id + '_h2c_training.png'
         elif type == 'c2h':
             filename = self.id + '_c2h_training.png'
         elif type == 'gb2gb':
-            filename = self.id + '_gb2gb_training.png'
+            filename = self.id + '_gb2gb_training_fix.png'
         filepath = filedir + '/' + filename
         return filepath
 
