@@ -274,8 +274,6 @@ def draw_polyline_in_sandbox2d(ctrl_frames, facts):
 
 
 if __name__ == '__main__':
-    pass
-"""
     save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test"
 
     # scan and initialize
@@ -341,5 +339,3 @@ if __name__ == '__main__':
     # save_path = browse_dir()
     # fname = save_path + '/test_diff.png'
     # save_fig(arr_diff, fname)
-
-"""
