@@ -10,14 +10,19 @@ import compas.utilities as cu
 
 
 class Artist(object):
-    def __init__(self, dna, num_ctrl_pts, fframe_bounds):
-        self.dna = dna
+    def __init__(self, num_ctrl_pts, fframe_bounds):
         self.facts = self.call_fact()
         self.num_ctrl_pts = num_ctrl_pts
         self.fframe_bounds = fframe_bounds
-        self.ctrl_pts = self.dna.random_ctrl_pts(self.num_ctrl_pts, self.fframe_bounds)
-        self.ctrl_frames = self.tuple_to_compas_frame()
         self.toolpath_feature = self.draw_polyline_in_sandbox2d()
+
+    def random_ctrl_pts(self):
+        arr = np.zeros((self.num_ctrl_pts, 3))
+        for i in range(arr.shape[0]):
+            arr[i][0] = r.randint(int(self.fframe_bounds[0][0]), int(self.fframe_bounds[0][1]))
+            arr[i][1] = r.randint(int(self.fframe_bounds[1][0]), int(self.fframe_bounds[1][1]))
+            arr[i][2] = r.randint(50, 100)
+        return arr
 
     def call_fact(self):
         dir = os.getcwd()
@@ -29,7 +34,8 @@ class Artist(object):
 
     def tuple_to_compas_frame(self, curve_type='bezier', segments_num=50):
         ctrl_frames = []
-        ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in self.ctrl_pts]
+        ctrl_pts = self.random_ctrl_pts()
+        ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in ctrl_pts]
 
         if curve_type == 'polyline':
             polyline = cg.Polyline(ctrl_pts)
@@ -76,9 +82,10 @@ class Artist(object):
                                     m.floor(feature_xsize),
                                     3], dtype=np.uint8)
 
-        for a, b in cu.pairwise(range(len(self.ctrl_frames))):
-            pt_s = self.ctrl_frames[a].point
-            pt_e = self.ctrl_frames[b].point
+        ctrl_frames = self.tuple_to_compas_frame()
+        for a, b in cu.pairwise(range(len(ctrl_frames))):
+            pt_s = ctrl_frames[a].point
+            pt_e = ctrl_frames[b].point
             z = self.remapValue(pt_s[2], 50, 100, 0, 255)
             cv.line(img,
                     (int(pt_s[0]), int(pt_s[1])),
@@ -87,6 +94,45 @@ class Artist(object):
                     thickness=2,
                     lineType=cv.FILLED)
         return img
+
+
+    class DNA():  # GENOTYPE
+        def __init__(self, toolpath_fframe):
+            self.genes = toolpath_fframe
+
+        def fit(self, target_arr):
+            # score
+            # arr_diff = np.subtract(self.gene, target_arr)
+            # arr_abs_diff = np.absolute(arr_diff)
+            # score = np.mean(arr_abs_diff)
+            score = 0
+
+            for i in range(self.genes.shape[0]):
+                for j in range(self.genes.shape[1]):
+                    if self.genes[i][j] == target_arr[i][j]:
+                        score += 1
+            self.fitness = score / (self.genes.shape[0] * self.genes.shape[1])
+            # exponential fitness
+            # self.fitness = score ** 2
+            # self.fitness = 2 ** score
+
+        def crossover(self, child, dna2):
+            midpoint_x = int(r.randint(0, self.genes.shape[0]))
+            midpoint_y = int(r.randint(0, self.genes.shape[1]))
+            for i in range(self.genes.shape[0]):
+                for j in range(self.genes.shape[1]):
+                    if i > midpoint_x and j > midpoint_y:
+                        child.genes[i][j] = self.genes[i]
+                    else:
+                        child.genes[i][j] = dna2.genes[i]
+            return child
+
+        def mutation(self, metation_rate):
+            for i in range(self.genes.shape[0]):
+                for j in range(self.genes.shape[1]):
+                    if r.random() < metation_rate:
+                        self.genes[i][j] = r.randint(0, 255)
+
 
 
 class LineArtist(object):
@@ -129,7 +175,6 @@ class LineArtist(object):
 
     def save_img(self):
         pass
-
 
 if __name__ == '__main__':
     pass

@@ -11,14 +11,16 @@ import os
 
 class DNA(object):  # GENOTYPE
     def __init__(self):
-        self.genes = self.random_ctrl_pts()
+        self.genes = self.random_assign()
 
-    def random_ctrl_pts(self, num_ctrl_pts, fframe_bounds):
-        arr = np.zeros((num_ctrl_pts, 3))
+    def get_gene(self):
+        arr = np.zeros((10))
+        return arr
+
+    def random_assign(self):
+        arr = self.get_gene()
         for i in range(arr.shape[0]):
-            arr[i][0] = r.randint(int(fframe_bounds[0][0]), int(fframe_bounds[0][1]))
-            arr[i][1] = r.randint(int(fframe_bounds[1][0]), int(fframe_bounds[1][1]))
-            arr[i][2] = r.randint(50, 100)
+            arr[i] = r.randrange(0, 10)
         return arr
 
     def fit(self, target_arr):

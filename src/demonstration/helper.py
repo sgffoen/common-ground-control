@@ -3,6 +3,9 @@ import sys
 import json
 import cv2 as cv
 import numpy as np
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from tkinter.filedialog import askdirectory
 
 sys.path.insert(0, 'C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/01_git/common-ground-control/src/data_collection')
 import UR as ur
@@ -82,6 +85,61 @@ class Helper(object):
                                          flags=cv.WARP_FILL_OUTLIERS,
                                          borderMode=cv.BORDER_TRANSPARENT)
         return img_cropped
+
+    def load_model(self):
+        dir_name = askdirectory()
+        try:
+            loaded_model = tf.keras.models.load_model(dir_name)
+            print('model is loaded from {}\n'.format(dir_name))
+            return loaded_model
+        except FileNotFoundError:
+            print('model, {}, does not exist\n'.format(dir_name))
+
+    def decode(self, img_to_decode1, img_to_decode2):
+        decoded_img1 = tf.image.decode_png(img_to_decode1)
+        decoded_img1 = tf.cast(decoded_img1, tf.float32)
+        decoded_img2 = tf.image.decode_png(img_to_decode2)
+        decoded_img2= tf.cast(decoded_img2, tf.float32)
+        return decoded_img1, decoded_img2
+
+    def normalize(self, img_to_normalize1, img_to_normalize2):
+        img_to_normalize1 = (img_to_normalize1 / 127.5) - 1
+        img_to_normalize2 = (img_to_normalize2 / 127.5) - 1
+        return img_to_normalize1, img_to_normalize2
+
+
+    def generate_images(self, model, test_input, target_input, plot_dir, step=0):
+        test_input = np.reshape(test_input, [1, 256, 256, 3])
+        target_input = np.reshape(target_input, [1, 256, 256, 3])
+
+        prediction = model(test_input, training=True)
+        plt.figure(figsize=(15, 15))
+
+        display_list = [test_input[0], target_input[0], prediction[0]]
+        title = ['Input Image', 'Target Image', 'Predicted Image']
+
+        for i in range(3):
+            plt.subplot(1, 3, i+1)
+            plt.title(title[i])
+            # Getting the pixel values in the [0, 1] range to plot.
+            plt.imshow(display_list[i] * 0.5 + 0.5)
+            plt.axis('off')
+        # plt.show()
+        fname = os.path.join(plot_dir,
+                            'predicted_img_{}.png'.format(step))
+        plt.savefig(fname)
+        return display_list[0]
+
+    def cal_zdiff(self, arr1, arr2):
+        arr_diff = np.subtract(arr1, arr2)
+        arr_abs_diff = np.absolute(arr_diff)
+        return arr_abs_diff
+
+    def get_minmax(self, arr):
+        min = np.amin(arr)
+        max = np.amax(arr)
+        return min, max
+
 
 
 if __name__ == '__main__':
