@@ -18,20 +18,6 @@ class Processing():
         bg_img = cv2.merge([b, g, zeros])
         return [r_img, g_img, b_img, bg_img]
 
-    # def img_overlay(self, base_img, mask_img):
-    #     gray_img = cv2.cvtColor(mask_img, cv2.COLOR_BGR2GRAY)
-    #     ret, mask = cv2.threshold(gray_img, 200, 255, cv2.THRESH_BINARY_INV)
-    #     mask_inv = cv2.bitwise_not(mask)
-
-    #     base = cv2.bitwise_and(base_img, base_img, mask=mask_inv)
-    #     mask = cv2.bitwise_and(mask_img, mask_img, mask=mask)
-
-    #     img_overlay = cv2.add(base, mask)
-    #     return img_overlay
-
-    def img_overlay(self, base_img, overlay_img):
-        return base_img + overlay_img
-
     def custom_img_addition(self, height_img, toolpath_img):
         arr = np.zeros([256, 256, 3])
         for i in range(256):
@@ -51,12 +37,7 @@ class Processing():
         return img_h_stack
 
     def save_img(self, img_to_save, filepath):
-        # if os.path.isfile(filepath):
-        #     pass
-        #     # print('file: {} already exists'.format(filepath))
-        # else:
         cv2.imwrite(filepath, img_to_save)
-            # print('Save PNG image in: {}'.format(filepath))
 
     def white2black(self, img):
         for i in range(256):
