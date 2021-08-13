@@ -63,8 +63,8 @@ def processing(env):
         p.save_img(c2h, data.get_save_path('c2h'))
 
         # split channel
-        height_fframe_split = p.chennel_edit(data.height_fframe)
-        height_fframe_after_split = p.chennel_edit(data.height_fframe_after)
+        height_fframe_split = p.channel_edit(data.height_fframe)
+        height_fframe_after_split = p.channel_edit(data.height_fframe_after)
 
         # turn white into black (255 to 0)
         toolpath_on_black = p.white2black(data.toolpath_fframe)

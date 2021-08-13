@@ -7,7 +7,7 @@ class Processing():
     def __init__(self):
         pass
 
-    def chennel_edit(self, img_to_edit):
+    def channel_edit(self, img_to_edit):
         # split img
         b, g, r = cv2.split(img_to_edit)
         zeros = np.zeros(img_to_edit.shape[:2], dtype="uint8")
@@ -56,6 +56,11 @@ class Processing():
                     img[i][j][1] = 0
                     img[i][j][2] = 0
         return img
+
+    def data_augmentation(self):
+        """
+        takes the original training samples and augments new samples by moving the all height pixels up or down
+        """
 
 
 if __name__ == "__main__":

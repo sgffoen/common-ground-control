@@ -45,11 +45,12 @@ class LearningData(object):
             self.id = self.create_identifier(iteration, delta=i)
             parent_folder = os.path.join(dir, self.id)
             if i > 100:
-                raise FileNotFoundError('path: {} does not exist'.format(path_name_raw))
+                raise FileNotFoundError('path: {} does not exist'.format(parent_folder))
 
         self.path_name_raw = os.path.join(parent_folder, '00_RAW')
         self.path_name_processed = os.path.join(parent_folder, '01_processed')
         self.path_name_train = os.path.join(parent_folder, '02_training')
+        self.path_name_augmented = os.path.join(parent_folder, '03_training_augmented')
 
     def get_fframe(self):
         rgb_fframe_fname = os.path.join(self.path_name_processed, self.id + '_rgb_featureframe.png')
@@ -313,6 +314,14 @@ class LearningData(object):
             os.mkdir(self.ckpt_dir)
         except FileExistsError:
             print('Directory ', self.ckpt_dir, ' already exisits')
+
+    def create_augment_dir(self):
+        # create folder for augmented data in iteration folder
+        new_dir = self.path_name_augmented
+        try:
+            os.makedirs(new_dir)
+        except FileExistsError:
+            print("Could not create directory " , new_dir )
 
 
 if __name__ == '__main__':
