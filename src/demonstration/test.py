@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tkinter.filedialog import askopenfilename, askdirectory
-import cv2
+import cv2 as cv
 import json
 import numpy as np
 import random as r
@@ -14,6 +14,7 @@ sys.path.insert(0, 'C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control
 import UR as ur
 from data import TrainingData
 from scanning import ScanData, HeightMap, PointCloud
+from ga_sample import DNA
 
 
 def browse_file():
@@ -26,20 +27,14 @@ def browse_dir():
     return dir_name
 
 
-def load_image(show=False):
+def load_image():
     filename = browse_file()
-    loaded_img = cv2.imread(filename)
-
-    if show:
-        cv2.imshow("loaded_img", loaded_img)
-        cv2.waitKey(0)
-
+    loaded_img = cv.imread(filename)
     return loaded_img
 
 
 def save_fig(img_to_save, path):
-    fname = path + '/test.png'
-    cv2.imwrite(fname, img_to_save)
+    cv.imwrite(fname, img_to_save)
 
 
 def cal_zdiff(arr1, arr2):
@@ -54,6 +49,12 @@ def get_minmax(arr):
     return min, max
 
 
+def cal_MSE(img1, img2):
+    # mean square error
+    mse = (np.square(img1.astype(int)-img2.astype(int))).mean(axis=None)
+    return mse
+
+
 def crop_image(img, path):
     # Cropping an image
     left_image = img[0:256, 0:256]
@@ -61,15 +62,9 @@ def crop_image(img, path):
 
     # Save the cropped image
     fname = path + '/' + 'left_img.png'
-    cv2.imwrite(fname, left_image)
+    cv.imwrite(fname, left_image)
     fname = path + '/' + 'right_img.png'
-    cv2.imwrite(fname, right_image)
-
-
-def cal_MSE(img1, img2):
-    # mean square error
-    mse = (np.square(img1.astype(int)-img2.astype(int))).mean(axis=None)
-    return mse
+    cv.imwrite(fname, right_image)
 
 
 def load_model():
@@ -195,8 +190,8 @@ def crop_feature(crop_idx, img):
                         [facts['fig_size']['x'], 0],
                         [facts['fig_size']['x'], facts['fig_size']['y']],
                         [0, facts['fig_size']['y']]])
-    M = cv2.getPerspectiveTransform(pts_from, pts_to)
-    img_cropped = cv2.warpPerspective(img,
+    M = cv.getPerspectiveTransform(pts_from, pts_to)
+    img_cropped = cv.warpPerspective(img,
                                         M,
                                         (int(facts['fig_size']['x']),
                                         int(facts['fig_size']['x'])))
@@ -270,7 +265,7 @@ def draw_polyline_in_sandbox2d(ctrl_frames, facts):
         pt_s = ctrl_frames[a].point
         pt_e = ctrl_frames[b].point
         z = remapValue(pt_s[2], 50, 100, 0, 255)
-        cv2.line(img,
+        cv.line(img,
                     (int(pt_s[0]), int(pt_s[1])),
                     (int(pt_e[0]), int(pt_e[1])),
                     color=(0, 0, z),  # red channel for toolpath height
@@ -279,9 +274,11 @@ def draw_polyline_in_sandbox2d(ctrl_frames, facts):
 
 
 if __name__ == '__main__':
+    pass
+"""
     save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test"
 
-    # scan and create data
+    # scan and initialize
     ur.ur_helper.scan_pose(scanning_time=5)
     data = TrainingData(iteration=0, environment='test')
     scan = ScanData()
@@ -303,14 +300,16 @@ if __name__ == '__main__':
     corners = get_fframe_corner(fframe_bounds)
     crop_idx = get_corp_idx(corners)
     fframe = crop_feature(crop_idx, feature)
-    save_fig(fframe, save_dir)
+    fname = save_dir + '/test_fframe.png'
+    save_fig(fframe, fname)
 
     # draw toolpath inside the fframe
     ctrl_pts = generate_ctrl_pts(fframe_bounds, num=5)
     ctrl_frames = tuple_to_compas_frame(ctrl_pts, curve_type='bezier', segments_num=50)
     feature = draw_polyline_in_sandbox2d(ctrl_frames, facts)
     toolpath_fframe = crop_feature(crop_idx, feature)
-    save_fig(toolpath_fframe, save_dir)
+    fname = save_dir + '/test_toolpath_fframe.png'
+    save_fig(toolpath_fframe, fname)
 
     # overlay image
 
@@ -340,5 +339,7 @@ if __name__ == '__main__':
 
     # save difference image
     # save_path = browse_dir()
-    # save_fig(arr_diff, save_path)
+    # fname = save_path + '/test_diff.png'
+    # save_fig(arr_diff, fname)
 
+"""
