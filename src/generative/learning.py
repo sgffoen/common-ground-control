@@ -106,12 +106,12 @@ class LearningData(object):
     def store_data(self):
         # h2h
         path_from = self.get_save_path(type='h2h')
-        if self.iter % 2 == 0:
-            # save to train
-            path_to = self.h2h_train_dir
-        else:
+        if self.iter % 4 == 0:
             # save to test
             path_to = self.h2h_test_dir
+        else:
+            # save to train
+            path_to = self.h2h_train_dir
         try:
             shutil.copy(path_from, path_to)
         except shutil.SameFileError:
@@ -119,12 +119,12 @@ class LearningData(object):
 
         # g2bgb
         path_from = self.get_save_path(type='gb2gb')
-        if self.iter % 2 == 0:
-            # save to train
-            path_to = self.gb2gb_train_dir
-        else:
+        if self.iter % 4 == 0:
             # save to test
             path_to = self.gb2gb_test_dir
+        else:
+            # save to train
+            path_to = self.gb2gb_train_dir
         try:
             shutil.copy(path_from, path_to)
         except shutil.SameFileError:
