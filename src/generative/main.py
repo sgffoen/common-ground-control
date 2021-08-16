@@ -13,11 +13,13 @@ import os
 
 __FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
 
+
 def get_iteration_dirs():
     iteration_dirs = os.listdir('G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production')
     iteration_dirs.remove('meta.json')
     iteration_dirs.sort()
     return iteration_dirs
+
 
 def hello_cgc(env, lvl, img_type):
     print('\n\nHello cgc, this is a test.\n')
@@ -43,13 +45,6 @@ def processing(env):
         # 2. do processing
         p = Processing()
 
-        # c2c (rgb2rgb)
-        # toolpath_on_rgb = p.img_overlay(data.rgb_fframe,
-        #                                 data.toolpath_fframe)
-        # c2c = p.horizontal_stack(toolpath_on_rgb,
-        #                          data.rgb_fframe_after)
-        # p.save_img(c2c, data.get_save_path('c2c'))
-
         # h2h (height2height)
         toolpath_on_height = p.custom_img_addition(data.height_fframe,
                                                    data.toolpath_fframe)
@@ -57,38 +52,16 @@ def processing(env):
                                  data.height_fframe_after)
         p.save_img(h2h, data.get_save_path('h2h'))
 
-        # h2c (height2rgb)
-        # h2c = p.horizontal_stack(toolpath_on_height,
-        #                          data.rgb_fframe_after)
-        # p.save_img(h2c, data.get_save_path('h2c'))
-
-        # c2h (rgb2height)
-        # c2h = p.horizontal_stack(toolpath_on_rgb,
-        #                          data.height_fframe_after)
-        # p.save_img(c2h, data.get_save_path('c2h'))
-
         # split channel
         height_fframe_split = p.channel_edit(data.height_fframe)
         height_fframe_after_split = p.channel_edit(data.height_fframe_after)
 
-        # turn white into black (255 to 0)
-        # toolpath_on_black = p.white2black(data.toolpath_fframe)
-
         # gb2gb
         toolpath_on_bg = p.simple_img_addition(height_fframe_split[3],
                                                data.toolpath_fframe)
-        # toolpath_on_green = p.img_overlay(height_fframe_split[1],
-        #                                   data.toolpath_fframe)
         gb2gb = p.horizontal_stack(toolpath_on_bg,
                                    height_fframe_after_split[3])
         p.save_img(gb2gb, data.get_save_path('gb2gb'))
-
-        # # g2b
-        # toolpath_on_blue = p.img_overlay(height_fframe_split[2],
-        #                                  data.toolpath_fframe)
-        # b2g = p.horizontal_stack(toolpath_on_blue,
-        #                          height_fframe_after_split[1])
-        # p.save_img(b2g, data.get_save_path('b2g'))
 
         if i % 100 == 0:
             lap = (time.time()-start)/60

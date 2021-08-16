@@ -36,20 +36,10 @@ class LearningData(object):
         self.path_name_augmented = os.path.join(parent_folder, '03_training_augmented')
 
     def get_fframe(self):
-        rgb_fframe_fname = os.path.join(self.path_name_processed, self.id + '_rgb_featureframe.png')
-        rgb_fframe_after_fname = os.path.join(self.path_name_processed, self.id + '_rgb_featureframe_after.png')
         height_fframe_fname = os.path.join(self.path_name_processed, self.id + '_height_featureframe.png')
         height_fframe_after_fname = os.path.join(self.path_name_processed, self.id + '_height_featureframe_after.png')
         toolpath_fframe_fname = os.path.join(self.path_name_processed, self.id + '_toolpath_featureframe_fix.png')
 
-        if os.path.isfile(rgb_fframe_fname):
-            self.rgb_fframe = cv2.imread(rgb_fframe_fname)
-        else:
-            raise FileNotFoundError('file: {} does not exist'.format(rgb_fframe_fname))
-        if os.path.isfile(rgb_fframe_after_fname):
-            self.rgb_fframe_after = cv2.imread(rgb_fframe_after_fname)
-        else:
-            raise FileNotFoundError('file: {} does not exist'.format(rgb_fframe_after_fname))
         if os.path.isfile(height_fframe_fname):
             self.height_fframe = cv2.imread(height_fframe_fname)
         else:
@@ -73,14 +63,8 @@ class LearningData(object):
     def get_save_path(self, type):
         # get filepath
         filedir = self.path_name_train
-        if type == 'c2c':
-            filename = self.id + '_c2c_training.png'
-        elif type == 'h2h':
+        if type == 'h2h':
             filename = self.id + '_h2h_training_fix.png'
-        elif type == 'h2c':
-            filename = self.id + '_h2c_training.png'
-        elif type == 'c2h':
-            filename = self.id + '_c2h_training.png'
         elif type == 'gb2gb':
             filename = self.id + '_gb2gb_training_fix.png'
         filepath = filedir + '/' + filename
@@ -96,20 +80,6 @@ class LearningData(object):
             os.makedirs(dataset_dir)
         except FileExistsError:
             pass
-            # print('Directory ', dataset_dir, " already exists")
-
-        # create folder for child folders
-        # c2c
-        c2c_dir = os.path.join(dataset_dir, 'c2c')
-        self.c2c_train_dir = os.path.join(c2c_dir, 'train')
-        self.c2c_test_dir = os.path.join(c2c_dir, 'test')
-        try:
-            os.makedirs(c2c_dir)
-            os.makedirs(self.c2c_train_dir)
-            os.makedirs(self.c2c_test_dir)
-        except FileExistsError:
-            pass
-            # print("Directory ", c2c_dir, " already exists")
 
         # h2h
         h2h_dir = os.path.join(dataset_dir, 'h2h')
@@ -121,31 +91,6 @@ class LearningData(object):
             os.makedirs(self.h2h_test_dir)
         except FileExistsError:
             pass
-            # print("Directory ", h2h_dir, " already exists")
-
-        # h2c
-        h2c_dir = os.path.join(dataset_dir, 'h2c')
-        self.h2c_train_dir = os.path.join(h2c_dir, 'train')
-        self.h2c_test_dir = os.path.join(h2c_dir, 'test')
-        try:
-            os.makedirs(h2c_dir)
-            os.makedirs(self.h2c_train_dir)
-            os.makedirs(self.h2c_test_dir)
-        except FileExistsError:
-            pass
-            # print("Directory ", h2c_dir, " already exists")
-
-        # c2h
-        c2h_dir = os.path.join(dataset_dir, 'c2h')
-        self.c2h_train_dir = os.path.join(c2h_dir, 'train')
-        self.c2h_test_dir = os.path.join(c2h_dir, 'test')
-        try:
-            os.makedirs(c2h_dir)
-            os.makedirs(self.c2h_train_dir)
-            os.makedirs(self.c2h_test_dir)
-        except FileExistsError:
-            pass
-            # print("Directory ", c2h_dir, " already exists")
 
         # gb2gb
         gb2gb_dir = os.path.join(dataset_dir, 'gb2gb')
@@ -157,23 +102,8 @@ class LearningData(object):
             os.makedirs(self.gb2gb_test_dir)
         except FileExistsError:
             pass
-            # print("Directory ", g2b_dir, " already exists")
 
     def store_data(self):
-        # c2c
-        path_from = self.get_save_path(type='c2c')
-        if self.iter % 2 == 0:
-            # save to train
-            path_to = self.c2c_train_dir
-        else:
-            # save to test
-            path_to = self.c2c_test_dir
-        try:
-            shutil.copy(path_from, path_to)
-        except shutil.SameFileError:
-            pass
-            # print("File ", path_to, ' already exists')
-
         # h2h
         path_from = self.get_save_path(type='h2h')
         if self.iter % 2 == 0:
@@ -186,37 +116,8 @@ class LearningData(object):
             shutil.copy(path_from, path_to)
         except shutil.SameFileError:
             pass
-            # print("File ", path_to, ' already exists')
 
-        # h2c
-        path_from = self.get_save_path(type='h2c')
-        if self.iter % 2 == 0:
-            # save to train
-            path_to = self.h2c_train_dir
-        else:
-            # save to test
-            path_to = self.h2c_test_dir
-        try:
-            shutil.copy(path_from, path_to)
-        except shutil.SameFileError:
-            pass
-            # print("File ", path_to, ' already exists')
-
-        # c2h
-        path_from = self.get_save_path(type='c2h')
-        if self.iter % 2 == 0:
-            # save to train
-            path_to = self.c2h_train_dir
-        else:
-            # save to test
-            path_to = self.c2h_test_dir
-        try:
-            shutil.copy(path_from, path_to)
-        except shutil.SameFileError:
-            pass
-            # print("File ", path_to, ' already exists')
-
-        # g2b
+        # g2bgb
         path_from = self.get_save_path(type='gb2gb')
         if self.iter % 2 == 0:
             # save to train
@@ -228,7 +129,6 @@ class LearningData(object):
             shutil.copy(path_from, path_to)
         except shutil.SameFileError:
             pass
-            # print("File ", path_to, ' already exists')
 
     def get_dataset_dir(self):
         dir = os.path.join(self.gan_folder, '00_dataset')
