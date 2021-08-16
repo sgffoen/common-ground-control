@@ -2,11 +2,6 @@ import compas.geometry as cg
 import compas.utilities as cu
 import numpy as np
 import random as r
-import math as m
-import cv2 as cv
-import time
-import json
-import os
 
 
 class DNA(object):  # GENOTYPE
