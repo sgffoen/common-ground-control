@@ -23,45 +23,30 @@ class DNA(object):  # GENOTYPE
             arr[i] = r.randrange(0, 10)
         return arr
 
-    def cal_zdiff(self, arr1, arr2):
-        arr_diff = np.subtract(arr1, arr2)
-        arr_abs_diff = np.absolute(arr_diff)
-        return arr_abs_diff
-
-    def get_minmax(self, arr):
-        min = np.amin(arr)
-        max = np.amax(arr)
-        return min, max
-
     def fit(self, target_arr):
-        # evaluation
-        zdiff = self.cal_zdiff(self.genes, target_arr)
-        zdiff_min, zdiffmax = self.get_minmax(zdiff)
-        mean_zdiff = np.mean(zdiff)
-
-        self.fitness = m.exp(-mean_zdiff)
+        score = 0
+        for i in range(self.genes.shape[0]):
+            if self.genes[i] == target_arr[i]:
+                score += 1
+        self.fitness = score / target_arr.shape[0]
         # exponential fitness
         # self.fitness = score ** 2
         # self.fitness = 2 ** score
 
     def crossover(self, dna2):
         child_dna = DNA()
-        midpoint1 = int(r.randint(0, self.genes.shape[0]))
-        midpoint2 = int(r.randint(0, self.genes.shape[1]))
+        midpoint = int(r.randint(0, self.genes.shape[0]))
         for i in range(self.genes.shape[0]):
-            for j in range(self.genes.shape[1]):
-                if i > midpoint1 and j > midpoint2:
-                    child_dna.genes[i][j] = self.genes[i][j]
-                else:
-                    child_dna.genes[i][j] = dna2.genes[i][j]
+            if i > midpoint:
+                child_dna.genes[i] = self.genes[i]
+            else:
+                child_dna.genes[i] = dna2.genes[i]
         return child_dna
 
     def mutation(self, metation_rate):
         for i in range(self.genes.shape[0]):
-            for j in range(self.genes.shape[1]):
-                if r.random() < metation_rate:
-                    self.genes[i][j] = r.randint(np.amin(self.genes),
-                                                 np.amax(self.genes))
+            if r.random() < metation_rate:
+                self.genes[i] = r.randint(0, 10)
 
 
 if __name__ == '__main__':

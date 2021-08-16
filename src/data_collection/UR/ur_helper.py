@@ -2,7 +2,6 @@
 import math as m
 import time
 import json
-import os
 import compas.geometry as cg
 
 if __name__ == "__main__":
@@ -16,8 +15,7 @@ else:
 
 
 # fact sheet
-path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data', 'facts.json'))
-with open(path) as f:
+with open('data/facts.json') as f:
     facts = json.load(f)
 
 # FUNCTIONS
