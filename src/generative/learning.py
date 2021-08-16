@@ -70,6 +70,19 @@ class LearningData(object):
         filepath = filedir + '/' + filename
         return filepath
 
+    def get_save_path_aug(self, type, num):
+        filepaths = []
+        # get filepath
+        filedir = self.path_name_augmented
+        for i in range(num):
+            if type == 'h2h':
+                filename = self.id + '_h2h_augmented_' + str(i).zfill(2) + '.png'
+            elif type == 'gb2gb':
+                filename = self.id + '_gb2gb_augmented_' + str(i).zfill(2) + '.png'
+            filepath = filedir + '/' + filename
+            filepaths.append(filepath)
+        return filepaths
+
     def create_dataset_dir(self, lvl):
         dir = self.gan_folder
         new_dir = os.path.join(dir, '00_dataset')
@@ -104,8 +117,10 @@ class LearningData(object):
             pass
 
     def store_data(self):
+        aug_num = 2
         # h2h
         path_from = self.get_save_path(type='h2h')
+        path_from_aug = self.get_save_path_aug(type='h2h', num=aug_num)
         if self.iter % 4 == 0:
             # save to test
             path_to = self.h2h_test_dir
@@ -114,11 +129,14 @@ class LearningData(object):
             path_to = self.h2h_train_dir
         try:
             shutil.copy(path_from, path_to)
+            for i in range(aug_num):
+                shutil.copy(path_from_aug[i], path_to)
         except shutil.SameFileError:
             pass
 
         # g2bgb
         path_from = self.get_save_path(type='gb2gb')
+        path_from_aug = self.get_save_path_aug(type='gb2gb', num=aug_num)
         if self.iter % 4 == 0:
             # save to test
             path_to = self.gb2gb_test_dir
@@ -127,6 +145,8 @@ class LearningData(object):
             path_to = self.gb2gb_train_dir
         try:
             shutil.copy(path_from, path_to)
+            for i in range(aug_num):
+                shutil.copy(path_from_aug[i], path_to)
         except shutil.SameFileError:
             pass
 
