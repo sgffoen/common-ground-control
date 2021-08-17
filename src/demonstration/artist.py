@@ -1,20 +1,29 @@
 import os
-import cv2 as cv
+import sys
 import json
 import datetime
+import cv2 as cv
 import math as m
 import numpy as np
 import random as r
 import compas.geometry as cg
 import compas.utilities as cu
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from tkinter.filedialog import askdirectory
 
 
 class Artist(object):
-    def __init__(self, num_ctrl_pts, fframe_bounds):
+    def __init__(self, num_ctrl_pts, height_fframe, target_img, model):
         self.facts = self.call_fact()
         self.num_ctrl_pts = num_ctrl_pts
-        self.fframe_bounds = fframe_bounds
-        self.toolpath_feature = self.draw_polyline_in_sandbox2d()
+        self.fframe_bounds = self.get_fframe_bounds()
+        self.model = model
+        self.target_img = target_img
+        self.height_img = height_fframe
+
+        self.genotype = self.random_ctrl_pts()
+        self.phenotype = None
 
     def random_ctrl_pts(self):
         arr = np.zeros((self.num_ctrl_pts, 3))
@@ -24,17 +33,8 @@ class Artist(object):
             arr[i][2] = r.randint(50, 100)
         return arr
 
-    def call_fact(self):
-        dir = os.getcwd()
-        fname = "data_collection/data/facts.json"
-        path = os.path.join(dir, fname)
-        with open(path) as f:
-            facts = json.load(f)
-        return facts
-
-    def tuple_to_compas_frame(self, curve_type='bezier', segments_num=50):
+    def tuple_to_compas_frame(self, ctrl_pts, curve_type='bezier', segments_num=50):
         ctrl_frames = []
-        ctrl_pts = self.random_ctrl_pts()
         ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in ctrl_pts]
 
         if curve_type == 'polyline':
@@ -78,15 +78,16 @@ class Artist(object):
         feature_ysize = int(abs(self.facts['feature_bounds']['max_bound'][0]
                                 - self.facts['feature_bounds']['min_bound'][0]))
 
-        img = 255 * np.ones(shape=[m.floor(feature_ysize),
-                                    m.floor(feature_xsize),
-                                    3], dtype=np.uint8)
+        img = np.zeros(shape=[m.floor(feature_ysize),
+                              m.floor(feature_xsize),
+                              3],
+                       dtype=np.uint8)
 
-        ctrl_frames = self.tuple_to_compas_frame()
+        ctrl_frames = self.tuple_to_compas_frame(self.genotype)
         for a, b in cu.pairwise(range(len(ctrl_frames))):
             pt_s = ctrl_frames[a].point
             pt_e = ctrl_frames[b].point
-            z = self.remapValue(pt_s[2], 50, 100, 0, 255)
+            z = self.remapValue(pt_s[2], 0, 150, 0, 255)
             cv.line(img,
                     (int(pt_s[0]), int(pt_s[1])),
                     (int(pt_e[0]), int(pt_e[1])),
@@ -95,100 +96,162 @@ class Artist(object):
                     lineType=cv.FILLED)
         return img
 
+    def call_fact(self):
+        dir = os.getcwd()
+        fname = "data_collection/data/facts.json"
+        path = os.path.join(dir, fname)
+        with open(path, 'r') as f:
+            facts = json.load(f)
+        return facts
 
-    class DNA():  # GENOTYPE
-        def __init__(self, toolpath_fframe):
-            self.genes = toolpath_fframe
+    def get_feature_center(self):
+        (f_bounds_xmin,
+        f_bounds_ymin,
+        f_bounds_zmin) = self.facts['feature_bounds']['min_bound']
+        (f_bounds_xmax,
+        f_bounds_ymax,
+        f_bounds_zmax) = self.facts['feature_bounds']['max_bound']
 
-        def fit(self, target_arr):
-            # score
-            # arr_diff = np.subtract(self.gene, target_arr)
-            # arr_abs_diff = np.absolute(arr_diff)
-            # score = np.mean(arr_abs_diff)
-            score = 0
+        x = (f_bounds_xmax - f_bounds_xmin)/2
+        y = (f_bounds_ymax - f_bounds_ymin)/2
+        z = (f_bounds_zmax - f_bounds_zmin)/2
+        return [y, x, z]
 
-            for i in range(self.genes.shape[0]):
-                for j in range(self.genes.shape[1]):
-                    if self.genes[i][j] == target_arr[i][j]:
-                        score += 1
-            self.fitness = score / (self.genes.shape[0] * self.genes.shape[1])
-            # exponential fitness
-            # self.fitness = score ** 2
-            # self.fitness = 2 ** score
+    def get_fframe_bounds(self):
+        xsize = self.facts['fig_size']['x']
+        ysize = self.facts['fig_size']['y']
 
-        def crossover(self, child, dna2):
-            midpoint_x = int(r.randint(0, self.genes.shape[0]))
-            midpoint_y = int(r.randint(0, self.genes.shape[1]))
-            for i in range(self.genes.shape[0]):
-                for j in range(self.genes.shape[1]):
-                    if i > midpoint_x and j > midpoint_y:
-                        child.genes[i][j] = self.genes[i]
-                    else:
-                        child.genes[i][j] = dna2.genes[i]
-            return child
+        feature_center = self.get_feature_center()
 
-        def mutation(self, metation_rate):
-            for i in range(self.genes.shape[0]):
-                for j in range(self.genes.shape[1]):
-                    if r.random() < metation_rate:
-                        self.genes[i][j] = r.randint(0, 255)
+        xmin = feature_center[0] - (xsize/2)
+        xmax = feature_center[0] + (xsize/2)
+        ymin = feature_center[1] - (ysize/2)
+        ymax = feature_center[1] + (ysize/2)
 
+        x_range = [xmin, xmax]
+        y_range = [ymin, ymax]
+        return [x_range, y_range]
 
+    def get_fframe_corner(self):
+        fframe_bounds = self.get_fframe_bounds()
 
-class LineArtist(object):
-    def __init__(self):
-        img = 255 * np.ones(shape=[m.floor(256),
-                                   m.floor(256),
-                                   3], dtype=np.uint8)
-        self.original_image = img
-        self.clone = self.original_image.copy()
+        topleft = [fframe_bounds[0][0], fframe_bounds[1][0]]
+        topright = [fframe_bounds[0][1], fframe_bounds[1][0]]
+        bottomleft = [fframe_bounds[0][0], fframe_bounds[1][1]]
+        bottomright = [fframe_bounds[0][1], fframe_bounds[1][1]]
+        return [topleft, topright, bottomright, bottomleft]
 
-        cv.namedWindow('image')
-        cv.setMouseCallback('image', self.extract_coordinates)
+    def get_corp_idx(self):
+        idx = []
+        corners = self.get_fframe_corner()
+        for c in corners:
+            coord = []
+            for i in c:
+                coord.append(int(i))
+            idx.append(coord)
+        return idx
 
-        # List to store start/end points
-        self.image_coordinates = []
-        self.count = 0
+    def crop_feature(self):
+        img = self.draw_polyline_in_sandbox2d()
+        crop_idx = self.get_corp_idx()
+        pts_from = np.float32(crop_idx)
+        pts_to = np.float32([[0, 0],
+                            [self.facts['fig_size']['x'], 0],
+                            [self.facts['fig_size']['x'], self.facts['fig_size']['y']],
+                            [0, self.facts['fig_size']['y']]])
+        M = cv.getPerspectiveTransform(pts_from, pts_to)
+        img_cropped = cv.warpPerspective(img,
+                                         M,
+                                         (int(self.facts['fig_size']['x']),
+                                          int(self.facts['fig_size']['x'])),
+                                         flags=cv.WARP_FILL_OUTLIERS,
+                                         borderMode=cv.BORDER_CONSTANT)
+        return img_cropped
 
-    def extract_coordinates(self, event, x, y, flags, parameters):
-        # Record starting (x,y) coordinates on left mouse button click
-        if (event == cv.EVENT_LBUTTONDOWN) and (self.count % 2 == 0):
-            self.image_coordinates = [(x, y)]
-            self.count += 1
+    def custom_img_addition(self, height_img):
+        self.toolpath_img = self.crop_feature()
+        arr = np.zeros([256, 256, 3], dtype=np.uint8)
+        for i in range(256):
+            for j in range(256):
+                if self.toolpath_img[i][j][2] > 0:
+                    arr[i][j] = self.toolpath_img[i][j]
+                else:
+                    arr[i][j] = height_img[i][j]
+        return arr
 
-        # Record ending (x,y) coordintes on left mouse bottom click
-        elif (event == cv.EVENT_LBUTTONDOWN) and (self.count % 2 == 1):
-            self.count += 1
-            self.image_coordinates.append((x, y))
-            print('Line: {}, Starting: {}, Ending: {}'.format(int(self.count/2), self.image_coordinates[0], self.image_coordinates[1]))
+    def decode(self, img_to_decode):
+        decoded_img = tf.convert_to_tensor(img_to_decode)
+        decoded_img = tf.cast(decoded_img, tf.float32)
+        return decoded_img
 
-            # Draw line
-            cv.line(self.clone, self.image_coordinates[0], self.image_coordinates[1], (0, 0, 255), thickness=2)
-            cv.imshow("image", self.clone)
+    def normalize(self, img_to_normalize):
+        img_to_normalize = (img_to_normalize / 127.5) - 1
+        return img_to_normalize
 
-        # Clear drawing boxes on right mouse button click
-        elif event == cv.EVENT_RBUTTONDOWN:
-            self.clone = self.original_image.copy()
+    def denormalize(self, img_to_denormalize):
+        img_to_denormalize = np.add(img_to_denormalize, 1)
+        img_to_denormalize = np.multiply(img_to_denormalize, 127.5)
+        return img_to_denormalize
 
-    def show_image(self):
-        return self.clone
+    def encode(self, img_to_encode):
+        img_to_encode = img_to_encode.astype(np.uint8)
+        return img_to_encode
 
-    def save_img(self):
-        pass
+    def generate_img(self):
+        input_img = self.custom_img_addition(self.height_img)
+        img_decoded = self.decode(input_img)
+        img_normalized = self.normalize(img_decoded)
+        input_tensor = np.reshape(img_normalized, [1, 256, 256, 3])
+
+        prediction = self.model(input_tensor, training=True)
+
+        output_img = prediction[0].numpy()
+        img_denormalized = self.denormalize(output_img)
+        img_encoded = self.encode(img_denormalized)
+        self.phenotype = img_encoded
+
+    def cal_zdiff(self, arr1, arr2):
+        arr_diff = np.subtract(arr1, arr2)
+        arr_abs_diff = np.absolute(arr_diff)
+        return arr_abs_diff
+
+    def get_minmax(self, arr):
+        min = np.amin(arr)
+        max = np.amax(arr)
+        return min, max
+
+    def fit(self):
+        # evaluation
+        self.generate_img()
+        zdiff = self.cal_zdiff(self.target_img, self.phenotype)
+        zmin, zmax = self.get_minmax(zdiff)
+        mean_zdiff = np.mean(zdiff)
+        # raw_fitness = m.exp(-(mean_zdiff))
+        raw_fitness = 1 / mean_zdiff
+        if raw_fitness < 0.01:
+            raw_fitness += 0.01
+
+        self.fitness = raw_fitness
+
+    def crossover(self, parent_a, parent_b):
+        midpoint = int(r.randint(0, self.genotype.shape[0]))
+        for i in range(self.genotype.shape[0]):
+            if i > midpoint:
+                self.genotype[i] = parent_a.genotype[i]
+            else:
+                self.genotype[i] = parent_b.genotype[i]
+
+    def mutation(self, metation_rate):
+        for i in range(self.genotype.shape[0]):
+            if r.random() < metation_rate:
+                self.genotype[i][0] = r.randint(int(self.fframe_bounds[0][0]), int(self.fframe_bounds[0][1]))
+                self.genotype[i][1] = r.randint(int(self.fframe_bounds[1][0]), int(self.fframe_bounds[1][1]))
+                self.genotype[i][2] = r.randint(50, 100)
+
+    def save_fig(self, tp_fname, ex_fname):
+        cv.imwrite(tp_fname, self.toolpath_img)
+        cv.imwrite(ex_fname, self.phenotype)
+
 
 if __name__ == '__main__':
     pass
-    # line_artist = LineArtist()
-    # while True:
-    #     img = line_artist.show_image()
-    #     cv.imshow('image', img)
-    #     key = cv.waitKey(1)
-
-    #     # Close program with keyboard 'q'
-    #     if key == ord('q'):
-    #         id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    #         filename = 'G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/' + 'test_{}.png'.format(id)
-    #         cv.imwrite(filename, img)
-
-    #         cv.destroyAllWindows()
-    #         exit(1)

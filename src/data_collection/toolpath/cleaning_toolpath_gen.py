@@ -16,8 +16,9 @@ import json
 
 def clean(type='along_x'):
 
-    # set global facts
-    with open('data/facts.json') as f:
+    # fact sheet
+    path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data', 'facts.json'))
+    with open(path) as f:
         facts = json.load(f)
 
     __BLADE_W__ = 50
