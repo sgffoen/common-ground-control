@@ -14,7 +14,7 @@ def augment_data():
     iteration_dirs.remove('meta.json')
     iteration_dirs.sort()
 
-    for i, id in enumerate(iteration_dirs[1128:]):
+    for i, id in enumerate(iteration_dirs[4099:]):
         # 1. accessing data_collection path/img
         data = LearningData(iter=i, id=id, env='production')
         data.get_iter_dirs()
@@ -28,12 +28,14 @@ def augment_data():
         for j in range(2):
             h2h_aug, gb2gb_aug = augment_fframe(data)
 
-            # store augmented image pair
-            h2h_fn = data.id + '_h2h_augmented_' + str(j).zfill(2) + '.png'
-            gb2gb_fn = data.id + '_gb2gb_augmented_' + str(j).zfill(2) + '.png'
+            if h2h_aug is not None and gb2gb_aug is not None:
 
-            cv2.imwrite(os.path.join(data.path_name_augmented, h2h_fn), h2h_aug)
-            cv2.imwrite(os.path.join(data.path_name_augmented, gb2gb_fn), gb2gb_aug)
+                # store augmented image pair
+                h2h_fn = data.id + '_h2h_augmented_' + str(j).zfill(2) + '.png'
+                gb2gb_fn = data.id + '_gb2gb_augmented_' + str(j).zfill(2) + '.png'
+
+                cv2.imwrite(os.path.join(data.path_name_augmented, h2h_fn), h2h_aug)
+                cv2.imwrite(os.path.join(data.path_name_augmented, gb2gb_fn), gb2gb_aug)
 
 
         if i % 100 == 0:
@@ -47,29 +49,31 @@ def augment_fframe(data):
     h2h = cv2.imread(data.get_save_path(type='h2h'))
     gb2gb = cv2.imread(data.get_save_path(type='gb2gb'))
 
+    try:
+        # augmented array
+        h2h_aug = np.copy(h2h)
+        gb2gb_aug = np.copy(gb2gb)
 
-    # augmented array
-    h2h_aug = np.copy(h2h)
-    gb2gb_aug = np.copy(gb2gb)
+        # get min and max bounds
+        dmin = np.min(h2h[h2h>0])
+        dmax = 255 - np.max(h2h)
 
-    # get min and max bounds
-    dmin = np.min(h2h[h2h>0])
-    dmax = 255 - np.max(h2h)
+        # add or substract random choice
+        k = np.random.randint(0, 1)
+        if k == 1:
+            #add
+            v = np.random.randint(low=3, high=dmax-1, dtype=np.uint8)
+        elif k == 0:
+            # subtract
+            v = np.random.randint(low=3, high=dmin-1, dtype=np.uint8) * -1
 
-    # add or substract random choice
-    k = np.random.randint(0, 1)
-    if k == 1:
-        #add
-        v = np.random.randint(low=3, high=dmax-1, dtype=np.uint8)
-    elif k == 0:
-        # subtract
-        v = np.random.randint(low=3, high=dmin-1, dtype=np.uint8) * -1
+        h2h_aug[h2h_aug!=0] += v.astype(np.uint8)
+        gb2gb_aug[gb2gb_aug!=0] += v.astype(np.uint8)
 
-    h2h_aug[h2h_aug!=0] += v.astype(np.uint8)
-    gb2gb_aug[gb2gb_aug!=0] += v.astype(np.uint8)
-
-    return h2h_aug, gb2gb_aug
-
+        return h2h_aug, gb2gb_aug
+    except:
+        print('skipped {}'.format(data.id))
+        return None, None
 
 
 if __name__ == "__main__":

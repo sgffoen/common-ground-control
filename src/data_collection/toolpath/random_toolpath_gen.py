@@ -426,7 +426,7 @@ def get_toolpath(level, curve_type, folder, id, show=False):
 
     t = Toolpath(level,
                  curve_type,
-                 num_ctrl_pts=5,
+                 num_ctrl_pts=2,
                  segments_num=50,
                  thickness=2,
                  parent_folder=folder,
