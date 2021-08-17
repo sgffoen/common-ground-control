@@ -56,12 +56,12 @@ def demo():
     population = []
     mating_pool = []
     mutation_rate = 0.01
-    generation_num = 1000
+    generation_num = 10000
     plot_fitness = []
 
     # initialize
     for i in range(population_num):
-        a = Artist(5, height_fframe, target_img, loaded_model)
+        a = Artist(2, height_fframe, target_img, loaded_model)
         population.append(a)
 
     for g in range(generation_num):
@@ -75,7 +75,7 @@ def demo():
         # reproduciton
         for i in range(population_num):
             # next gen
-            child_a = Artist(5, height_fframe, target_img, loaded_model)
+            child_a = Artist(2, height_fframe, target_img, loaded_model)
             # crossover
             if population_num == 2:
                 child_a.crossover(mating_pool[0], mating_pool[1])
@@ -126,6 +126,13 @@ def demo():
     plt.ylabel('fitness')
     plt.savefig(fname)
 
+def single_prediction():
+    h = Helper()
+    loaded_model = h.load_model()
+    h.generate_img(loaded_model)
+    cv.imshow('single_prediction', h.phenotype)
+    cv.waitKey(0)
 
 if __name__ == '__main__':
     demo()
+    # single_prediction()

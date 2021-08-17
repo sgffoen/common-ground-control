@@ -5,7 +5,7 @@ import cv2 as cv
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from tkinter.filedialog import askdirectory
+from tkinter.filedialog import askdirectory, askopenfilename
 
 
 class Helper(object):
@@ -89,6 +89,52 @@ class Helper(object):
             return loaded_model
         except FileNotFoundError:
             print('model, {}, does not exist\n'.format(dir_name))
+
+    def custom_img_addition(self, height_img):
+        fname = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production/00000_2021-08-05/01_processed/00000_2021-08-05_toolpath_featureframe_fix.png"
+        self.toolpath_img = cv.imread(fname)
+        arr = np.zeros([256, 256, 3], dtype=np.uint8)
+        for i in range(256):
+            for j in range(256):
+                if self.toolpath_img[i][j][2] > 0:
+                    arr[i][j] = self.toolpath_img[i][j]
+                else:
+                    arr[i][j] = height_img[i][j]
+        return arr
+
+    def decode(self, img_to_decode):
+        decoded_img = tf.convert_to_tensor(img_to_decode)
+        decoded_img = tf.cast(decoded_img, tf.float32)
+        return decoded_img
+
+    def normalize(self, img_to_normalize):
+        img_to_normalize = (img_to_normalize / 127.5) - 1
+        return img_to_normalize
+
+    def denormalize(self, img_to_denormalize):
+        img_to_denormalize = np.add(img_to_denormalize, 1)
+        img_to_denormalize = np.multiply(img_to_denormalize, 127.5)
+        return img_to_denormalize
+
+    def encode(self, img_to_encode):
+        img_to_encode = img_to_encode.astype(np.uint8)
+        return img_to_encode
+
+    def generate_img(self, model):
+        fname = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production/00000_2021-08-05/01_processed/00000_2021-08-05_height_feature.png"
+        height_img = cv.imread(fname)
+        input_img = self.custom_img_addition(height_img)
+        img_decoded = self.decode(input_img)
+        img_normalized = self.normalize(img_decoded)
+        input_tensor = np.reshape(img_normalized, [1, 256, 256, 3])
+
+        prediction = model(input_tensor, training=True)
+
+        output_img = prediction[0].numpy()
+        img_denormalized = self.denormalize(output_img)
+        img_encoded = self.encode(img_denormalized)
+        self.phenotype = img_encoded
+
 
 if __name__ == '__main__':
     save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test"

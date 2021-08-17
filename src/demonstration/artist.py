@@ -28,8 +28,8 @@ class Artist(object):
     def random_ctrl_pts(self):
         arr = np.zeros((self.num_ctrl_pts, 3))
         for i in range(arr.shape[0]):
-            arr[i][0] = r.randint(int(self.fframe_bounds[0][0]), int(self.fframe_bounds[0][1]))
-            arr[i][1] = r.randint(int(self.fframe_bounds[1][0]), int(self.fframe_bounds[1][1]))
+            arr[i][0] = r.randint(self.fframe_bounds[0][0], self.fframe_bounds[0][1])
+            arr[i][1] = r.randint(self.fframe_bounds[1][0], self.fframe_bounds[1][1])
             arr[i][2] = r.randint(50, 100)
         return arr
 
