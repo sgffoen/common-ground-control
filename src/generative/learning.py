@@ -26,6 +26,10 @@ class LearningData(object):
     def get_gan_folder(self):
         return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/"
 
+    def create_identifier(self, iter):
+        id_num = str(iter).zfill(5)
+        return str(id_num) + '_' + str(datetime.date.today())
+
     def get_iter_dirs(self):
         dir = self.env_folder
         parent_folder = os.path.join(dir, self.id)
@@ -130,7 +134,8 @@ class LearningData(object):
         try:
             shutil.copy(path_from, path_to)
             for i in range(aug_num):
-                shutil.copy(path_from_aug[i], path_to)
+                if os.path.isfile(path_from_aug[i]):
+                    shutil.copy(path_from_aug[i], path_to)
         except shutil.SameFileError:
             pass
 
@@ -146,7 +151,8 @@ class LearningData(object):
         try:
             shutil.copy(path_from, path_to)
             for i in range(aug_num):
-                shutil.copy(path_from_aug[i], path_to)
+                if os.path.isfile(path_from_aug[i]):
+                    shutil.copy(path_from_aug[i], path_to)
         except shutil.SameFileError:
             pass
 
