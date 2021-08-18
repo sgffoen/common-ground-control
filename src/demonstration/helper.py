@@ -81,6 +81,16 @@ class Helper(object):
                                          borderMode=cv.BORDER_CONSTANT)
         return img_cropped
 
+    def load_img(self, img_path):
+        # Read and decode an image file to a uint8 tensor
+        image = tf.io.read_file(img_path)
+        image = tf.image.decode_png(image)
+        # Convert an image to float32 tensors
+        image = tf.cast(image, tf.float32)
+        # Normalizing the images to [-1, 1]
+        image = (image / 127.5) - 1
+        return image
+
     def load_model(self):
         dir_name = askdirectory()
         try:
@@ -108,8 +118,8 @@ class Helper(object):
         return decoded_img
 
     def normalize(self, img_to_normalize):
-        img_to_normalize = (img_to_normalize / 127.5) - 1
-        return img_to_normalize
+        normalized_img = (img_to_normalize / 127.5) - 1
+        return normalized_img
 
     def denormalize(self, img_to_denormalize):
         img_to_denormalize = np.add(img_to_denormalize, 1)
@@ -120,13 +130,8 @@ class Helper(object):
         img_to_encode = img_to_encode.astype(np.uint8)
         return img_to_encode
 
-    def generate_img(self, model):
-        fname = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production/00000_2021-08-05/01_processed/00000_2021-08-05_height_feature.png"
-        height_img = cv.imread(fname)
-        input_img = self.custom_img_addition(height_img)
-        img_decoded = self.decode(input_img)
-        img_normalized = self.normalize(img_decoded)
-        input_tensor = np.reshape(img_normalized, [1, 256, 256, 3])
+    def generate_img(self, model, input_img):
+        input_tensor = np.reshape(input_img, [1, 256, 256, 3])
 
         prediction = model(input_tensor, training=True)
 

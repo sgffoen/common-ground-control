@@ -20,6 +20,7 @@ from helper import Helper
 
 def demo():
     save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test"
+    save_dir_ga = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/ga"
 
     # # scan and initialize
     # ur.ur_helper.scan_pose(scanning_time=5)
@@ -37,15 +38,14 @@ def demo():
     # height_feature = None
 
     # set target img
-    filepath = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production/00000_2021-08-05/01_processed/00000_2021-08-05_height_featureframe_after.png"
+    filepath = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/test_target.png"
     target_img = cv.imread(filepath)
 
     # get fframe
     helper = Helper()
     # height_fframe = helper.crop_feature(height_feature)
-    filepath = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production/00000_2021-08-05/01_processed/00000_2021-08-05_height_feature.png"
-    temp_feature = cv.imread(filepath)
-    height_fframe = helper.crop_feature(temp_feature)
+    filepath = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/test_scan.png"
+    height_fframe = cv.imread(filepath)
     # load model
     print("select the model you want to test.")
     loaded_model = helper.load_model()
@@ -56,8 +56,8 @@ def demo():
     population = []
     mating_pool = []
     mutation_rate = 0.01
-    generation_num = 10000
-    plot_fitness = []
+    generation_num = 1000
+    plot = []
 
     # initialize
     for i in range(population_num):
@@ -65,41 +65,71 @@ def demo():
         population.append(a)
 
     for g in range(generation_num):
+        # simplify
+        # child_a = Artist(2, height_fframe, target_img, loaded_model)
+        # # selection
+        # parent_a = population[0]
+        # parent_b = population[1]
+        # # crossover
+        # child_a.crossover(parent_a, parent_b)
+        # # mutation
+        # child_a.mutation(mutation_rate)
+        # # fit
+        # parent_a.fit()
+        # parent_b.fit()
+        # child_a.fit()
+        # # compete parent and child
+        # if child_a.fitness > parent_a.fitness:
+        #     population[0] = child_a
+        # elif child_a.fitness > parent_b.fitness:
+        #     population[1] = child_a
+        # # plot fitness
+        # fitness = population[0].fitness
+        # plot_fitness.append(fitness)
+        # fitness = population[1].fitness
+        # plot_fitness.append(fitness)
+
+        # normal
         # selection
         for p in population:
             p.fit()
             # mating_pool
             for j in range(int(p.fitness * 100)):
                 mating_pool.append(p)
-
         # reproduciton
         for i in range(population_num):
             # next gen
             child_a = Artist(2, height_fframe, target_img, loaded_model)
             # crossover
-            if population_num == 2:
-                child_a.crossover(mating_pool[0], mating_pool[1])
-            else:
-                child_a.crossover(r.sample(mating_pool, 1)[0],
-                                r.sample(mating_pool, 1)[0])
+            parent_a = r.sample(mating_pool, 1)[0]
+            parent_b = r.sample(mating_pool, 1)[0]
+            child_a.crossover(parent_a, parent_b)
             # mutation
             child_a.mutation(mutation_rate)
             # fit
             child_a.fit()
+
+            # # compete paraents
+            # if parent_a.fitness > parent_b.fitness:
+            #     better_parent = parent_a
+            # else:
+            #     better_parent = parent_b
+            # # compete parent and child
+            # if child_a.fitness > better_parent.fitness:
+            #     population[i] = child_a
             population[i] = child_a
+
             # plot
             fitness = population[i].fitness
-            plot_fitness.append(fitness)
-            # evaluate
-            if fitness > 0.9:
-                final_generation = g
-                break
-            else:
-                final_generation = g
+        plot.append([population[i].zdiff_mean, population[i].zdiff_min, population[i].zdiff_max])
 
         if g % 10 == 0:
             print('\ngeneration: {} / {}'.format(g, generation_num))
-            print('LAPTIME   : ', (time.time()-start)/60, ' min\n')
+            print('LAPTIME   : ', (time.time()-start)/60, ' min')
+            print('FITNESS   : ', fitness, '\n')
+            id = str(g).zfill(3)
+            fname = save_dir_ga + '/' + str(id) + '_' + 'ga_toolpath.png'
+            cv.imwrite(fname, population[i].input_img)
 
     # save image
     for i,p in enumerate(population):
@@ -113,23 +143,32 @@ def demo():
     average_fitness = total_fitness / len(population)
     calc_time = time.time() - start
 
-    print("total generation: {}".format(final_generation))
     print("average fitness : {}".format(average_fitness))
     print("total population: {}".format(population_num))
     print("mutation rate   : {}".format(mutation_rate))
     print("calculation time: {}sec".format(calc_time))
 
     # save plot
-    id = str(0).zfill(3)
-    fname = save_dir + '/' + str(id) + '_' + "fitness.png"
-    plt.plot(plot_fitness, 'bo')
+    fig, ax = plt.subplots()
+    mean = [p[0] for p in plot]
+    z_min = [p[1] for p in plot]
+    z_max = [p[2] for p in plot]
+    ax.plot(mean, color='green', label='mean')
+    ax.plot(z_min, color='blue', label='min')
+    ax.plot(z_max, color='red', label='max')
+    ax.legend(loc='upper left')
+    plt.xlabel('generation')
     plt.ylabel('fitness')
-    plt.savefig(fname)
+    plot_fname = save_dir + '/' + 'plot_fitness.png'
+    plt.savefig(plot_fname)
+
 
 def single_prediction():
     h = Helper()
     loaded_model = h.load_model()
-    h.generate_img(loaded_model)
+    path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/left_img.png"
+    input_img = h.load_img(path)
+    h.generate_img(loaded_model, input_img)
     cv.imshow('single_prediction', h.phenotype)
     cv.waitKey(0)
 

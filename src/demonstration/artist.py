@@ -19,17 +19,18 @@ class Artist(object):
         self.num_ctrl_pts = num_ctrl_pts
         self.fframe_bounds = self.get_fframe_bounds()
         self.model = model
-        self.target_img = target_img
+        self.target_img = target_img.astype(np.uint8)
         self.height_img = height_fframe
 
         self.genotype = self.random_ctrl_pts()
+        self.input_img = self.custom_img_addition(self.height_img)
         self.phenotype = None
 
     def random_ctrl_pts(self):
         arr = np.zeros((self.num_ctrl_pts, 3))
         for i in range(arr.shape[0]):
-            arr[i][0] = r.randint(self.fframe_bounds[0][0], self.fframe_bounds[0][1])
-            arr[i][1] = r.randint(self.fframe_bounds[1][0], self.fframe_bounds[1][1])
+            arr[i][0] = r.randint(int(self.fframe_bounds[0][0]), int(self.fframe_bounds[0][1]))
+            arr[i][1] = r.randint(int(self.fframe_bounds[1][0]), int(self.fframe_bounds[1][1]))
             arr[i][2] = r.randint(50, 100)
         return arr
 
@@ -179,58 +180,89 @@ class Artist(object):
                     arr[i][j] = height_img[i][j]
         return arr
 
-    def decode(self, img_to_decode):
-        decoded_img = tf.convert_to_tensor(img_to_decode)
-        decoded_img = tf.cast(decoded_img, tf.float32)
-        return decoded_img
+    def load_img(self, img_path):
+        # Read and decode an image file to a uint8 tensor
+        image = tf.io.read_file(img_path)
+        image = tf.image.decode_png(image)
+        # Convert an image to float32 tensors
+        image = tf.cast(image, tf.float32)
+        # Normalizing the images to [-1, 1]
+        image = (image / 127.5) - 1
+        # reshape to add batch at the index of zero
+        image = np.reshape(image, [1, 256, 256, 3])
+        return image
 
-    def normalize(self, img_to_normalize):
-        img_to_normalize = (img_to_normalize / 127.5) - 1
-        return img_to_normalize
-
-    def denormalize(self, img_to_denormalize):
-        img_to_denormalize = np.add(img_to_denormalize, 1)
-        img_to_denormalize = np.multiply(img_to_denormalize, 127.5)
-        return img_to_denormalize
-
-    def encode(self, img_to_encode):
-        img_to_encode = img_to_encode.astype(np.uint8)
-        return img_to_encode
+    def encode_img(self, image):
+        # translate tensor into numpy
+        image = image.numpy()
+        # de-normalize image from [-1,1] to [0,255]
+        image = np.add(image, 1)
+        image = np.multiply(image, 127.5)
+        # change dtype from tf.float32 to np.uint8
+        image = image.astype(np.uint8)
+        return image
 
     def generate_img(self):
-        input_img = self.custom_img_addition(self.height_img)
-        img_decoded = self.decode(input_img)
-        img_normalized = self.normalize(img_decoded)
-        input_tensor = np.reshape(img_normalized, [1, 256, 256, 3])
-
+        # save and load to convert image into tensor
+        fname = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/input.png"
+        cv.imwrite(fname, self.input_img)
+        input_tensor = self.load_img(fname)
+        # generate_img
         prediction = self.model(input_tensor, training=True)
-
-        output_img = prediction[0].numpy()
-        img_denormalized = self.denormalize(output_img)
-        img_encoded = self.encode(img_denormalized)
-        self.phenotype = img_encoded
+        # denormalized
+        self.phenotype = self.encode_img(prediction[0])
 
     def cal_zdiff(self, arr1, arr2):
+        arr1 = arr1.astype(np.float32)
+        arr2 = arr2.astype(np.float32)
         arr_diff = np.subtract(arr1, arr2)
-        arr_abs_diff = np.absolute(arr_diff)
-        return arr_abs_diff
+        arr_diff = np.divide(arr_diff, 255)
+        arr_diff = np.add(arr_diff, 1)
+        arr_diff = np.divide(arr_diff, 2)
+        return arr_diff
 
     def get_minmax(self, arr):
         min = np.amin(arr)
         max = np.amax(arr)
         return min, max
 
-    def fit(self):
-        # evaluation
-        self.generate_img()
-        zdiff = self.cal_zdiff(self.target_img, self.phenotype)
-        zmin, zmax = self.get_minmax(zdiff)
-        mean_zdiff = np.mean(zdiff)
-        # raw_fitness = m.exp(-(mean_zdiff))
-        raw_fitness = 1 / mean_zdiff
+    def get_fitness(self, img1, img2):
+        # zdiff = self.cal_zdiff(img1, img2)
+        # pixel_distance = np.sum(np.sqrt(np.sum(zdiff * zdiff, axis=2)))
+        # raw_fitness = 1 / pixel_fitness
+
+        zdiff = self.cal_zdiff(img1, img2)
+        self.zdiff_mean = np.mean(zdiff)
+        self.zdiff_min, self.zdiff_max = self.get_minmax(zdiff)
+
+        raw_fitness = 1 - self.zdiff_mean
+        # raw_fitness = m.exp(-5*(zdiff_mean))
+
+        # img1 = tf.expand_dims(img1, axis=0)
+        # img2 = tf.expand_dims(img2, axis=0)
+        # ssim = tf.image.ssim(img1,
+        #                      img2,
+        #                      max_val=255,
+        #                      filter_size=22,
+        #                      filter_sigma=1.5,
+        #                      k1=0.01,
+        #                      k2=0.03)
+        # ssim = ssim.numpy()
+        # raw_fitness = (ssim[0] + 1) / 2
+
+        # check min
         if raw_fitness < 0.01:
             raw_fitness += 0.01
+        return raw_fitness
 
+    def fit(self):
+        # generate phenotype
+        self.generate_img()
+        # fitness function
+        raw_fitness = self.get_fitness(self.target_img, self.phenotype)
+        # put at least one item into pool
+        if raw_fitness < 0.01:
+            raw_fitness += 0.01
         self.fitness = raw_fitness
 
     def crossover(self, parent_a, parent_b):
