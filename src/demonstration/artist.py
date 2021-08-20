@@ -229,7 +229,6 @@ class Artist(object):
         # remap
         bounds = 85  # np.amax([np.ptp(arr1), np.ptp(arr2)])
         arr1 = np.interp(arr1, [np.amin(arr1), np.amin(arr1)+bounds], [0, bounds])
-        print(arr1)
         arr2 = np.interp(arr2, [np.amin(arr2), np.amin(arr2)+bounds], [0, bounds])
         # subtraction
         arr_diff = np.subtract(arr1, arr2)
