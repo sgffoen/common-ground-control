@@ -6,27 +6,22 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from tkinter.filedialog import askdirectory, askopenfilename
+from toolbox import Facts
+
 
 
 class Helper(object):
     def __init__(self):
-        self.facts = self.call_fact()
+        self.facts = Facts().facts
 
-    def call_fact(self):
-        dir = os.getcwd()
-        fname = "data_collection/data/facts.json"
-        path = os.path.join(dir, fname)
-        with open(path, 'r') as f:
-            facts = json.load(f)
-        return facts
 
     def get_feature_center(self):
         (f_bounds_xmin,
         f_bounds_ymin,
-        f_bounds_zmin) = self.facts['feature_bounds']['min_bound']
+        f_bounds_zmin) = self.facts.feature_bounds['min_bound']
         (f_bounds_xmax,
         f_bounds_ymax,
-        f_bounds_zmax) = self.facts['feature_bounds']['max_bound']
+        f_bounds_zmax) = self.facts.feature_bounds['max_bound']
 
         x = (f_bounds_xmax - f_bounds_xmin)/2
         y = (f_bounds_ymax - f_bounds_ymin)/2
@@ -34,8 +29,8 @@ class Helper(object):
         return [y, x, z]
 
     def get_fframe_bounds(self):
-        xsize = self.facts['fig_size']['x']
-        ysize = self.facts['fig_size']['y']
+        xsize = self.facts.fig_size['x']
+        ysize = self.facts.fig_size['y']
 
         feature_center = self.get_feature_center()
         xmin = feature_center[0] - (xsize/2)
@@ -69,14 +64,14 @@ class Helper(object):
         crop_idx = self.get_corp_idx()
         pts_from = np.float32(crop_idx)
         pts_to = np.float32([[0, 0],
-                            [self.facts['fig_size']['x'], 0],
-                            [self.facts['fig_size']['x'], self.facts['fig_size']['y']],
-                            [0, self.facts['fig_size']['y']]])
+                            [self.facts.fig_size['x'], 0],
+                            [self.facts.fig_size['x'], self.facts.fig_size['y']],
+                            [0, self.facts.fig_size['y']]])
         M = cv.getPerspectiveTransform(pts_from, pts_to)
         img_cropped = cv.warpPerspective(img,
                                          M,
-                                         (int(self.facts['fig_size']['x']),
-                                          int(self.facts['fig_size']['x'])),
+                                         (int(self.facts.fig_size['x']),
+                                          int(self.facts.fig_size['x'])),
                                          flags=cv.WARP_FILL_OUTLIERS,
                                          borderMode=cv.BORDER_CONSTANT)
         return img_cropped

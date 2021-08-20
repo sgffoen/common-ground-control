@@ -11,19 +11,17 @@ from tkinter.filedialog import askopenfilename, askdirectory
 # package
 from artist import Artist
 from helper import Helper
-# package from parent folders
-# sys.path.insert(1, 'C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/01_git/common-ground-control/src/data_collection')
-# import UR as ur
-# from data import TrainingData
-# from scanning import ScanData, HeightMap, PointCloud
+from toolbox import TrainingData
+from toolbox import ScanData, HeightMap, PointCloud
+import toolbox.ur_helper as ur
 
 
 def demo():
     save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test"
     save_dir_ga = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/ga"
 
-    # # scan and initialize
-    # ur.ur_helper.scan_pose(scanning_time=5)
+    # scan and initialize
+    # ur.scan_pose(scanning_time=5)
     # data = TrainingData(iteration=0, environment='test')
     # scan = ScanData()
     # pcl_obj = PointCloud(scan)
@@ -56,7 +54,7 @@ def demo():
     population = []
     mating_pool = []
     mutation_rate = 0.01
-    generation_num = 100
+    generation_num = 10
     plot = []
 
     # initialize

@@ -11,11 +11,12 @@ import compas.geometry as cg
 import compas.utilities as cu
 import matplotlib.pyplot as plt
 from tkinter.filedialog import askdirectory
+from toolbox import Facts
 
 
 class Artist(object):
     def __init__(self, num_ctrl_pts, height_fframe, target_img, model):
-        self.facts = self.call_fact()
+        self.facts = Facts().facts
         self.num_ctrl_pts = num_ctrl_pts
         self.fframe_bounds = self.get_fframe_bounds()
         self.model = model
@@ -90,10 +91,10 @@ class Artist(object):
         return rv
 
     def draw_polyline_in_sandbox2d(self):
-        feature_xsize = int(abs(self.facts['feature_bounds']['max_bound'][1]
-                                - self.facts['feature_bounds']['min_bound'][1]))
-        feature_ysize = int(abs(self.facts['feature_bounds']['max_bound'][0]
-                                - self.facts['feature_bounds']['min_bound'][0]))
+        feature_xsize = int(abs(self.facts.feature_bounds['max_bound'][1]
+                                - self.facts.feature_bounds['min_bound'][1]))
+        feature_ysize = int(abs(self.facts.feature_bounds['max_bound'][0]
+                                - self.facts.feature_bounds['min_bound'][0]))
 
         img = np.zeros(shape=[m.floor(feature_ysize),
                               m.floor(feature_xsize),
@@ -113,21 +114,13 @@ class Artist(object):
                     lineType=cv.FILLED)
         return img
 
-    def call_fact(self):
-        dir = os.getcwd()
-        fname = "data_collection/data/facts.json"
-        path = os.path.join(dir, fname)
-        with open(path, 'r') as f:
-            facts = json.load(f)
-        return facts
-
     def get_feature_center(self):
         (f_bounds_xmin,
         f_bounds_ymin,
-        f_bounds_zmin) = self.facts['feature_bounds']['min_bound']
+        f_bounds_zmin) = self.facts.feature_bounds['min_bound']
         (f_bounds_xmax,
         f_bounds_ymax,
-        f_bounds_zmax) = self.facts['feature_bounds']['max_bound']
+        f_bounds_zmax) = self.facts.feature_bounds['max_bound']
 
         x = (f_bounds_xmax - f_bounds_xmin)/2
         y = (f_bounds_ymax - f_bounds_ymin)/2
@@ -135,8 +128,8 @@ class Artist(object):
         return [y, x, z]
 
     def get_fframe_bounds(self):
-        xsize = self.facts['fig_size']['x']
-        ysize = self.facts['fig_size']['y']
+        xsize = self.facts.fig_size['x']
+        ysize = self.facts.fig_size['y']
 
         feature_center = self.get_feature_center()
 
@@ -173,14 +166,14 @@ class Artist(object):
         crop_idx = self.get_corp_idx()
         pts_from = np.float32(crop_idx)
         pts_to = np.float32([[0, 0],
-                            [self.facts['fig_size']['x'], 0],
-                            [self.facts['fig_size']['x'], self.facts['fig_size']['y']],
-                            [0, self.facts['fig_size']['y']]])
+                            [self.facts.fig_size['x'], 0],
+                            [self.facts.fig_size['x'], self.facts.fig_size['y']],
+                            [0, self.facts.fig_size['y']]])
         M = cv.getPerspectiveTransform(pts_from, pts_to)
         img_cropped = cv.warpPerspective(img,
                                          M,
-                                         (int(self.facts['fig_size']['x']),
-                                          int(self.facts['fig_size']['x'])),
+                                         (int(self.facts.fig_size['x']),
+                                          int(self.facts.fig_size['x'])),
                                          flags=cv.WARP_FILL_OUTLIERS,
                                          borderMode=cv.BORDER_CONSTANT)
         return img_cropped
@@ -236,6 +229,7 @@ class Artist(object):
         # remap
         bounds = 85  # np.amax([np.ptp(arr1), np.ptp(arr2)])
         arr1 = np.interp(arr1, [np.amin(arr1), np.amin(arr1)+bounds], [0, bounds])
+        print(arr1)
         arr2 = np.interp(arr2, [np.amin(arr2), np.amin(arr2)+bounds], [0, bounds])
         # subtraction
         arr_diff = np.subtract(arr1, arr2)
