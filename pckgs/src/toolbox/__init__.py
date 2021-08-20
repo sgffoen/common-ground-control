@@ -5,3 +5,4 @@ from .raster_utils import EsriGrid
 from .scan import *
 from .training import *
 from .ur_helper import *
+from .helper import Facts
