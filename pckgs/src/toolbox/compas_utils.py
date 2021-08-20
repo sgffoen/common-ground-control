@@ -4,7 +4,7 @@
 import compas.geometry as cg
 from compas_view2.app import App
 import math
-from helper import Facts
+from .helper import Facts
 
 # set global facts
 __FACTS__ = Facts().facts
