@@ -12,9 +12,9 @@ from tkinter.filedialog import askdirectory
 from tkinter.constants import S
 import matplotlib.pyplot as plt
 from pylibfreenect2 import setGlobalLogger
-from raster_utils import EsriGrid
-from features import Feature
-from helper import Facts
+from .raster_utils import EsriGrid
+from .features import Feature
+from .helper import Facts
 
 
 # turn off print logging to command line interface -> to turn on comment out this line of code

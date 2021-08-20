@@ -1,7 +1,7 @@
 import os
 import json
 import datetime
-from features import Feature
+from .features import Feature
 
 class TrainingData(object):
     def __init__(self, iteration, environment='test', toolpath=None, heightmap=None, pointcloud=None, scan_data=None, frame_corner_pts=None):

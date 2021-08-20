@@ -3,7 +3,7 @@ import math as m
 import time
 import json
 import compas.geometry as cg
-from helper import Facts
+from .helper import Facts
 import compas_simple_comm as uc
 import compas_simple_ur_script as us
 import compas_utils as uu

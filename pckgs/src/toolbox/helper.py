@@ -1,4 +1,4 @@
-from facts import facts
+from .facts import facts
 
 class Facts(object):
     def __init__(self):
