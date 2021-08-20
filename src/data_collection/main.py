@@ -9,7 +9,7 @@ import scanning.scan
 import os
 import json
 
-__ITERATION__ = 20
+__ITERATION__ = 100
 __START__ = 0
 __FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
 
@@ -34,7 +34,7 @@ def training(env):
         print('scan id: {}'.format(data.identifier))
 
         # 2. get toolpath
-        toolpath = random_toolpath_gen.get_toolpath(level='1-2',
+        toolpath = random_toolpath_gen.get_toolpath(level='1-3',
                                                     curve_type='bezier',
                                                     folder=path_name_raw,
                                                     id=data.identifier)
@@ -60,7 +60,7 @@ def training(env):
         adapt_height = None
 
         # execure toolpath
-        ur.execute_toolpath(toolpath.ctrlframes_feature, adapt_height, excavation_time=20)
+        ur.execute_toolpath(toolpath.ctrlframes_feature, adapt_height, excavation_time=24)
 
         # scan
         print('\n#############  iteration {} done  #############\n\n'.format(i))

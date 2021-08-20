@@ -19,7 +19,7 @@ def live_scan_stream():
         k = ktb.Kinect()
         while True:
             # Specify as many types as you want here
-            color_frame = k.get_frame(ktb.COLOR)
+            color_frame = k.get_frame(ktb.IR)
             color_frame = np.flipud(color_frame)
 
             cv2.imshow('frame', color_frame)
