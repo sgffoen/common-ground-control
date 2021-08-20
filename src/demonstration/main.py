@@ -56,7 +56,7 @@ def demo():
     population = []
     mating_pool = []
     mutation_rate = 0.01
-    generation_num = 1000
+    generation_num = 100
     plot = []
 
     # initialize
@@ -65,33 +65,9 @@ def demo():
         population.append(a)
 
     for g in range(generation_num):
-        # simplify
-        # child_a = Artist(2, height_fframe, target_img, loaded_model)
-        # # selection
-        # parent_a = population[0]
-        # parent_b = population[1]
-        # # crossover
-        # child_a.crossover(parent_a, parent_b)
-        # # mutation
-        # child_a.mutation(mutation_rate)
-        # # fit
-        # parent_a.fit()
-        # parent_b.fit()
-        # child_a.fit()
-        # # compete parent and child
-        # if child_a.fitness > parent_a.fitness:
-        #     population[0] = child_a
-        # elif child_a.fitness > parent_b.fitness:
-        #     population[1] = child_a
-        # # plot fitness
-        # fitness = population[0].fitness
-        # plot_fitness.append(fitness)
-        # fitness = population[1].fitness
-        # plot_fitness.append(fitness)
-
-        # normal
         # selection
         for p in population:
+            p.custom_img_addition()
             p.fit()
             # mating_pool
             for j in range(int(p.fitness * 100)):
@@ -105,8 +81,9 @@ def demo():
             parent_b = r.sample(mating_pool, 1)[0]
             child_a.crossover(parent_a, parent_b)
             # mutation
-            child_a.mutation(mutation_rate)
+            # child_a.mutation(mutation_rate)
             # fit
+            child_a.custom_img_addition()
             child_a.fit()
 
             # # compete paraents
@@ -121,7 +98,7 @@ def demo():
 
             # plot
             fitness = population[i].fitness
-        plot.append([population[i].zdiff_mean, population[i].zdiff_min, population[i].zdiff_max])
+            plot.append([population[i].fitness])
 
         if g % 10 == 0:
             print('\ngeneration: {} / {}'.format(g, generation_num))
@@ -151,11 +128,11 @@ def demo():
     # save plot
     fig, ax = plt.subplots()
     mean = [p[0] for p in plot]
-    z_min = [p[1] for p in plot]
-    z_max = [p[2] for p in plot]
-    ax.plot(mean, color='green', label='mean')
-    ax.plot(z_min, color='blue', label='min')
-    ax.plot(z_max, color='red', label='max')
+    # z_min = [p[1] for p in plot]
+    # z_max = [p[2] for p in plot]
+    ax.plot(mean, color='green', label='fitness')
+    # ax.plot(z_min, color='blue', label='min')
+    # ax.plot(z_max, color='red', label='max')
     ax.legend(loc='upper left')
     plt.xlabel('generation')
     plt.ylabel('fitness')

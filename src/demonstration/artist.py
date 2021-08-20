@@ -6,9 +6,9 @@ import cv2 as cv
 import math as m
 import numpy as np
 import random as r
+import tensorflow as tf
 import compas.geometry as cg
 import compas.utilities as cu
-import tensorflow as tf
 import matplotlib.pyplot as plt
 from tkinter.filedialog import askdirectory
 
@@ -22,8 +22,7 @@ class Artist(object):
         self.target_img = target_img.astype(np.uint8)
         self.height_img = height_fframe
 
-        self.genotype = self.random_ctrl_pts()
-        self.input_img = self.custom_img_addition(self.height_img)
+        self.genotype = self.pts_on_curve()
         self.phenotype = None
 
     def random_ctrl_pts(self):
@@ -32,6 +31,23 @@ class Artist(object):
             arr[i][0] = r.randint(int(self.fframe_bounds[0][0]), int(self.fframe_bounds[0][1]))
             arr[i][1] = r.randint(int(self.fframe_bounds[1][0]), int(self.fframe_bounds[1][1]))
             arr[i][2] = r.randint(50, 100)
+        return arr
+
+    def pts_on_curve(self):
+        ctrl_pts = self.random_ctrl_pts()
+        ctrl_frames = []
+        ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in ctrl_pts]
+
+        curve = cg.Bezier(ctrl_pts)
+        segments_num = 10
+        arr = np.zeros((segments_num, 3))
+        step = 1 / (segments_num-1)
+        for i in range(segments_num):
+            t = step * i
+            pt_on_curve = curve.point(t)
+            arr[i][0] = pt_on_curve.x
+            arr[i][1] = pt_on_curve.y
+            arr[i][2] = pt_on_curve.z
         return arr
 
     def tuple_to_compas_frame(self, ctrl_pts, curve_type='bezier', segments_num=50):
@@ -169,7 +185,7 @@ class Artist(object):
                                          borderMode=cv.BORDER_CONSTANT)
         return img_cropped
 
-    def custom_img_addition(self, height_img):
+    def custom_img_addition(self):
         self.toolpath_img = self.crop_feature()
         arr = np.zeros([256, 256, 3], dtype=np.uint8)
         for i in range(256):
@@ -177,8 +193,8 @@ class Artist(object):
                 if self.toolpath_img[i][j][2] > 0:
                     arr[i][j] = self.toolpath_img[i][j]
                 else:
-                    arr[i][j] = height_img[i][j]
-        return arr
+                    arr[i][j] = self.height_img[i][j]
+        self.input_img = arr
 
     def load_img(self, img_path):
         # Read and decode an image file to a uint8 tensor
@@ -203,6 +219,8 @@ class Artist(object):
         return image
 
     def generate_img(self):
+        # generate_input image
+
         # save and load to convert image into tensor
         fname = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/input.png"
         cv.imwrite(fname, self.input_img)
@@ -215,11 +233,23 @@ class Artist(object):
     def cal_zdiff(self, arr1, arr2):
         arr1 = arr1.astype(np.float32)
         arr2 = arr2.astype(np.float32)
+        # remap
+        bounds = 85  # np.amax([np.ptp(arr1), np.ptp(arr2)])
+        arr1 = np.interp(arr1, [np.amin(arr1), np.amin(arr1)+bounds], [0, bounds])
+        arr2 = np.interp(arr2, [np.amin(arr2), np.amin(arr2)+bounds], [0, bounds])
+        # subtraction
         arr_diff = np.subtract(arr1, arr2)
-        arr_diff = np.divide(arr_diff, 255)
-        arr_diff = np.add(arr_diff, 1)
-        arr_diff = np.divide(arr_diff, 2)
-        return arr_diff
+        # absolute
+        arr_diff = np.absolute(arr_diff)
+        # exponential
+        powers = 1
+        arr_diff = arr_diff ** powers
+        # sum & percentage
+        arr_diff = np.sum(arr_diff)
+        total_error = (bounds ** powers) * 256 * 256
+        fitness = arr_diff / total_error
+        fitness = 1 - fitness
+        return fitness
 
     def get_minmax(self, arr):
         min = np.amin(arr)
@@ -227,33 +257,8 @@ class Artist(object):
         return min, max
 
     def get_fitness(self, img1, img2):
-        # zdiff = self.cal_zdiff(img1, img2)
-        # pixel_distance = np.sum(np.sqrt(np.sum(zdiff * zdiff, axis=2)))
-        # raw_fitness = 1 / pixel_fitness
-
-        zdiff = self.cal_zdiff(img1, img2)
-        self.zdiff_mean = np.mean(zdiff)
-        self.zdiff_min, self.zdiff_max = self.get_minmax(zdiff)
-
-        raw_fitness = 1 - self.zdiff_mean
-        # raw_fitness = m.exp(-5*(zdiff_mean))
-
-        # img1 = tf.expand_dims(img1, axis=0)
-        # img2 = tf.expand_dims(img2, axis=0)
-        # ssim = tf.image.ssim(img1,
-        #                      img2,
-        #                      max_val=255,
-        #                      filter_size=22,
-        #                      filter_sigma=1.5,
-        #                      k1=0.01,
-        #                      k2=0.03)
-        # ssim = ssim.numpy()
-        # raw_fitness = (ssim[0] + 1) / 2
-
-        # check min
-        if raw_fitness < 0.01:
-            raw_fitness += 0.01
-        return raw_fitness
+        self.zdiff = self.cal_zdiff(img1, img2)
+        return self.zdiff
 
     def fit(self):
         # generate phenotype
@@ -266,9 +271,10 @@ class Artist(object):
         self.fitness = raw_fitness
 
     def crossover(self, parent_a, parent_b):
-        midpoint = int(r.randint(0, self.genotype.shape[0]))
+
+        midpoint = int(r.randint(0, self.genotype.shape[0]-1))
         for i in range(self.genotype.shape[0]):
-            if i > midpoint:
+            if i < midpoint:
                 self.genotype[i] = parent_a.genotype[i]
             else:
                 self.genotype[i] = parent_b.genotype[i]
@@ -281,7 +287,7 @@ class Artist(object):
                 self.genotype[i][2] = r.randint(50, 100)
 
     def save_fig(self, tp_fname, ex_fname):
-        cv.imwrite(tp_fname, self.toolpath_img)
+        cv.imwrite(tp_fname, self.input_img)
         cv.imwrite(ex_fname, self.phenotype)
 
 
