@@ -272,6 +272,11 @@ class Artist(object):
             else:
                 self.genotype[i] = parent_b.genotype[i]
 
+    def crossover_tween(self, parent_a, parent_b):
+
+        self.genotype = cg.tween_points(parent_a.genotype, parent_b.genotype, num=1)[0]
+
+
     def mutation(self, metation_rate):
         for i in range(self.genotype.shape[0]):
             if r.random() < metation_rate:

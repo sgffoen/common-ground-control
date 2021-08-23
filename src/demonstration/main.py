@@ -50,11 +50,11 @@ def demo():
 
     # GA parameters
     start = time.time()
-    population_num = 2
+    population_num = 200
     population = []
     mating_pool = []
     mutation_rate = 0.01
-    generation_num = 10
+    generation_num = 200
     plot = []
 
     # initialize
@@ -77,7 +77,7 @@ def demo():
             # crossover
             parent_a = r.sample(mating_pool, 1)[0]
             parent_b = r.sample(mating_pool, 1)[0]
-            child_a.crossover(parent_a, parent_b)
+            child_a.crossover_tween(parent_a, parent_b)
             # mutation
             # child_a.mutation(mutation_rate)
             # fit
@@ -147,6 +147,12 @@ def single_prediction():
     cv.imshow('single_prediction', h.phenotype)
     cv.waitKey(0)
 
+def profiler():
+    import cProfile
+    import re
+    cProfile.run("demo()")
+
 if __name__ == '__main__':
+
     demo()
     # single_prediction()
