@@ -15,16 +15,31 @@ from toolbox import Facts
 
 
 class Artist(object):
-    def __init__(self, num_ctrl_pts, height_fframe, target_img, model):
+    def __init__(self, num_ctrl_pts, height_fframe, target_img, model, pts_from_rhino):
         self.facts = Facts().facts
         self.num_ctrl_pts = num_ctrl_pts
         self.fframe_bounds = self.get_fframe_bounds()
         self.model = model
         self.target_img = target_img.astype(np.uint8)
         self.height_img = height_fframe
+        self.feature_center = self.get_feature_center()
 
-        self.genotype = self.pts_on_curve()
+        self.genotype = self.tp_from_rhino(pts_from_rhino)
+        self.input_img = self.simple_img_addtion()
         self.phenotype = None
+
+    def get_feature_center(self):
+        (f_bounds_xmin,
+        f_bounds_ymin,
+        f_bounds_zmin) = self.facts['feature_bounds']['min_bound']
+        (f_bounds_xmax,
+        f_bounds_ymax,
+        f_bounds_zmax) = self.facts['feature_bounds']['max_bound']
+
+        x = (f_bounds_xmax - f_bounds_xmin)/2
+        y = (f_bounds_ymax - f_bounds_ymin)/2
+        z = (f_bounds_zmax - f_bounds_zmin)/2
+        return [y, x, z]
 
     def random_ctrl_pts(self):
         arr = np.zeros((self.num_ctrl_pts, 3))
@@ -32,6 +47,20 @@ class Artist(object):
             arr[i][0] = r.randint(int(self.fframe_bounds[0][0]), int(self.fframe_bounds[0][1]))
             arr[i][1] = r.randint(int(self.fframe_bounds[1][0]), int(self.fframe_bounds[1][1]))
             arr[i][2] = r.randint(50, 100)
+        return arr
+
+    def tp_from_rhino(self, pts_from_rhino):
+        center_x = self.feature_center[0]
+        center_y = self.feature_center[1]
+        center_z = 0
+
+        arr = np.zeros([len(pts_from_rhino), 3])
+        for i, p in enumerate(pts_from_rhino):
+            x = p[0] + center_x - 127.5
+            y = p[1] + center_y - 127.5
+            z = p[2] + center_z
+            coord = [x, y, z]
+            arr[i] = coord
         return arr
 
     def pts_on_curve(self):
@@ -112,6 +141,7 @@ class Artist(object):
                     color=(0, 0, z),  # red channel for toolpath height
                     thickness=2,
                     lineType=cv.FILLED)
+        self.tp_in_sandbox = img
         return img
 
     def get_feature_center(self):
@@ -187,7 +217,13 @@ class Artist(object):
                     arr[i][j] = self.toolpath_img[i][j]
                 else:
                     arr[i][j] = self.height_img[i][j]
-        self.input_img = arr
+        return arr
+
+    def simple_img_addtion(self):
+        self.toolpath_img = self.crop_feature()
+        height = self.height_img
+        arr = self.toolpath_img + height
+        return arr
 
     def load_img(self, img_path):
         # Read and decode an image file to a uint8 tensor
@@ -284,10 +320,69 @@ class Artist(object):
                 self.genotype[i][1] = r.randint(int(self.fframe_bounds[1][0]), int(self.fframe_bounds[1][1]))
                 self.genotype[i][2] = r.randint(50, 100)
 
-    def save_fig(self, tp_fname, ex_fname):
+    def save_fig(self, tp_fname, ex_fname, f_name):
         cv.imwrite(tp_fname, self.input_img)
-        cv.imwrite(ex_fname, self.phenotype)
+        # flip rgb to bgr
+        arr = np.empty([256,256,3])
+        arr[:,:,0] = self.phenotype[:,:,2]
+        arr[:,:,1] = self.phenotype[:,:,1]
+        arr[:,:,2] = self.phenotype[:,:,0]
+        cv.imwrite(ex_fname, arr)
+        cv.imwrite(f_name, self.tp_in_sandbox)
+        return arr
 
+    def write_height2ascii(self, arr, path, cellsize=1.0):
+        grid_data = arr[:,:,1]
+        rows,cols = np.shape(grid_data)
+        esri = EsriGrid(
+                        ncols=cols,
+                        nrows=rows,
+                        xllcorner=self.facts['feature_bounds']['min_bound'][0],
+                        yllcorner=self.facts['feature_bounds']['min_bound'][1],
+                        cellsize=cellsize,
+                        grid_data=grid_data,
+                        filepath=path,
+                        NODATA_VALUE=-9999)
+
+        esri.write_file()
+        return esri
+
+
+class EsriGrid(object):
+    def __init__(self, ncols, nrows, xllcorner, yllcorner, cellsize, grid_data, filepath, NODATA_VALUE=-9999):
+        self.ncols = ncols
+        self.nrows = nrows
+        self.xllcorner = xllcorner
+        self.yllcorner = yllcorner
+        self.cellsize = cellsize
+        self.NODATA_VALUE = NODATA_VALUE
+        self.grid_data = grid_data
+        self.filepath = filepath
+
+    def read_file(self):
+        f = open(self.filepath, "r")
+        return f
+
+    def write_file(self):
+        f = open(self.filepath, "w")
+
+        # create file header
+        f.write("ncols {}\n".format(self.ncols))
+        f.write("nrows {}\n".format(self.nrows))
+        f.write("xllcorner     {}\n".format(self.xllcorner))
+        f.write("yllcorner     {}\n".format(self.yllcorner))
+        f.write("cellsize      {}\n".format(self.cellsize))
+        f.write("NODATA_value  {}\n".format(self.NODATA_VALUE))
+
+        # write data rows
+        for row in range(self.nrows):
+            for col in range(self.ncols):
+                f.write("{} ".format(self.grid_data[row, col] if self.grid_data[row, col] != 0 else self.NODATA_VALUE ))
+            # new row
+            f.write("\n")
+
+        # close file
+        f.close()
 
 if __name__ == '__main__':
     pass

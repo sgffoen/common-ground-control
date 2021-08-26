@@ -1,7 +1,7 @@
 # built-in
 import sys
 import time
-import numpy as np
+import json
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import cv2 as cv
@@ -147,12 +147,68 @@ def single_prediction():
     cv.imshow('single_prediction', h.phenotype)
     cv.waitKey(0)
 
+
 def profiler():
     import cProfile
     import re
     cProfile.run("demo()")
 
-if __name__ == '__main__':
 
-    demo()
+def prediction_from_json(): #single curve
+    # model preparation
+    h = Helper()
+
+    feature_center = h.get_feature_center()
+    save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/00_info/05_Mid_Term_Presentation/img/interactive_sandbox/"
+    height_fframe_dir = save_dir + "00100_2021-08-05_height_featureframe.png"
+    height_fframe = cv.imread(height_fframe_dir)
+    target_img_dir = save_dir + "00100_2021-08-05_height_featureframe_after.png"
+    target_img = cv.imread(target_img_dir)
+    model = h.load_model()
+
+    # gb2gb
+    # split channel
+    height_fframe_split = h.chennel_edit(height_fframe)
+    # height_fframe_after_split = p.chennel_edit(height_fframe_after)
+
+    for i in range(7):
+        # load json from rhino
+        num = i
+        filepath = "G:/Shared drives/2021_MAS/T3/Common Ground Control/00_info/05_Mid_Term_Presentation/img/interactive_translation/demo"
+        filename = filepath + str(num) + '.json'
+
+        with open(filename, 'r') as o:
+            data = json.load(o)
+
+        pts = []
+        for d in data['ctrl_pts']:
+            p = [d[0], d[1], d[2]*(-1)+50]
+            pts.append(p)
+
+        # prediction
+        pts_from_rhino = pts
+        gb = height_fframe_split[1] + height_fframe_split[2]
+        a = Artist(5, gb, target_img, model, pts_from_rhino)
+        a.fit()
+
+        # a.custom_img_addition()
+        input_img_name = save_dir + "input{}.png".format(num)
+        phenotype_name = save_dir + "phenotype{}.png".format(num)
+        feature_name = save_dir + "feature{}.png".format(num)
+
+        # cv.imwrite(feature_name, h.phenotype)
+        arr = a.save_fig(input_img_name, phenotype_name, feature_name)
+
+        # saving terrain
+        ascii_path = save_dir + "ascii{}.txt".format(num)
+        a.write_height2ascii(arr, ascii_path)
+
+
+def prediction_from_multi_json():
+    pass
+
+
+if __name__ == '__main__':
+    # demo()
     # single_prediction()
+    prediction_from_json()
