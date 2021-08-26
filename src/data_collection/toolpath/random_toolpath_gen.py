@@ -112,6 +112,15 @@ class Toolpath():
                 z = r.randrange(self.z_min, self.z_max)
                 self.ctrl_pts_list.append((x, y, z))
 
+        elif self.level == 'center':
+            length = 180
+            step = length / (self.num_ctrl_pts-1)
+            for i in range(self.num_ctrl_pts):
+                x = i * step
+                y = 0.0
+                z = 75.0
+                self.ctrl_pts_list.append((x, y, z))
+
     def tuple_to_compas_frame(self):
         ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in self.ctrl_pts_list]
 
@@ -148,6 +157,10 @@ class Toolpath():
     def rotate_ctrl_frames(self):
         # set angle
         degree = r.randint(-180, 0)
+
+        if self.level == 'center':
+            degree = -90
+            print('rotation')
         # get rotation center
         R = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(),
                                             m.radians(degree))
@@ -207,6 +220,9 @@ class Toolpath():
         # generate target frame to move to
         frame_to_x = r.randint(int(d.offset_x_min), int(d.offset_x_max))
         frame_to_y = r.randint(int(d.offset_y_min), int(d.offset_y_max))
+        if self.level == 'center':
+            frame_to_x = d.sandbox_xsize / 2 + 200
+            frame_to_y = d.sandbox_ysize / 2
         frame_to_center = cg.Point(frame_to_x,
                                    frame_to_y,
                                    0)
@@ -426,7 +442,7 @@ def get_toolpath(level, curve_type, folder, id, show=False):
 
     t = Toolpath(level,
                  curve_type,
-                 num_ctrl_pts=5,
+                 num_ctrl_pts=2,
                  segments_num=50,
                  thickness=2,
                  parent_folder=folder,
