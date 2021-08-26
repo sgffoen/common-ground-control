@@ -63,6 +63,17 @@ def processing(env):
                                    height_fframe_after_split[3])
         p.save_img(gb2gb, data.get_save_path('gb2gb'))
 
+        # seperate channel
+        img_before = p.get_pix_below_tp(data.height_fframe,
+                                        data.toolpath_thick_fframe,
+                                        before=True)
+        img_after = p.get_pix_below_tp(data.height_fframe_after,
+                                       data.toolpath_thick_fframe,
+                                       before=False)
+        img_split = p.horizontal_stack(img_before,
+                                       img_after)
+        p.save_img(img_split, data.get_save_path('split'))
+
         if i % 100 == 0:
             lap = (time.time()-start)/60
             print('\nprocessing id: {} / {}\nLAP-TIME: {}\n'.format(i, len(iteration_dirs), lap))

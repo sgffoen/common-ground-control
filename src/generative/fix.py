@@ -114,6 +114,81 @@ def meta_data(env):
     return max_scan_id
 
 
+def thicken(env, thickness):
+    start = time.time()
+    print("starting aliasing mode")
+    print("environment: {} \n".format(env))
+
+    iteration_dirs = get_iteration_dirs()
+
+    for i, id in enumerate(iteration_dirs):
+        # 1. accessing data_collection path/img
+        data = LearningData(i, id, env)
+        data.get_iter_dirs()
+
+        # load json
+        dir = data.path_name_raw
+        fname = data.id + '_toolpath.json'
+        fpath = os.path.join(dir, fname)
+        with open(fpath, 'r') as o:
+            facts = json.load(o)
+
+        # get control frames from json
+        ctrl_frames = []
+        for j, c in enumerate(facts['ctrl_frames']):
+            id_num = str(j).zfill(3)
+            key = 'f_{}'.format(id_num)
+            jsonstring = facts['ctrl_frames'][key]
+            frame = cg.Frame.from_jsonstring(jsonstring)
+            ctrl_frames.append(frame)
+
+        # draw polyline in sandbox2d
+        img = np.zeros(shape=[732,
+                              1135,
+                              3],
+                              dtype=np.uint8)
+
+        for a, b in cu.pairwise(range(len(ctrl_frames))):
+            pt_s = ctrl_frames[a].point
+            pt_e = ctrl_frames[b].point
+            z = remapValue(pt_s[2], -20, 130, 255, 0)
+            cv2.line(img,
+                     (int(pt_s[0]), int(pt_s[1])),
+                     (int(pt_e[0]), int(pt_e[1])),
+                     color=(0, 0, z),  # red channel for toolpath height
+                     thickness=thickness,
+                     lineType=cv2.FILLED)
+
+        # crop_toolpathbox2d_oriented(self, img, d):
+        crop_idx = []
+        for k in range(4):
+            crop_idx.append(facts['frame_corner_pts'][str(k)])
+        pts_from = np.float32(crop_idx)
+        pts_to = np.float32([[0, 0],
+                            [256, 0],
+                            [256, 256],
+                            [0, 256]])
+        M = cv2.getPerspectiveTransform(pts_from, pts_to)
+        img_cropped = cv2.warpPerspective(img,
+                                          M,
+                                          (int(256),int(256)),
+                                          flags=cv2.WARP_FILL_OUTLIERS,
+                                          borderMode=cv2.BORDER_TRANSPARENT)
+
+        # export images
+        filename = data.path_name_processed + '/' + data.id + '_toolpath_feature_thickness{}.png'.format(thickness)
+        cv2.imwrite(filename, img)
+        filename = data.path_name_processed + '/' + data.id + '_toolpath_featureframe_thickness{}.png'.format(thickness)
+        cv2.imwrite(filename, img_cropped)
+
+        if i % 100 == 0:
+            lap = (time.time()-start)/60
+            print('\nfixing id: {} / {}\nLAP-TIME: {}\n'.format(i, len(iteration_dirs), lap))
+
+    print('\nTotal fixing time: ', (time.time()-start)/60, ' min\n\n')
+
+
 
 if __name__ == "__main__":
-    aliasing(env='production')
+    # aliasing(env='production')
+    thicken(env='production', thickness=50)

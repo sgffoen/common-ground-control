@@ -43,6 +43,7 @@ class LearningData(object):
         height_fframe_fname = os.path.join(self.path_name_processed, self.id + '_height_featureframe.png')
         height_fframe_after_fname = os.path.join(self.path_name_processed, self.id + '_height_featureframe_after.png')
         toolpath_fframe_fname = os.path.join(self.path_name_processed, self.id + '_toolpath_featureframe_fix.png')
+        toolpath_fframe_thick_fname = os.path.join(self.path_name_processed, self.id + '_toolpath_featureframe_thickness50.png')
 
         if os.path.isfile(height_fframe_fname):
             self.height_fframe = cv2.imread(height_fframe_fname)
@@ -56,6 +57,10 @@ class LearningData(object):
             self.toolpath_fframe = cv2.imread(toolpath_fframe_fname)
         else:
             raise FileNotFoundError('file: {} does not exist'.format(toolpath_fframe_fname))
+        if os.path.isfile(toolpath_fframe_thick_fname):
+            self.toolpath_thick_fframe = cv2.imread(toolpath_fframe_thick_fname)
+        else:
+            raise FileNotFoundError('file: {} does not exist'.format(toolpath_fframe_thick_fname))
 
     def get_toolpath_level(self):
         filepath = os.path.join(self.path_name_raw, '{}_toolpath.json'.format(self.id))
@@ -71,6 +76,8 @@ class LearningData(object):
             filename = self.id + '_h2h_training_fix.png'
         elif type == 'gb2gb':
             filename = self.id + '_gb2gb_training_fix.png'
+        elif type == 'split':
+            filename = self.id + '_split_training_fix.png'
         filepath = filedir + '/' + filename
         return filepath
 
