@@ -157,6 +157,10 @@ class TrainingData(object):
         prev_filepath = dir + prev_id + '/01_processed'
         return prev_filepath
 
+    def get_hm_feature(self):
+        hm_feature = self.heightmap.height2feature()
+        return hm_feature
+
 if __name__ == "__main__":
 
     pass

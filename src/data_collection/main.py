@@ -1,7 +1,7 @@
 from data import TrainingData
 from argparser import parse_args
 from scanning import ScanData, HeightMap, PointCloud
-from toolpath import random_toolpath_gen, cleaning_toolpath_gen
+from toolpath import random_toolpath_gen, cleaning_toolpath_gen, Toolpath, Dimension
 import scanning
 import time
 import UR as ur
@@ -9,7 +9,7 @@ import scanning.scan
 import os
 import json
 
-__ITERATION__ = 1
+__ITERATION__ = 10
 __START__ = 0
 __FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
 
@@ -33,42 +33,49 @@ def training(env):
         path_name_raw, path_name_processed, path_name_train = data.create_iter_dirs()
         print('scan id: {}'.format(data.identifier))
 
-        # 2. get toolpath
-        toolpath = random_toolpath_gen.get_toolpath(level='center',
-                                                    curve_type='bezier',
-                                                    folder=path_name_raw,
-                                                    id=data.identifier)
-        data.frame_corner_pts = toolpath.crop_idx
+        # 2. robot to scan pose
+        ur.ur_helper.scan_pose(scanning_time=5)
 
-        # 3. robot to scan pose
-        ur.ur_helper.scan_pose(scanning_time=15)
-
-        # 4. scan and create data
+        # 3. scan and create data
         scan = ScanData()
         pcl_obj = PointCloud(scan)
         heightmap = HeightMap(scan)
 
-        # 5. store data
-        data.toolpath = toolpath
+        # 4. set data
         data.scan_data = scan
         data.pointcloud = pcl_obj
         data.heightmap = heightmap
+
+        # 5. get toolpath
+        hm_feature = data.get_hm_feature()
+        d = Dimension()
+        tp = Toolpath(level='adaptive',
+                      curve_type='bezier',
+                      num_ctrl_pts=2,
+                      segments_num=50,
+                      thickness=2,
+                      parent_folder=path_name_raw,
+                      id=data.identifier,
+                      d=d,
+                      hm_feature=hm_feature.feature)
+        # 5-2. get crop index
+        data.toolpath = tp
+        data.frame_corner_pts = tp.crop_idx
+
+        # 6. store data
         data.store_data()
+        tp.export_json()
         print('{}: data is collected and stored'.format(data.identifier))
 
-        # adapt toolpath
-        adapt_height = None
+        # 7. execure toolpath
+        ur.execute_toolpath(tp.ctrlframes_feature, excavation_time=24)
 
-        # execure toolpath
-        ur.execute_toolpath(toolpath.ctrlframes_feature, adapt_height, excavation_time=24)
-
-        # scan
-        print('\n#############  iteration {} done  #############\n\n'.format(i))
-        # update meta data
+        # 8. update meta data
         time_spend = (time.time()-start)/60
-        meta_data(env=env, new_max_id=start_id+i, time=time_spend, tp_level=toolpath.level)
+        meta_data(env=env, new_max_id=start_id+i, time=time_spend, tp_level=tp.level)
+        print('\n#############  iteration {} done  #############\n\n'.format(i))
 
-        # cleaning at every 100 iteration
+        # 9. cleaning at every 100 iteration
         if i % 100 == 99:
             print('#############  cleaning {}  #############\n'.format(i))
             ur.ur_helper.scan_pose(scanning_time=10)
