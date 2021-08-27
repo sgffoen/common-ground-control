@@ -182,7 +182,6 @@ class Toolpath():
 
         if self.level == 'center':
             degree = -90
-            print('rotation')
         # get rotation center
         R = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(),
                                             m.radians(degree))
@@ -236,7 +235,7 @@ class Toolpath():
         self.ctrlframes_feature = []
         for ctrl_frame in ctrl_frames:
             f = ctrl_frame.transformed(T)
-            if self.hm_feature is not None:
+            if self.level == 'adaptive':
                 h_sand = self.get_scanned_height(int(f.point[0]), int(f.point[1]))
                 f.point[2] = h_sand
             self.ctrlframes_feature.append(f)
@@ -250,9 +249,6 @@ class Toolpath():
         # safety net
         if height > 100:
             height = 100
-
-        print('\n', self.hm_feature.shape)
-        print(height_pix, height_mm, height, '\n')
         return height
 
     # image processing from here
