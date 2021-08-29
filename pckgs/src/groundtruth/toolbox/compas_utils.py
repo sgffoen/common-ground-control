@@ -2,6 +2,7 @@
 
 
 import compas.geometry as cg
+import compas.datastructures as cd
 from compas_view2.app import App
 import math
 from .helper import Facts
@@ -35,6 +36,8 @@ __FACTS__ = Facts().facts
     adapt_height_from_pcl
     check_arguments
     run_viewer
+-gh_interface
+    draw_feature
 '''
 
 
@@ -111,6 +114,13 @@ def get_sandbox2d_size():
     sandbox2d_size_x = crop_ids['xEnd'] - crop_ids['xStart']
     sandbox2d_size_y = crop_ids['yStart'] - crop_ids['yEnd']
     return sandbox2d_size_x, sandbox2d_size_y
+
+
+def get_feature_bounds():
+    feature_bounds = __FACTS__.feature_bounds
+    min_bounds = feature_bounds['min_bound']
+    max_bounds = feature_bounds['max_bound']
+    return [min_bounds, max_bounds]
 
 
 def compas_to_robot_space(geo):

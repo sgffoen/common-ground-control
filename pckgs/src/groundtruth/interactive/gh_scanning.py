@@ -8,7 +8,9 @@ import numpy as np
 import os
 
 __FACTS__ = Facts().facts
-__GH_DATA__ = 'C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/00_git/common-ground-control/grasshopper/data'
+__HERE__ = os.path.dirname(__file__)
+__GH_DATA__ = os.path.join(__HERE__, '..', '..', '..', '..', 'grasshopper/data')
+
 
 
 def scan():
@@ -24,12 +26,13 @@ def get_heightmap(scan):
 
 def height2ascii(arr, cellsize=1.0, path=__GH_DATA__):
     grid_data = arr
-    rows,cols = np.shape(grid_data)
+    # print(grid_data.shape) = (737, 1135)
+    rows, cols = np.shape(grid_data)
     esri = EsriGrid(
                     ncols=cols,
                     nrows=rows,
-                    xllcorner=__FACTS__.feature_bounds['min_bound'][0],
-                    yllcorner=__FACTS__.feature_bounds['min_bound'][1],
+                    xllcorner=0,
+                    yllcorner=-737,
                     cellsize=cellsize,
                     grid_data=grid_data,
                     filepath=os.path.join(path, 'grid.asc'),

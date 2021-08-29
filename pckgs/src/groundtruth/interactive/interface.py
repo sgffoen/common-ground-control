@@ -1,5 +1,6 @@
 from groundtruth.interactive.gh_scanning import get_heightmap, gray2height, height2ascii, scan
 
+
 def get_height_grid():
     s = scan()
     hm_feature = get_heightmap(s)
