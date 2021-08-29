@@ -36,7 +36,7 @@ def height2ascii(arr, cellsize=1.0, path=__GH_DATA__):
                     NODATA_VALUE=-9999)
 
     esri.write_file()
-    return esri
+    return esri.filepath
 
 def gray2height(v, ori_Min=0, ori_Max=255, targetMin=0.0, targetMax=150.0):
     rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin

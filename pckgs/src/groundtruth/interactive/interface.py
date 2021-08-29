@@ -5,8 +5,8 @@ def get_height_grid():
     hm_feature = get_heightmap(s)
     height_b = hm_feature.channel_split()[0]
     height = gray2height(height_b)
-    height2ascii(height)
-    return "done"
+    path = height2ascii(height)
+    return path
 
 
 if __name__ == '__main__':
