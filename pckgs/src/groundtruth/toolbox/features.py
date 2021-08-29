@@ -55,3 +55,9 @@ class Feature(object):
                                              self.frame_shape[1]))
 
         return feature_frame
+
+    def channel_split(self):
+        img = self.feature
+        # split img
+        b, g, r = cv2.split(img)
+        return b, g, r
