@@ -42,18 +42,20 @@ class Feature(object):
         f = self.get_featureframe(frame_corner_pts)
         self.save(fname=fname, path=path, frame=f)
 
-    def get_featureframe(self, frame_corner_pts):
+    def get_warp_transformation(self, frame_corner_pts):
         pts_from = np.float32(frame_corner_pts)
         pts_to = np.float32([[0, 0],
                             [self.frame_shape[0], 0],
                             [self.frame_shape[0], self.frame_shape[1]],
                             [0, self.frame_shape[1]]])
         M = cv2.getPerspectiveTransform(pts_from, pts_to)
+        return M
+
+    def get_featureframe(self, M):
         feature_frame = cv2.warpPerspective(self.feature,
                                             M,
                                             (self.frame_shape[0],
                                              self.frame_shape[1]))
-
         return feature_frame
 
     def channel_split(self):
@@ -61,3 +63,11 @@ class Feature(object):
         # split img
         b, g, r = cv2.split(img)
         return b, g, r
+
+    def img_overlay(self, height_img, toolpath_img):
+        condition = np.zeros([256,256,3])
+        condition[:,:,0] = (toolpath_img[:,:,2] > 0)
+        condition[:,:,1] = (toolpath_img[:,:,2] > 0)
+        condition[:,:,2] = (toolpath_img[:,:,2] > 0)
+        arr = np.where(condition, toolpath_img, height_img)
+        return arr
