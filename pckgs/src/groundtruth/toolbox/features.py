@@ -55,7 +55,9 @@ class Feature(object):
         feature_frame = cv2.warpPerspective(self.feature,
                                             M,
                                             (self.frame_shape[0],
-                                             self.frame_shape[1]))
+                                             self.frame_shape[1]),
+                                             flags=cv2.WARP_FILL_OUTLIERS,
+                                             borderMode=cv2.BORDER_TRANSPARENT)
         return feature_frame
 
     def channel_split(self):
@@ -70,4 +72,14 @@ class Feature(object):
         condition[:,:,1] = (toolpath_img[:,:,2] > 0)
         condition[:,:,2] = (toolpath_img[:,:,2] > 0)
         arr = np.where(condition, toolpath_img, height_img)
+        return arr
+
+    def turn_background(self, fframe):
+        zeros = np.zeros([256, 256, 3])
+        condition = np.zeros([256, 256, 3])
+        condition[:,:,0] = (fframe[:,:,2]<255)
+        condition[:,:,1] = (fframe[:,:,2]<255)
+        condition[:,:,2] = (fframe[:,:,2]<255)
+        arr = np.where(condition, fframe, zeros)
+
         return arr

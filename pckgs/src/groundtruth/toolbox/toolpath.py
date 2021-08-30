@@ -25,46 +25,33 @@ class Toolpath():
                  toolpath,
                  parent_folder,
                  dimension,
-                 segments_num=50,
-                 thickness=2,
                  hm_feature=None,
                  adaptive=False):
         self.toolpath = toolpath
         self.parent_folder = parent_folder
         self.d = dimension
-        self.segments_num = segments_num
-        self.thickness = thickness
+        self.segments_num = 50
+        self.thickness = 2
         self.hm_feature = hm_feature
         self.adaptive = adaptive
 
-        self.shift_list()
         self.move_ctrl_frames_to_feature()
-
-    def generate_ctrl_pts_tuple(self):
-        ctrl_pts_list = []
-        ctrl_pts = self.toolpath.points
-        for p in ctrl_pts:
-            coord = [p.x, p.y, p.z]
-            ctrl_pts_list.append(coord)
-        return ctrl_pts_list
+        self.shift_list()
 
     def tuple_to_compas_frame(self):
         ctrl_frames = []
-        ctrl_pts_tuple = self.generate_ctrl_pts_tuple()
-        ctrl_pts = [cg.Point(tl[0], tl[1], tl[2]) for tl in ctrl_pts_tuple]
+        ctrl_pts = self.toolpath.points
 
-        if self.curve_type == 'polyline':
-            polyline = cg.Polyline(ctrl_pts)
-            pts_on_curve = polyline.divide_polyline(self.segments_num)
-
-        elif self.curve_type == 'bezier':
+        if len(ctrl_pts)==2:
+            curve = cg.Polyline(ctrl_pts)
+        else:
             curve = cg.Bezier(ctrl_pts)
-            pts_on_curve = []
-            step = 1 / (self.segments_num-1)
-            for i in range(self.segments_num):
-                t = step * i
-                pt_on_curve = curve.point(t)
-                pts_on_curve.append(pt_on_curve)
+        pts_on_curve = []
+        step = 1 / (self.segments_num-1)
+        for i in range(self.segments_num):
+            t = step * i
+            pt_on_curve = curve.point(t)
+            pts_on_curve.append(pt_on_curve)
 
         for a, b in cu.pairwise(range(len(pts_on_curve))):
             # get first pt
@@ -84,55 +71,8 @@ class Toolpath():
             ctrl_frames.append(cg.Frame(pta, yaxis, -xaxis))
         return ctrl_frames
 
-    def rotate_ctrl_frames(self):
-        # get control frames
-        ctrl_frames = self.tuple_to_compas_frame()
-        # set angle
-        degree = r.randint(-180, 0)
-
-        if self.level == 'center':
-            degree = -90
-        # get rotation center
-        R = cg.Rotation.from_axis_and_angle(cg.Vector.Zaxis(),
-                                            m.radians(degree))
-        for f in ctrl_frames:
-            f.transform(R)
-        toggle = r.randint(0, 1)
-        if toggle:
-            ctrl_frames.reverse()
-        return ctrl_frames
-
-    def move_ctrl_frames_to_sandbox2d(self):
-        # get rotated ctrl_frames
-        ctrl_frames = self.rotate_ctrl_frames()
-        # generate target frame to move to
-        frame_to_x = r.randint(int(self.d.offset_x_min), int(self.d.offset_x_max))
-        frame_to_y = r.randint(int(self.d.offset_y_min), int(self.d.offset_y_max))
-        if self.level == 'center':
-            frame_to_x = self.d.sandbox_xsize / 2 + 200
-            frame_to_y = self.d.sandbox_ysize / 2
-        frame_to_center = cg.Point(frame_to_x,
-                                   frame_to_y,
-                                   0)
-        frame_to = cg.Frame(frame_to_center,
-                            cg.Vector.Xaxis(),
-                            cg.Vector.Yaxis())
-        # generate frame at middle of the toolpath
-        toolpath_line = cg.Line(ctrl_frames[0].point,
-                                ctrl_frames[-1].point)
-        toolpath_midpt = toolpath_line.midpoint
-        toolpath_midpt.z = 0
-        frame_from = cg.Frame(toolpath_midpt,
-                              cg.Vector.Xaxis(),
-                              cg.Vector.Yaxis())
-        # create transformation
-        T = cg.Transformation.from_frame_to_frame(frame_from, frame_to)
-        for ctrl_frame in ctrl_frames:
-            ctrl_frame.transform(T)
-        return ctrl_frames
-
     def move_ctrl_frames_to_feature(self):
-        ctrl_frames = self.move_ctrl_frames_to_sandbox2d()
+        ctrl_frames = self.tuple_to_compas_frame()
         framefrom = cg.Frame(cg.Point(0, 0, 0),
                              cg.Vector.Xaxis(),
                              cg.Vector.Yaxis())
@@ -168,20 +108,21 @@ class Toolpath():
         return rv
 
     def draw_polyline_in_sandbox2d(self):
-        ctrl_frames = self.move_ctrl_frames_to_sandbox2d()
-        img = np.zeros(shape=[m.floor(self.d.feature_ysize),
-                              m.floor(self.d.feature_xsize),
-                              3], dtype=np.uint8)
+        ctrl_frames = self.ctrlframes_feature
+        img = 255 * np.ones(shape=[m.floor(self.d.feature_ysize),
+                                   m.floor(self.d.feature_xsize),
+                                   3], dtype=np.uint8)
 
         for a, b in cu.pairwise(range(len(ctrl_frames))):
             pt_s = ctrl_frames[a].point
             pt_e = ctrl_frames[b].point
-            z = self.remapValue(pt_s[2], self.z_min, self.z_max, 0, 255)
+            z = self.remapValue(pt_s[2], 0, 150, 0, 255)
             cv2.line(img,
                      (int(pt_s[0]), int(pt_s[1])),
                      (int(pt_e[0]), int(pt_e[1])),
                      color=(0, 0, z),  # red channel for toolpath height
-                     thickness=self.thickness)
+                     thickness=self.thickness,
+                     lineType=cv2.FILLED)
         self.img = img
         return img, ctrl_frames
 

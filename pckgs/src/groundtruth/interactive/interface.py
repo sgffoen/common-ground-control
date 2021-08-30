@@ -1,5 +1,5 @@
 from groundtruth.interactive.gh_scanning import get_heightmap, gray2height, height2ascii, scan
-from groundtruth.interactive.gh_toolpath import export_json, flip_y_value, toolpath, generate_input_img, inverse_fframe
+from groundtruth.interactive.gh_toolpath import export_json, flip_y_value, toolpath, generate_input_img, inverse_fframe, generate_toolpaths, save_img, feature
 from groundtruth.interactive.gh_prediction import load_model, generate_img
 import os
 
@@ -9,9 +9,9 @@ __GH_DATA__ = os.path.join(__HERE__, '..', '..', '..', '..', 'grasshopper/data')
 __GH_FIX__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/00_designs"
 
 
-def get_height_grid(predicted_img):
+def get_height_grid(predicted_img=None):
     if predicted_img:
-        height_b = predicted_img[:,:,0]
+        height_b = predicted_img.channel_split()[0]
     else:
         s = scan()
         hm_feature = get_heightmap(s)
@@ -22,25 +22,28 @@ def get_height_grid(predicted_img):
 
 
 def prediction(toolpaths, iteration):
-    # load model
-    model = load_model()
     # scan
     s = scan()
-    heightmap = get_heightmap(s)
+    hm_feature = get_heightmap(s)
+    # load model
+    model = load_model()
     # flip y to match feature
     toolpaths = flip_y_value(toolpaths)
     for tp in toolpaths:
         # draw toolpath in feature
-        t = toolpath(tp, __GH_DATA__, heightmap, adaptive=False)
-        # get feature frame
-        input_img, M = generate_input_img(t, heightmap, __GH_DATA__)
+        t = toolpath(tp, __GH_DATA__, hm_feature, adaptive=False)
+        # generate input image
+        input_img, M = generate_input_img(t, hm_feature, __GH_DATA__)
         # prediction
         predicted_img = generate_img(model, input_img)
         # patch predicted image into original height map
-        inversed_img = inverse_fframe(M, t.crop_idx, heightmap, predicted_img)
+        inversed_img = inverse_fframe(M, t.crop_idx, hm_feature, predicted_img)
         # update current state of sand
-        heightmap = inversed_img
-    return heightmap
+        hm_feature = feature(inversed_img)
+    # save image for checking
+    save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
+    save_img(inversed_img, __GH_DATA__, 'predicted_feature.png')
+    return hm_feature
 
 
 def fix_design(toolpaths, iteration):
@@ -49,4 +52,7 @@ def fix_design(toolpaths, iteration):
 
 
 if __name__ == '__main__':
-    get_height_grid()
+    # get_height_grid()
+    # toolpaths = generate_toolpaths()
+    # heightmap = prediction(toolpaths, 0)
+    pass

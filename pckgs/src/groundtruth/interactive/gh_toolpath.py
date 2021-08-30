@@ -1,8 +1,9 @@
 import groundtruth.toolbox.compas_utils as cu
-from groundtruth.toolbox import Feature
-from groundtruth.toolbox import Toolpath, Dimension
+from groundtruth.toolbox.features import Feature
+from groundtruth.toolbox.toolpath import Toolpath, Dimension
 import compas.geometry as cg
 import compas.datastructures as cd
+import random as r
 import numpy as np
 import datetime
 import json
@@ -33,31 +34,38 @@ def flip_y_value(toolpaths):
 
 def toolpath(toolpath, save_dir, hm_feature, adaptive):
     d = Dimension()
-    t = Toolpath(toolpath, save_dir, d, hm_feature, adaptive=adaptive)
+    t = Toolpath(toolpath, save_dir, d, hm_feature, adaptive)
     return t
 
 
-def generate_input_img(t, height_map, dir):
+def generate_input_img(t, hm_feature, dir):
     # get feature
     t_feature = Feature(t.img)
-    hm_feature = Feature(height_map)
     # get warp transformation
     M = t_feature.get_warp_transformation(t.crop_idx)
     # get fframe
     t_fframe = t_feature.get_featureframe(M)
     hm_fframe = hm_feature.get_featureframe(M)
+    # turn black to white
+    t_fframe = t_feature.turn_background(t_fframe)
     # overlay
     input_img = t_feature.img_overlay(hm_fframe, t_fframe)
     # save image
-    fname = 'input.png'
-    path = os.path.join(dir, fname)
-    cv2.imwrite(path, input_img)
+    tp_fname = 'toolpath.png'
+    tp_path = os.path.join(dir, tp_fname)
+    cv2.imwrite(tp_path, t_fframe)
+    hm_fname = 'hm_fframe.png'
+    hm_path = os.path.join(dir, hm_fname)
+    cv2.imwrite(hm_path, hm_fframe)
+    input_fname = 'input.png'
+    input_path = os.path.join(dir, input_fname)
+    cv2.imwrite(input_path, input_img)
 
-    return path, M
+    return input_path, M
 
 
 def inverse_fframe(M, crop_idx, feature, fframe):
-    rows, cols, chs = feature.shape
+    rows, cols, chs = feature.feature.shape
     fframe_feature = cv2.warpPerspective(fframe, M, (cols, rows), flags=cv2.WARP_INVERSE_MAP)
     patched_img = overlay_fframe(feature, fframe_feature)
     return patched_img
@@ -65,8 +73,42 @@ def inverse_fframe(M, crop_idx, feature, fframe):
 
 def overlay_fframe(feature, fframe_feature):
     condition = (fframe_feature != 0)
-    patched = np.where(condition, fframe_feature, feature)
+    patched = np.where(condition, fframe_feature, feature.feature)
     return patched
+
+
+def generate_toolpaths():
+    xmax = 1135
+    ymin = -737
+    zmax = 100
+    offset = 125
+    num_crv = 2
+    length = 50
+
+    toolpaths = []
+    for i in range(num_crv):
+        x_coord = r.randint(offset, xmax-offset)
+        y_coord = r.randint(ymin+offset, 0-offset)
+        z_coord = r.randint(50, zmax)
+        pt = cg.Point(x_coord, y_coord, z_coord)
+
+        vec = cg.Vector(0, length, 0)
+
+        T = cg.Translation.from_vector(vec)
+        pt_end = pt.transformed(T)
+
+        pl = cg.Polyline([pt, pt_end])
+        toolpaths.append(pl)
+    return toolpaths
+
+
+def save_img(img, dir, fname):
+    path = os.path.join(dir, fname)
+    cv2.imwrite(path, img)
+
+
+def feature(feature):
+    return Feature(feature)
 
 
 if __name__ == '__main__':
