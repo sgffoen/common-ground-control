@@ -9,13 +9,17 @@ __GH_DATA__ = os.path.join(__HERE__, '..', '..', '..', '..', 'grasshopper/data')
 __GH_FIX__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/00_designs"
 
 
-def get_height_grid(predicted_img=None):
-    if predicted_img:
-        height_b = predicted_img.channel_split()[0]
-    else:
-        s = scan()
-        hm_feature = get_heightmap(s)
-        height_b = hm_feature.channel_split()[0]
+def scan_sandbox():
+    s = scan()
+    hm_feature = get_heightmap(s)
+    height_b = hm_feature.channel_split()[0]
+    height = gray2height(height_b)
+    path = height2ascii(height)
+    return path
+
+
+def get_height_grid(hm_feature=None):
+    height_b = hm_feature.channel_split()[0]
     height = gray2height(height_b)
     path = height2ascii(height)
     return path
@@ -43,7 +47,9 @@ def prediction(toolpaths, iteration):
     # save image for checking
     save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
     save_img(inversed_img, __GH_DATA__, 'predicted_feature.png')
-    return hm_feature
+    # get path to ascii
+    path = get_height_grid(hm_feature=hm_feature)
+    return path
 
 
 def fix_design(toolpaths, iteration):
