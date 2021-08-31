@@ -5,23 +5,25 @@ import os
 
 
 __HERE__ = os.path.dirname(__file__)
-__GH_DATA__ = os.path.join(__HERE__, '..', '..', '..', '..', 'grasshopper/data')
-__GH_FIX__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/00_designs"
+#__GH_DATA__ = os.path.join(__HERE__, '..', '..', '..', '..', 'grasshopper/data')
+__GH_DATA__ = 'G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/01_data'
+__GH_EXPORT__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/00_designs"
 
 
 def scan_sandbox():
     s = scan()
     hm_feature = get_heightmap(s)
+    hm_feature.save(fname='height_feature', path=__GH_DATA__)
     height_b = hm_feature.channel_split()[0]
     height = gray2height(height_b)
-    path = height2ascii(height)
+    path = height2ascii(height, path=__GH_DATA__)
     return path
 
 
 def get_height_grid(hm_feature=None):
     height_b = hm_feature.channel_split()[0]
     height = gray2height(height_b)
-    path = height2ascii(height)
+    path = height2ascii(height, path=__GH_DATA__)
     return path
 
 
@@ -57,7 +59,7 @@ def prediction(toolpaths, adaptive):
     return path, adapted_toolpaths
 
 
-def fix_design(tp, iteration):
+def export_design(tp, iteration):
     # initiate data
     data = {}
     # store control frames
@@ -70,7 +72,7 @@ def fix_design(tp, iteration):
             frame_key = 'f_{}'.format(frame_num)
             data[toolpath_key][frame_key] = f.to_jsonstring()
     # export json
-    export_json(dir=__GH_FIX__, data=data, iter=iteration)
+    export_json(dir=__GH_EXPORT__, data=data, iter=iteration)
 
 
 if __name__ == '__main__':

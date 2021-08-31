@@ -2,15 +2,12 @@ from groundtruth.toolbox import ScanData, HeightMap
 import groundtruth.toolbox.ur_helper as ur
 from groundtruth.toolbox import EsriGrid
 from groundtruth.toolbox import Facts
-
 # python libs
 import numpy as np
 import os
 
 __FACTS__ = Facts().facts
 __HERE__ = os.path.dirname(__file__)
-__GH_DATA__ = os.path.join(__HERE__, '..', '..', '..', '..', 'grasshopper/data')
-
 
 
 def scan():
@@ -21,10 +18,9 @@ def scan():
 def get_heightmap(scan):
     heightmap = HeightMap(scan)
     hm_feature = heightmap.height2feature()
-    hm_feature.save(fname='height_feature', path=__GH_DATA__)
     return hm_feature
 
-def height2ascii(arr, cellsize=1.0, path=__GH_DATA__):
+def height2ascii(arr, path, cellsize=1.0):
     grid_data = arr
     # print(grid_data.shape) = (737, 1135)
     rows, cols = np.shape(grid_data)
