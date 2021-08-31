@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 def load_model():
-    dir_name = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/01_models/00000_2021-08-17/model"
+    dir_name = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/01_models/00004_2021-08-18/model"
     try:
         loaded_model = tf.keras.models.load_model(dir_name)
         print('model is loaded from {}\n'.format(dir_name))

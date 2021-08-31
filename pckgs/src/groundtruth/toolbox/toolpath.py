@@ -41,9 +41,6 @@ class Toolpath():
     def tuple_to_compas_frame(self):
         ctrl_frames = []
         ctrl_pts = self.toolpath.points
-        for p in ctrl_pts:
-            z = p.z
-            p.z = self.remapValue(z, 0, 130, 130, 0)
 
         if len(ctrl_pts)==2:
             curve = cg.Polyline(ctrl_pts)
@@ -84,15 +81,14 @@ class Toolpath():
                                     self.d.feature_origin_z),
                            cg.Vector.Xaxis(),
                            cg.Vector.Yaxis())
-        T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
+        T = cg.Transformation.from_frame_to_frame(frameto, framefrom)
         self.ctrlframes_feature = []
         for ctrl_frame in ctrl_frames:
-            # f = ctrl_frame.transformed(T)
+            f = ctrl_frame.transformed(T)
             f = ctrl_frame
             if self.adaptive:
                 h_sand = self.get_scanned_height(int(f.point[0]), int(f.point[1]))
-                remapped = self.remapValue(h_sand, 0, 255, 0, 150)
-                f.point[2] = remapped
+                f.point[2] = h_sand
             self.ctrlframes_feature.append(f)
 
     def get_scanned_height(self, x, y):
@@ -102,8 +98,8 @@ class Toolpath():
         height = (130 - height_mm) + depth
 
         # safety net
-        if height > 100:
-            height = 100
+        if height > 130:
+            height = 130
         elif height < 0:
             height = 0
         return height
@@ -131,10 +127,10 @@ class Toolpath():
                      thickness=self.thickness,
                      lineType=cv2.FILLED)
         self.img = img
-        return img, ctrl_frames
+        return img
 
     def calc_contour(self):
-        img = self.draw_polyline_in_sandbox2d()[0]
+        img = self.draw_polyline_in_sandbox2d()
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(src=img_gray,
                                     thresh=127.5,
@@ -182,7 +178,7 @@ class Toolpath():
         return crop_idx
 
     def calc_toolpath_dir(self):
-        ctrl_frames = self.draw_polyline_in_sandbox2d()[1]
+        ctrl_frames = self.ctrlframes_feature
         # calc direction of toolpath
         toolpath_start = ctrl_frames[0].point
         toolpath_end = ctrl_frames[-1].point
