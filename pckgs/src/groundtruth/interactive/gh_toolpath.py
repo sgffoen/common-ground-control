@@ -48,8 +48,10 @@ def generate_input_img(t, hm_feature, dir):
     hm_fframe = hm_feature.get_featureframe(M)
     # turn black to white
     t_fframe = t_feature.turn_background(t_fframe)
-    # overlay
-    input_img = t_feature.img_overlay(hm_fframe, t_fframe)
+    # channels
+    b, g, _ = hm_feature.channel_split()
+    _, _, r = t_feature.channel_split()
+    input_img = cv2.merge([b, g, r])
     # save image
     tp_fname = 'toolpath.png'
     tp_path = os.path.join(dir, tp_fname)
