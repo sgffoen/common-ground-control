@@ -252,8 +252,8 @@ class Toolpath():
         height = (130 - height_mm) + self.adaptive_depth
 
         # safety net
-        if height > 130:
-            height = 130
+        if height > 125:
+            height = 125
         elif height < 0:
             height = 0
         return height
