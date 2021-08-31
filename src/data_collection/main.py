@@ -9,8 +9,9 @@ import scanning.scan
 import os
 import json
 import datetime
+import random as r
 
-__ITERATION__ = 10
+__ITERATION__ = 500
 __START__ = 0
 __FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
 
@@ -35,7 +36,7 @@ def training(env):
         print('scan id: {}'.format(data.identifier))
 
         # 2. robot to scan pose
-        ur.ur_helper.scan_pose(scanning_time=5)
+        ur.ur_helper.scan_pose(scanning_time=6)
 
         # 3. scan and create data
         scan = ScanData()
@@ -50,6 +51,8 @@ def training(env):
         # 5. get toolpath
         hm_feature = data.get_hm_feature()
         d = Dimension()
+        adaptive_depth = r.randint(0, 30)
+        print(adaptive_depth)
         tp = Toolpath(level='adaptive',
                       curve_type='bezier',
                       num_ctrl_pts=2,
@@ -58,7 +61,8 @@ def training(env):
                       parent_folder=path_name_raw,
                       id=data.identifier,
                       d=d,
-                      hm_feature=hm_feature.feature)
+                      hm_feature=hm_feature.feature,
+                      adaptive_depth=adaptive_depth)
         # 5-2. get crop index
         data.toolpath = tp
         data.frame_corner_pts = tp.crop_idx

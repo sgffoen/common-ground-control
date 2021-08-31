@@ -32,7 +32,8 @@ class Toolpath():
                  parent_folder,
                  id,
                  d,
-                 hm_feature=None):
+                 hm_feature=None,
+                 adaptive_depth=0):
         self.level = level
         self.curve_type = curve_type
         self.num_ctrl_pts = num_ctrl_pts
@@ -42,10 +43,11 @@ class Toolpath():
         self.parent_folder = parent_folder
         self.d = d
         self.hm_feature = hm_feature
+        self.adaptive_depth = adaptive_depth
 
         self.create_json_file()
-        self.shift_list()
         self.move_ctrl_frames_to_feature()
+        self.shift_list()
 
     def generate_ctrl_pts_tuple(self):
         self.y_min = 30
@@ -128,7 +130,7 @@ class Toolpath():
                 ctrl_pts_list.append((x, y, z))
 
         elif self.level == 'adaptive':
-            length = 200
+            length = 120
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
@@ -241,10 +243,9 @@ class Toolpath():
             self.ctrlframes_feature.append(f)
 
     def get_scanned_height(self, x, y):
-        depth = 0
         height_pix = self.hm_feature[y, x, 0]
         height_mm = self.remapValue(height_pix, 0, 255, 0, 150)
-        height = (130 - height_mm) + depth
+        height = (130 - height_mm) + self.adaptive_depth
 
         # safety net
         if height > 100:
@@ -258,7 +259,7 @@ class Toolpath():
         return rv
 
     def draw_polyline_in_sandbox2d(self):
-        ctrl_frames = self.move_ctrl_frames_to_sandbox2d()
+        ctrl_frames = self.ctrlframes_feature
         img = 255 * np.ones(shape=[m.floor(self.d.feature_ysize),
                                    m.floor(self.d.feature_xsize),
                                    3], dtype=np.uint8)
@@ -416,6 +417,7 @@ class Toolpath():
         data['num_ctrl_pts'] = {}
         data['curve_type'] = {}
         data['thickness'] = {}
+        data['adaptive_depth'] = {}
         filepath = self.parent_folder + '/' + '{}_toolpath.json'.format(self.id)
         with open(filepath, 'w') as o:
             json.dump(data, o, indent=4)
@@ -439,6 +441,7 @@ class Toolpath():
         data['num_ctrl_pts'] = self.num_ctrl_pts
         data['thickness'] = self.thickness
         data['curve_type'] = self.curve_type
+        data['adaptive_depth'] = self.adaptive_depth
         # export and overwrite json
         with open(filepath, 'w') as o:
             json.dump(data, o, indent=4)
@@ -477,7 +480,7 @@ class Dimension():
 
     def get_feature_origin(self):
         self.feature_origin_x = (self.pt0.y - self.f_bounds_ymax)  # 587 - 570 = 17
-        self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)  # (-338) - (-352) = 14
+        self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)  # (-338) - (-431) = 22
         self.feature_origin_z = 0
 
     def get_feature_frame_size(self):
