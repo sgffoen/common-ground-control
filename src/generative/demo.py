@@ -191,15 +191,15 @@ if __name__ == "__main__":
 
     cv2.imshow('original',inversed_img)
     cv2.waitKey(0)
-    # cv2.imshow('blur',blur)
+    # cv2.imshow('feature',hm_feature)
     # cv2.waitKey(0)
-    # print(blur)
+    # create mask
     crop_idx = [crop_idx['0'], crop_idx['1'], crop_idx['2'], crop_idx['3']]
     pts_from = np.int32(crop_idx)
     mask = cv2.fillConvexPoly(black, pts_from, (255,255,255))
-    mask_blur  = cv2.GaussianBlur(mask,(55,55),0).astype('float') / 255.
-    # cv2.imshow('mask',mask_blur)
-    # cv2.waitKey(0)
+    mask_blur  = cv2.GaussianBlur(mask,(99,99),0).astype('float') / 255.
+    cv2.imshow('mask',mask_blur)
+    cv2.waitKey(0)
     img = inversed_img.astype('float') / 255.
     bg = hm_feature.astype('float') / 255.
     out  = bg * (1 - mask_blur)  + img * mask_blur

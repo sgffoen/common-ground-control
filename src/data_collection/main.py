@@ -8,6 +8,7 @@ import UR as ur
 import scanning.scan
 import os
 import json
+import datetime
 
 __ITERATION__ = 10
 __START__ = 0
@@ -102,6 +103,13 @@ def main():
     elif run_mode == 'see':
         ur.ur_helper.scan_pose(scanning_time=0.1)
         scanning.live_scan_stream()
+    elif run_mode == 'scan':
+        ur.ur_helper.scan_pose(scanning_time=5.0)
+        scan = ScanData()
+        heightmap = HeightMap(scan)
+        f = heightmap.height2feature()
+        f.save('height_scan_' + str(datetime.date.today()), path="G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/03_test/00_test_scans")
+
     elif run_mode == 'toolpath':
         backup = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_backup"
         id = "test_0000"
