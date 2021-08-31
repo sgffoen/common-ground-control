@@ -35,7 +35,15 @@ def generate_img(model, img_path):
     output_img = prediction[0].numpy()
     img_denormalized = denormalize(output_img)
     img_encoded = encode(img_denormalized)
-    return img_encoded
+    img_gray = gb2gray(img_encoded)
+    print(img_encoded.shape)
+    print(img_encoded[0][0])
+    return img_gray
+
+
+def gb2gray(gb_img):
+    gb_img[:,:,0] = gb_img[:,:,1]
+    return gb_img
 
 
 if __name__ == '__main__':

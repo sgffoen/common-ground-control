@@ -2,6 +2,7 @@ from groundtruth.toolbox import ScanData, HeightMap
 import groundtruth.toolbox.ur_helper as ur
 from groundtruth.toolbox import EsriGrid
 from groundtruth.toolbox import Facts
+from groundtruth.toolbox.toolpath import Dimension
 # python libs
 import numpy as np
 import os
@@ -21,14 +22,16 @@ def get_heightmap(scan):
     return hm_feature
 
 def height2ascii(arr, path, cellsize=1.0):
+    # get offset value
+    d = Dimension()
     grid_data = arr
-    # print(grid_data.shape) = (737, 1135)
+    # print(grid_data.shape) = (729, 1135)
     rows, cols = np.shape(grid_data)
     esri = EsriGrid(
                     ncols=cols,
                     nrows=rows,
-                    xllcorner=0 + 17,
-                    yllcorner=-737 - 14,
+                    xllcorner=0 + d.feature_origin_x,
+                    yllcorner=-729 - d.feature_origin_y,
                     cellsize=cellsize,
                     grid_data=grid_data,
                     filepath=os.path.join(path, 'grid.asc'),

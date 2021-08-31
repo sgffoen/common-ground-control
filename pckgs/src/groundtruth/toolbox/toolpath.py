@@ -73,22 +73,24 @@ class Toolpath():
 
     def move_ctrl_frames_to_feature(self):
         ctrl_frames = self.tuple_to_compas_frame()
-        framefrom = cg.Frame(cg.Point(0, 0, 0),
-                             cg.Vector.Xaxis(),
-                             cg.Vector.Yaxis())
-        frameto = cg.Frame(cg.Point(self.d.feature_origin_x,
-                                    self.d.feature_origin_y,
-                                    self.d.feature_origin_z),
+        # move frames to origin so that coordinates of ctrl_frame match the pixel order
+        frameto = cg.Frame(cg.Point(0, 0, 0),
                            cg.Vector.Xaxis(),
                            cg.Vector.Yaxis())
-        T = cg.Transformation.from_frame_to_frame(frameto, framefrom)
+        framefrom = cg.Frame(cg.Point(self.d.feature_origin_x,
+                                      self.d.feature_origin_y,
+                                      self.d.feature_origin_z),
+                             cg.Vector.Xaxis(),
+                             cg.Vector.Yaxis())
+        T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
         self.ctrlframes_feature = []
         for ctrl_frame in ctrl_frames:
             f = ctrl_frame.transformed(T)
-            f = ctrl_frame
             if self.adaptive:
                 h_sand = self.get_scanned_height(int(f.point[0]), int(f.point[1]))
                 f.point[2] = h_sand
+            else:
+                f.point.z = self.remapValue(f.point.z, 0, 130, 130, 0)
             self.ctrlframes_feature.append(f)
 
     def get_scanned_height(self, x, y):
@@ -119,7 +121,7 @@ class Toolpath():
         for a, b in cu.pairwise(range(len(ctrl_frames))):
             pt_s = ctrl_frames[a].point
             pt_e = ctrl_frames[b].point
-            z = self.remapValue(pt_s[2], 0, 150, 0, 255)
+            z = self.remapValue(pt_s[2], 0, 130, 0, 255)
             cv2.line(img,
                      (int(pt_s[0]), int(pt_s[1])),
                      (int(pt_e[0]), int(pt_e[1])),
@@ -289,7 +291,7 @@ class Dimension():
 
     def get_feature_origin(self):
         self.feature_origin_x = (self.pt0.y - self.f_bounds_ymax)  # 587 - 570 = 17
-        self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)  # (-338) - (-352) = 14
+        self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)  # (-338) - (-360) = 22
         self.feature_origin_z = 0
 
     def get_feature_frame_size(self):

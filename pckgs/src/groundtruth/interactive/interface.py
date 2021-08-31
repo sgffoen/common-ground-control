@@ -1,5 +1,5 @@
 from groundtruth.interactive.gh_scanning import get_heightmap, gray2height, height2ascii, scan
-from groundtruth.interactive.gh_toolpath import export_json, flip_y_value, toolpath, generate_input_img, inverse_fframe, generate_toolpaths, save_img, feature, blend_edges
+from groundtruth.interactive.gh_toolpath import export_json, flip_y_value, toolpath, generate_input_img, inverse_fframe, generate_toolpaths, save_img, feature, blend_edges, move_ctrl_frames_to_robot
 from groundtruth.interactive.gh_prediction import load_model, generate_img
 import os
 
@@ -60,6 +60,8 @@ def prediction(toolpaths, adaptive):
 
 
 def export_design(tp, iteration):
+    # move toolpath to sandbox space.
+    tp = move_ctrl_frames_to_robot(tp)
     # initiate data
     data = {}
     # store control frames
@@ -77,7 +79,6 @@ def export_design(tp, iteration):
 
 if __name__ == '__main__':
     # get_height_grid()
-    # toolpaths = generate_toolpaths()
-    # heightmap, a = prediction(toolpaths, 0)
-    #pass
-    scan_sandbox()
+    toolpaths = generate_toolpaths()
+    heightmap, a = prediction(toolpaths, 0)
+    # scan_sandbox()

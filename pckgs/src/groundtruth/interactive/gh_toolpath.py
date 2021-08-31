@@ -49,19 +49,22 @@ def generate_input_img(t, hm_feature, dir):
     # turn black to white
     t_fframe = t_feature.turn_background(t_fframe)
     # channels
-    b, g, _ = hm_feature.channel_split()
-    _, _, r = t_feature.channel_split()
+    b, g, _ = hm_feature.channel_split(hm_fframe)
+    _, _, r = t_feature.channel_split(t_fframe)
+    r = r.astype(np.uint8)
     input_img = cv2.merge([b, g, r])
-    # save image
-    tp_fname = 'toolpath.png'
-    tp_path = os.path.join(dir, tp_fname)
-    cv2.imwrite(tp_path, t_fframe)
-    hm_fname = 'hm_fframe.png'
-    hm_path = os.path.join(dir, hm_fname)
-    cv2.imwrite(hm_path, hm_fframe)
+
     input_fname = 'input.png'
     input_path = os.path.join(dir, input_fname)
     cv2.imwrite(input_path, input_img)
+
+    t_fframe_name = 't_fframe.png'
+    path = os.path.join(dir, t_fframe_name)
+    cv2.imwrite(path, t_fframe)
+
+    hm_fframe_name = 'hm_fframe.png'
+    path = os.path.join(dir, hm_fframe_name)
+    cv2.imwrite(path, hm_fframe)
 
     return input_path, M
 
@@ -127,6 +130,25 @@ def save_img(img, dir, fname):
 
 def feature(feature):
     return Feature(feature)
+
+
+def move_ctrl_frames_to_robot(frames):
+    d = Dimension()
+    # move frames to origin so that coordinates of ctrl_frame match the pixel order
+    framefrom = cg.Frame(cg.Point(0, 0, 0),
+                         cg.Vector.Xaxis(),
+                         cg.Vector.Yaxis())
+    frameto = cg.Frame(cg.Point(d.feature_origin_x,
+                                d.feature_origin_y,
+                                d.feature_origin_z),
+                       cg.Vector.Xaxis(),
+                       cg.Vector.Yaxis())
+    T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
+    ctrl_frame_robot = []
+    for f in frames:
+        f = f.transformed(T)
+        ctrl_frame_robot.append(f)
+    return ctrl_frame_robot
 
 
 if __name__ == '__main__':

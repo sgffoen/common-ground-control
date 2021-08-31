@@ -60,8 +60,11 @@ class Feature(object):
                                              borderMode=cv2.BORDER_TRANSPARENT)
         return feature_frame
 
-    def channel_split(self):
-        img = self.feature
+    def channel_split(self, fframe=None):
+        if fframe is None:
+            img = self.feature
+        else:
+            img = fframe
         # split img
         b, g, r = cv2.split(img)
         return b, g, r
