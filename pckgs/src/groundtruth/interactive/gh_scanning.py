@@ -31,8 +31,8 @@ def height2ascii(arr, cellsize=1.0, path=__GH_DATA__):
     esri = EsriGrid(
                     ncols=cols,
                     nrows=rows,
-                    xllcorner=0,
-                    yllcorner=-737,
+                    xllcorner=0 + 17,
+                    yllcorner=-737 - 14,
                     cellsize=cellsize,
                     grid_data=grid_data,
                     filepath=os.path.join(path, 'grid.asc'),

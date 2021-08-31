@@ -41,6 +41,9 @@ class Toolpath():
     def tuple_to_compas_frame(self):
         ctrl_frames = []
         ctrl_pts = self.toolpath.points
+        for p in ctrl_pts:
+            z = p.z
+            p.z = self.remapValue(z, 0, 130, 130, 0)
 
         if len(ctrl_pts)==2:
             curve = cg.Polyline(ctrl_pts)
