@@ -130,7 +130,7 @@ class Toolpath():
                 ctrl_pts_list.append((x, y, z))
 
         elif self.level == 'adaptive':
-            length = 120
+            length = r.randrange(self.l_min, self.l_max)
             step = length / (self.num_ctrl_pts - 1)
             for i in range(self.num_ctrl_pts):
                 x = i * step
