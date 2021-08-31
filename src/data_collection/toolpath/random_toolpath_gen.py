@@ -252,8 +252,10 @@ class Toolpath():
         height = (130 - height_mm) + self.adaptive_depth
 
         # safety net
-        if height > 100:
-            height = 100
+        if height > 130:
+            height = 130
+        elif height < 0:
+            height = 0
         return height
 
     # image processing from here
