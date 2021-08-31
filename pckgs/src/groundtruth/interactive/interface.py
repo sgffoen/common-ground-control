@@ -77,6 +77,7 @@ def export_design(tp, iteration):
 
 if __name__ == '__main__':
     # get_height_grid()
-    toolpaths = generate_toolpaths()
-    heightmap, a = prediction(toolpaths, 0)
+    # toolpaths = generate_toolpaths()
+    # heightmap, a = prediction(toolpaths, 0)
     #pass
+    scan_sandbox()
