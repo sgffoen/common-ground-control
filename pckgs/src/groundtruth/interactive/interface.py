@@ -25,7 +25,7 @@ def get_height_grid(hm_feature=None):
     return path
 
 
-def prediction(toolpaths, iteration):
+def prediction(toolpaths, adaptive):
     # scan
     s = scan()
     hm_feature = get_heightmap(s)
@@ -33,9 +33,10 @@ def prediction(toolpaths, iteration):
     model = load_model()
     # flip y to match feature
     toolpaths = flip_y_value(toolpaths)
+    adapted_toolpaths = []
     for tp in toolpaths:
         # draw toolpath in feature
-        t = toolpath(tp, __GH_DATA__, hm_feature, adaptive=False)
+        t = toolpath(tp, __GH_DATA__, hm_feature, adaptive=adaptive)
         # generate input image
         input_img, M = generate_input_img(t, hm_feature, __GH_DATA__)
         # prediction
@@ -44,16 +45,29 @@ def prediction(toolpaths, iteration):
         inversed_img = inverse_fframe(M, t.crop_idx, hm_feature, predicted_img)
         # update current state of sand
         hm_feature = feature(inversed_img)
+        # store control points
+        adapted_toolpaths.append(t.ctrlframes_feature)
     # save image for checking
     save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
     save_img(inversed_img, __GH_DATA__, 'predicted_feature.png')
     # get path to ascii
     path = get_height_grid(hm_feature=hm_feature)
-    return path
+    return path, adapted_toolpaths
 
 
-def fix_design(toolpaths, iteration):
+def fix_design(tp, iteration):
+    # initiate data
     data = {}
+    # store control frames
+    for i, f_list in enumerate(tp):
+        toolpath_num = str(i).zfill(3)
+        toolpath_key = 'toolpath_{}'.format(toolpath_num)
+        data[toolpath_key] = {}
+        for j, f in enumerate(f_list):
+            frame_num = str(j).zfill(3)
+            frame_key = 'f_{}'.format(frame_num)
+            data[toolpath_key][frame_key] = f.to_jsonstring()
+    # export json
     export_json(dir=__GH_FIX__, data=data, iter=iteration)
 
 
