@@ -71,6 +71,22 @@ def inverse_fframe(M, crop_idx, feature, fframe):
     return patched_img
 
 
+def blend_edges(background, prediction, crop):
+    size = prediction.shape
+    # mask
+    black = np.zeros(size,dtype=np.uint8)
+    black.fill(0)
+    pts_from = np.int32(crop)
+    mask = cv2.fillConvexPoly(black, pts_from, (255,255,255))
+    mask_blur  = cv2.GaussianBlur(mask,(199,199),0).astype('float') / 255.
+    # blur edges
+    img = prediction.astype('float') / 255.
+    bg = background.astype('float') / 255.
+    out  = bg * (1 - mask_blur)  + img * mask_blur
+    out = (out * 255).astype('uint8')
+    return out
+
+
 def overlay_fframe(feature, fframe_feature):
     condition = (fframe_feature != 0)
     patched = np.where(condition, fframe_feature, feature.feature)
@@ -82,7 +98,7 @@ def generate_toolpaths():
     ymin = -737
     zmax = 100
     offset = 125
-    num_crv = 2
+    num_crv = 1
     length = 50
 
     toolpaths = []
