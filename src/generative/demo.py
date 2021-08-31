@@ -182,7 +182,33 @@ if __name__ == "__main__":
     predicted_img = generate_img(model, input_img_name)
     # warp back
     inversed_img = inverse_fframe(M, crop_idx, hm_feature, predicted_img)
+
+    # blur edges experiments
+    size = inversed_img.shape
+    black = np.zeros(size,dtype=np.uint8)
+    black.fill(0)
+
+
+    cv2.imshow('original',inversed_img)
+    cv2.waitKey(0)
+    # cv2.imshow('blur',blur)
+    # cv2.waitKey(0)
+    # print(blur)
+    crop_idx = [crop_idx['0'], crop_idx['1'], crop_idx['2'], crop_idx['3']]
+    pts_from = np.int32(crop_idx)
+    mask = cv2.fillConvexPoly(black, pts_from, (255,255,255))
+    mask_blur  = cv2.GaussianBlur(mask,(55,55),0).astype('float') / 255.
+    # cv2.imshow('mask',mask_blur)
+    # cv2.waitKey(0)
+    img = inversed_img.astype('float') / 255.
+    bg = hm_feature.astype('float') / 255.
+    out  = bg * (1 - mask_blur)  + img * mask_blur
+    out = (out * 255).astype('uint8')
+    cv2.imshow('result',out)
+    cv2.waitKey(0)
+
+
     # saving terrain
-    save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/"
-    ascii_path = save_dir + "ascii_{}.txt".format(0)
-    write_height2ascii(inversed_img, ascii_path)
+    # save_dir = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/00_test/"
+    # ascii_path = save_dir + "ascii_{}.txt".format(0)
+    # write_height2ascii(inversed_img, ascii_path)
