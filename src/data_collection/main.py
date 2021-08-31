@@ -104,11 +104,17 @@ def main():
         ur.ur_helper.scan_pose(scanning_time=0.1)
         scanning.live_scan_stream()
     elif run_mode == 'scan':
+        scan_path = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/03_test/00_test_scans"
         ur.ur_helper.scan_pose(scanning_time=5.0)
-        scan = ScanData()
-        heightmap = HeightMap(scan)
+        s = ScanData()
+        s.display_scan(s.depth_scan)
+        pcl_obj = PointCloud(s)
+        pcl_obj.write_pointcloud(pcl_obj.get_feature(),
+                                             fname='pcl_feature',
+                                             path=scan_path)
+        heightmap = HeightMap(s)
         f = heightmap.height2feature()
-        f.save('height_scan_' + str(datetime.date.today()), path="G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/03_test/00_test_scans")
+        f.save('height_scan_' + str(datetime.date.today()), path=scan_path)
 
     elif run_mode == 'toolpath':
         backup = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_backup"
