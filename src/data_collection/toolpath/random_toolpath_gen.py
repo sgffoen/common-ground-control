@@ -225,10 +225,10 @@ class Toolpath():
 
     def move_ctrl_frames_to_feature(self):
         ctrl_frames = self.move_ctrl_frames_to_sandbox2d()
-        framefrom = cg.Frame(cg.Point(0, 0, 0),
+        frameto = cg.Frame(cg.Point(0, 0, 0),
                              cg.Vector.Xaxis(),
                              cg.Vector.Yaxis())
-        frameto = cg.Frame(cg.Point(self.d.feature_origin_x,
+        framefrom = cg.Frame(cg.Point(self.d.feature_origin_x,
                                     self.d.feature_origin_y,
                                     self.d.feature_origin_z),
                            cg.Vector.Xaxis(),
@@ -237,6 +237,7 @@ class Toolpath():
         self.ctrlframes_feature = []
         for ctrl_frame in ctrl_frames:
             f = ctrl_frame.transformed(T)
+            # f = ctrl_frame
             if self.level == 'adaptive':
                 h_sand = self.get_scanned_height(int(f.point[0]), int(f.point[1]))
                 f.point[2] = h_sand
