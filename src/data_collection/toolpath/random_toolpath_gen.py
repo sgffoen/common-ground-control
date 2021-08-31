@@ -201,7 +201,7 @@ class Toolpath():
         frame_to_x = r.randint(int(self.d.offset_x_min), int(self.d.offset_x_max))
         frame_to_y = r.randint(int(self.d.offset_y_min), int(self.d.offset_y_max))
         if self.level == 'center':
-            frame_to_x = self.d.sandbox_xsize / 2 + 200
+            frame_to_x = self.d.sandbox_xsize / 2
             frame_to_y = self.d.sandbox_ysize / 2
         frame_to_center = cg.Point(frame_to_x,
                                    frame_to_y,
@@ -225,23 +225,26 @@ class Toolpath():
 
     def move_ctrl_frames_to_feature(self):
         ctrl_frames = self.move_ctrl_frames_to_sandbox2d()
-        frameto = cg.Frame(cg.Point(0, 0, 0),
+        framefrom = cg.Frame(cg.Point(0, 0, 0),
                              cg.Vector.Xaxis(),
                              cg.Vector.Yaxis())
-        framefrom = cg.Frame(cg.Point(self.d.feature_origin_x,
+        frameto = cg.Frame(cg.Point(self.d.feature_origin_x,
                                     self.d.feature_origin_y,
                                     self.d.feature_origin_z),
                            cg.Vector.Xaxis(),
                            cg.Vector.Yaxis())
-        T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
+        T = cg.Transformation.from_frame_to_frame(frameto, framefrom)
         self.ctrlframes_feature = []
+        self.ctrlframes = []
         for ctrl_frame in ctrl_frames:
             f = ctrl_frame.transformed(T)
-            # f = ctrl_frame
+            f_robot = ctrl_frame.copy()
             if self.level == 'adaptive':
                 h_sand = self.get_scanned_height(int(f.point[0]), int(f.point[1]))
                 f.point[2] = h_sand
+                f_robot.point.z = h_sand
             self.ctrlframes_feature.append(f)
+            self.ctrlframes.append(f_robot)
 
     def get_scanned_height(self, x, y):
         height_pix = self.hm_feature[y, x, 0]
@@ -432,7 +435,7 @@ class Toolpath():
         for i, ci in enumerate(self.crop_idx):
             data['frame_corner_pts'][i] = ci
         # store frames
-        ctrl_frames = self.draw_polyline_in_sandbox2d()[1]
+        ctrl_frames = self.ctrlframes
         for j, f in enumerate(ctrl_frames):
             frame_num = str(j).zfill(3)
             frame_key = 'f_{}'.format(frame_num)
@@ -481,7 +484,7 @@ class Dimension():
 
     def get_feature_origin(self):
         self.feature_origin_x = (self.pt0.y - self.f_bounds_ymax)  # 587 - 570 = 17
-        self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)  # (-338) - (-431) = 22
+        self.feature_origin_y = (self.pt0.x - self.f_bounds_xmax)   # (-338) - (-360) = 22
         self.feature_origin_z = 0
 
     def get_feature_frame_size(self):

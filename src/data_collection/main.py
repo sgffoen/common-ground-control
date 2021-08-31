@@ -73,7 +73,7 @@ def training(env):
         print('{}: data is collected and stored'.format(data.identifier))
 
         # 7. execure toolpath
-        ur.execute_toolpath(tp.ctrlframes_feature, excavation_time=24)
+        ur.execute_toolpath(tp.ctrlframes, excavation_time=24)
 
         # 8. update meta data
         time_spend = (time.time()-start)/60
