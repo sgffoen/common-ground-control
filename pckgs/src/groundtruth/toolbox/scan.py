@@ -196,13 +196,6 @@ class PointCloud(object):
             pcd = self.get_o3d_format(self.get_feature())
             pcd.estimate_normals()
 
-            # remove high and low points
-            points = np.asarray(pcd.points)
-            mask_low = points[:,2] > -650.0# and points[:,2] < -410.0
-            mask_high = points[:,2] < -410.0
-            mask = mask_high * mask_low
-            pcd.points = o3d.utility.Vector3dVector(points[mask])
-
             mesh_out, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=12)
             #path = askdirectory(title='Select Folder') # shows dialog box and return the path
             if smooth is True:
