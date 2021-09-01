@@ -128,10 +128,6 @@ def save_img(img, dir, fname):
     cv2.imwrite(path, img)
 
 
-def feature(feature):
-    return Feature(feature)
-
-
 def move_ctrl_frames_to_robot(frames):
     d = Dimension()
     # move frames to origin so that coordinates of ctrl_frame match the pixel order

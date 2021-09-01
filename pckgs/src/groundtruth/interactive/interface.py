@@ -1,6 +1,7 @@
 from groundtruth.interactive.gh_scanning import get_heightmap, gray2height, height2ascii, scan
-from groundtruth.interactive.gh_toolpath import export_json, flip_y_value, toolpath, generate_input_img, inverse_fframe, generate_toolpaths, save_img, feature, blend_edges, move_ctrl_frames_to_robot
+from groundtruth.interactive.gh_toolpath import export_json, flip_y_value, toolpath, generate_input_img, inverse_fframe, generate_toolpaths, save_img, blend_edges, move_ctrl_frames_to_robot
 from groundtruth.interactive.gh_prediction import load_model, generate_img
+from groundtruth.toolbox.features import Feature
 import os
 
 
@@ -28,9 +29,9 @@ def get_height_grid(hm_feature=None):
 
 
 def prediction(toolpaths, adaptive):
-    # scan
-    s = scan()
-    hm_feature = get_heightmap(s)
+    # load heigt map
+    f = Feature()
+    hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'height_feature.png'))
     # load model
     model = load_model()
     # flip y to match feature
@@ -48,7 +49,7 @@ def prediction(toolpaths, adaptive):
         # blend edges prediction and height feature
         blend = blend_edges(background=hm_feature.feature, prediction=inversed_img, crop=t.crop_idx)
         # update current state of sand
-        hm_feature = feature(blend)
+        hm_feature = Feature(blend)
         # store control points
         adapted_toolpaths.append(t.ctrlframes_feature)
     # save image for checking

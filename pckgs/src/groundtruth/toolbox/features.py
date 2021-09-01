@@ -7,7 +7,7 @@ from tkinter.filedialog import askdirectory
 
 
 class Feature(object):
-    def __init__(self, feature):
+    def __init__(self, feature=None):
         self.feature = feature
         self.frame_shape = (int(256), int(256))
 
@@ -86,3 +86,8 @@ class Feature(object):
         arr = np.where(condition, fframe, zeros)
 
         return arr
+
+    def feature_from_file(self, path):
+        im = cv2.imread(path)
+        self.feature = im
+        return self
