@@ -14,24 +14,24 @@ __GH_EXPORT__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_d
 def scan_sandbox():
     s = scan()
     hm_feature = get_heightmap(s)
-    hm_feature.save(fname='height_feature', path=__GH_DATA__)
+    hm_feature.save(fname='scan_height_feature', path=__GH_DATA__)
     height_b = hm_feature.channel_split()[0]
     height = gray2height(height_b)
-    path = height2ascii(height, path=__GH_DATA__)
+    path = height2ascii(height, path=__GH_DATA__, fname='scan_grid.asc')
     return path
 
 
-def get_height_grid(hm_feature=None):
+def get_height_grid(hm_feature, fname):
     height_b = hm_feature.channel_split()[0]
     height = gray2height(height_b)
-    path = height2ascii(height, path=__GH_DATA__)
+    path = height2ascii(height, path=__GH_DATA__, fname=fname)
     return path
 
 
 def prediction(toolpaths, adaptive):
     # load heigt map
     f = Feature()
-    hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'height_feature.png'))
+    hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
     # load model
     model = load_model()
     # flip y to match feature
@@ -56,7 +56,7 @@ def prediction(toolpaths, adaptive):
     save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
     save_img(inversed_img, __GH_DATA__, 'predicted_feature.png')
     # get path to ascii
-    path = get_height_grid(hm_feature=hm_feature)
+    path = get_height_grid(hm_feature=hm_feature, fname='prediction_grid.asc')
     return path, adapted_toolpaths
 
 

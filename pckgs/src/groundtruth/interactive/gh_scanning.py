@@ -21,7 +21,7 @@ def get_heightmap(scan):
     hm_feature = heightmap.height2feature()
     return hm_feature
 
-def height2ascii(arr, path, cellsize=1.0):
+def height2ascii(arr, path, fname, cellsize=1.0):
     # get offset value
     d = Dimension()
     grid_data = arr
@@ -34,7 +34,7 @@ def height2ascii(arr, path, cellsize=1.0):
                     yllcorner=-729 - d.feature_origin_y,
                     cellsize=cellsize,
                     grid_data=grid_data,
-                    filepath=os.path.join(path, 'grid.asc'),
+                    filepath=os.path.join(path, fname),
                     NODATA_VALUE=-9999)
 
     esri.write_file()
