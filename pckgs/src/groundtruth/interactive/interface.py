@@ -76,6 +76,8 @@ def export_design(tp, iteration):
             data[toolpath_key][frame_key] = f.to_jsonstring()
     # export json
     export_json(dir=__GH_EXPORT__, data=data, iter=iteration)
+    text = 'json is saved in {}'.format(__GH_EXPORT__)
+    return text
 
 
 if __name__ == '__main__':
