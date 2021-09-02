@@ -33,3 +33,8 @@ class EsriGrid(object):
 
         # close file
         f.close()
+
+
+def g2height(v, ori_Min=0, ori_Max=255, targetMin=0.0, targetMax=150.0):
+    rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
+    return rv

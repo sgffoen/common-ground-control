@@ -1,5 +1,16 @@
 import numpy as np
 import tensorflow as tf
+import cv2
+
+
+def g2gray(g):
+    arr = cv2.merge([g, g, g])
+    return arr
+
+
+def split_channel(arr):
+    b, g, r = cv2.split(arr)
+    return b, g, r
 
 
 def load_model():
@@ -24,6 +35,10 @@ def encode(img_to_encode):
 
 
 def generate_img(model, img_path):
+    """
+    input: loaded model , path to input image
+    return: predict image
+    """
     input_img = tf.io.read_file(img_path)
     input_img = tf.image.decode_png(input_img)
     input_img = tf.cast(input_img, tf.float32)
@@ -35,16 +50,4 @@ def generate_img(model, img_path):
     output_img = prediction[0].numpy()
     img_denormalized = denormalize(output_img)
     img_encoded = encode(img_denormalized)
-    img_gray = gb2gray(img_encoded)
-    print(img_encoded.shape)
-    print(img_encoded[0][0])
-    return img_gray
-
-
-def gb2gray(gb_img):
-    gb_img[:,:,0] = gb_img[:,:,1]
-    return gb_img
-
-
-if __name__ == '__main__':
-    pass
+    return img_encoded

@@ -1,7 +1,8 @@
-from groundtruth.interactive.gh_scanning import get_heightmap, gray2height, height2ascii, scan
-from groundtruth.interactive.gh_toolpath import export_json, flip_y_value, toolpath, generate_input_img, inverse_fframe, generate_toolpaths, save_img, blend_edges, move_ctrl_frames_to_robot
-from groundtruth.interactive.gh_prediction import load_model, generate_img
+from groundtruth.interactive.gh_scanning import *
+from groundtruth.interactive.gh_toolpath import *
 from groundtruth.toolbox.features import Feature
+from groundtruth.toolbox.generative_utils import *
+from groundtruth.toolbox.raster_utils import g2height
 import os
 
 
@@ -15,15 +16,15 @@ def scan_sandbox():
     s = scan()
     hm_feature = get_heightmap(s)
     hm_feature.save(fname='scan_height_feature', path=__GH_DATA__)
-    height_b = hm_feature.channel_split()[0]
-    height = gray2height(height_b)
+    height_g = hm_feature.channel_split()[1]
+    height = g2height(height_g)
     path = height2ascii(height, path=__GH_DATA__, fname='scan_grid.asc')
     return path
 
 
 def get_height_grid(hm_feature, fname):
-    height_b = hm_feature.channel_split()[0]
-    height = gray2height(height_b)
+    height_g = hm_feature.channel_split()[1]
+    height = g2height(height_g)
     path = height2ascii(height, path=__GH_DATA__, fname=fname)
     return path
 
@@ -82,6 +83,7 @@ def export_design(tp, iteration):
 
 if __name__ == '__main__':
     # get_height_grid()
-    toolpaths = generate_toolpaths()
-    heightmap, a = prediction(toolpaths, 0)
-    # scan_sandbox()
+    # toolpaths = generate_toolpaths()
+    # heightmap, a = prediction(toolpaths, 0)
+    scan_sandbox()
+    pass
