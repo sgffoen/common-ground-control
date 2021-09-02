@@ -141,9 +141,10 @@ def move_ctrl_frames_to_robot(frames):
                        cg.Vector.Yaxis())
     T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
     ctrl_frame_robot = []
-    for f in frames:
-        f = f.transformed(T)
-        ctrl_frame_robot.append(f)
+    for fs in frames:
+        for f in fs:
+            f = f.transformed(T)
+            ctrl_frame_robot.append(f)
     return ctrl_frame_robot
 
 
