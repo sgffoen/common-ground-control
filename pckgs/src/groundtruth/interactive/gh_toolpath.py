@@ -83,7 +83,7 @@ def blend_edges(background, prediction, crop):
     black.fill(0)
     pts_from = np.int32(crop)
     mask = cv2.fillConvexPoly(black, pts_from, (255,255,255))
-    mask_blur  = cv2.GaussianBlur(mask,(199,199),0).astype('float') / 255.
+    mask_blur  = cv2.GaussianBlur(mask,(3,3),0).astype('float') / 255.
     # blur edges
     img = prediction.astype('float') / 255.
     bg = background.astype('float') / 255.
