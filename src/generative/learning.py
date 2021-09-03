@@ -72,10 +72,10 @@ class LearningData(object):
     def get_save_path(self, type):
         # get filepath
         filedir = self.path_name_train
-        if type == 'h2h':
-            filename = self.id + '_h2h_training_fix.png'
-        elif type == 'gb2gb':
-            filename = self.id + '_gb2gb_training_fix.png'
+        if type == 'tg2g':
+            filename = self.id + '_tg2g_training.png'
+        elif type == 'tgd2tgd':
+            filename = self.id + '_tgd2tgd_training.png'
         elif type == 'split':
             filename = self.id + '_split_training_fix.png'
         filepath = filedir + '/' + filename
@@ -86,10 +86,10 @@ class LearningData(object):
         # get filepath
         filedir = self.path_name_augmented
         for i in range(num):
-            if type == 'h2h':
-                filename = self.id + '_h2h_augmented_' + str(i).zfill(2) + '.png'
-            elif type == 'gb2gb':
-                filename = self.id + '_gb2gb_augmented_' + str(i).zfill(2) + '.png'
+            if type == 'tg2g':
+                filename = self.id + '_tg2g_augmented_' + str(i).zfill(2) + '.png'
+            elif type == 'tgd2tgd':
+                filename = self.id + '_tgd2tgd_augmented_' + str(i).zfill(2) + '.png'
             filepath = filedir + '/' + filename
             filepaths.append(filepath)
         return filepaths
@@ -130,8 +130,8 @@ class LearningData(object):
     def store_data(self):
         aug_num = 2
         # h2h
-        path_from = self.get_save_path(type='h2h')
-        path_from_aug = self.get_save_path_aug(type='h2h', num=aug_num)
+        path_from = self.get_save_path(type='tg2g')
+        path_from_aug = self.get_save_path_aug(type='tg2g', num=aug_num)
         if self.iter % 4 == 0:
             # save to test
             path_to = self.h2h_test_dir
@@ -147,8 +147,8 @@ class LearningData(object):
             pass
 
         # g2bgb
-        path_from = self.get_save_path(type='gb2gb')
-        path_from_aug = self.get_save_path_aug(type='gb2gb', num=aug_num)
+        path_from = self.get_save_path(type='tgd2tgd')
+        path_from_aug = self.get_save_path_aug(type='tgd2tgd', num=aug_num)
         if self.iter % 4 == 0:
             # save to test
             path_to = self.gb2gb_test_dir
