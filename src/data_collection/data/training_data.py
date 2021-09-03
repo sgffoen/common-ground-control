@@ -1,6 +1,7 @@
 import os
 import json
 import datetime
+import compas.geometry as cg
 if __name__ == "__main__":
     pass
 else:
@@ -18,6 +19,8 @@ class TrainingData(object):
         self.frame_corner_pts = frame_corner_pts
         self.prev_frame_corner_pts = self.get_previous_frame_corner_pts(self.scan_num)
         self.prev_processed_dir = self.get_prev_processd_dir(self.scan_num)
+        self.prev_min_height, self.prev_frames = self.get_previous_minimum_height(self.scan_num)
+        self.prev_dd = self.get_previous_digging_depth(self.scan_num)
 
     def store_data(self):
         dir_raw, dir_processed, dir_train = self.create_iter_dirs()
@@ -151,6 +154,44 @@ class TrainingData(object):
                                      prev_data['frame_corner_pts']['2'],
                                      prev_data['frame_corner_pts']['3']]
             return prev_frame_corner_pts
+
+    def get_previous_minimum_height(self, i):
+        if 0 == i:
+            return None
+        else:
+            dir = self.environment_folder
+            self.prev_id = self.create_identifier(i-1)
+            prev_filepath = dir + self.prev_id + '/00_RAW/' + self.prev_id + '_toolpath.json'
+
+            with open(prev_filepath, 'r') as f:
+                prev_data = json.load(f)
+
+            heights = []
+            prev_frames = []
+            prev_fkeys = prev_data['ctrl_frames'].keys()
+            for pfk in prev_fkeys:
+                f = cg.Frame.from_jsonstring(prev_data['ctrl_frames'][pfk])
+                prev_frames.append(f)
+                heights.append(f.point.z)
+
+            prev_min_height = max(heights)
+
+            return prev_min_height, prev_frames
+
+    def get_previous_digging_depth(self, i):
+        if 0 == i:
+            return None
+        else:
+            dir = self.environment_folder
+            self.prev_id = self.create_identifier(i-1)
+            prev_filepath = dir + self.prev_id + '/00_RAW/' + self.prev_id + '_toolpath.json'
+
+            with open(prev_filepath, 'r') as f:
+                prev_data = json.load(f)
+
+            heights = []
+            prev_dd = prev_data['digging_depth']
+            return prev_dd
 
     def get_prev_processd_dir(self, i):
         dir = self.environment_folder
