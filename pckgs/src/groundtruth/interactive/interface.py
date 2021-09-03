@@ -42,9 +42,10 @@ def prediction(toolpaths, adaptive):
         # draw toolpath in feature
         t = toolpath(tp, __GH_DATA__, hm_feature, adaptive=adaptive)
         # generate input image
-        input_img, M = generate_input_img(t, hm_feature, __GH_DATA__)
-        # prediction
-        predicted_img = generate_img(model, input_img)
+        input_img_path, M = generate_input_img(t, hm_feature, __GH_DATA__)
+        # create tensor and predict
+        input_tensor = load_input_tensor(input_img_path)
+        predicted_img = generate_img(model, input_tensor)
         # patch predicted image into original height map
         inversed_img = inverse_fframe(M, t.crop_idx, hm_feature, predicted_img)
         # blend edges prediction and height feature
