@@ -23,40 +23,46 @@ class Processing():
         bg_img = cv2.merge([b, g, zeros])
         return [r_img, g_img, b_img, bg_img]
 
-    def get_pix_below_tp(self, height_img, toolpath_img, before):
-        # red and blue
-        if before:
-            r_channel = toolpath_img
-            # checking toolpath pixels
-            condition1 = (toolpath_img[:,:,2] > 0)
-            zeros = np.zeros([256,256,3])
-            b_channel_raw = np.copy(zeros)
-            b_channel_raw[:,:,0] = np.where(condition1, height_img[:,:,0], zeros[:,:,0])
-            # check height of toolpath and sand surface
-            diff = height_img - toolpath_img
-            abs_diff = np.absolute(diff)
-            condition2 = (height_img[:,:,2] < toolpath_img[:,:,2])
-            b_channel = np.copy(zeros)
-            b_channel[:,:,0] = np.where(condition2, abs_diff[:,:,2], zeros[:,:,0])
-        else:
-            r_channel = np.zeros([256,256,3])
-            b_channel = np.zeros([256,256,3])
-        # green
-        g_channel = np.copy(height_img)
-        g_channel[:,:,0] = 0
-        g_channel[:,:,2] = 0
-        # checking
-        # for i in range(256):
-        #     for j in range(256):
-        #         if b_channel[i][j][0] > 0:
-        #             print(b_channel[i][j][0]==diff[i][j][2])
-        cv2.imshow('r', r_channel)
-        cv2.imshow('g', g_channel)
-        cv2.imshow('b', b_channel)
-        cv2.waitKey(0)
+    # def get_pix_below_tp(self, height_img, toolpath_img, before):
+    #     # red and blue
+    #     if before:
+    #         r_channel = toolpath_img
+    #         # checking toolpath pixels
+    #         condition1 = (toolpath_img[:,:,2] > 0)
+    #         zeros = np.zeros([256,256,3])
+    #         b_channel_raw = np.copy(zeros)
+    #         b_channel_raw[:,:,0] = np.where(condition1, height_img[:,:,0], zeros[:,:,0])
+    #         # check height of toolpath and sand surface
+    #         diff = height_img - toolpath_img
+    #         abs_diff = np.absolute(diff)
+    #         condition2 = (height_img[:,:,2] < toolpath_img[:,:,2])
+    #         b_channel = np.copy(zeros)
+    #         b_channel[:,:,0] = np.where(condition2, abs_diff[:,:,2], zeros[:,:,0])
+    #     else:
+    #         r_channel = np.zeros([256,256,3])
+    #         b_channel = np.zeros([256,256,3])
+    #     # green
+    #     g_channel = np.copy(height_img)
+    #     g_channel[:,:,0] = 0
+    #     g_channel[:,:,2] = 0
+    #     # checking
+    #     # for i in range(256):
+    #     #     for j in range(256):
+    #     #         if b_channel[i][j][0] > 0:
+    #     #             print(b_channel[i][j][0]==diff[i][j][2])
+    #     cv2.imshow('r', r_channel)
+    #     cv2.imshow('g', g_channel)
+    #     cv2.imshow('b', b_channel)
+    #     cv2.waitKey(0)
 
-        img = r_channel + g_channel + b_channel
-        return img
+    #     img = r_channel + g_channel + b_channel
+    #     return img
+
+    def get_pix_below_tp(self, r_tp, g_hff):
+        zeros = np.zeros([256, 256, 1])
+        cond = (r_tp < g_hff)
+        depth = np.where(cond, g_hff, zeros)
+        return depth
 
     def custom_img_addition(self, height_img, toolpath_img):
         arr = np.zeros([256, 256, 3])

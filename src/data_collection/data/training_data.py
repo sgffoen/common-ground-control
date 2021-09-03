@@ -98,7 +98,8 @@ class TrainingData(object):
         if environment == 'test':
             return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/00_test/"
         elif environment == 'production':
-            return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production/"
+            # return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/01_production/"
+            return "G:/My Drive/05_T3/01_data/00_data_collection/01_production/"
 
     def create_identifier(self, iter):
         id_num = str(iter).zfill(5)

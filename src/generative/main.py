@@ -46,33 +46,31 @@ def processing(env):
         p = Processing()
 
         # h2h (height2height)
-        toolpath_on_height = p.custom_img_addition(data.height_fframe,
-                                                   data.toolpath_fframe)
-        h2h = p.horizontal_stack(toolpath_on_height,
-                                 data.height_fframe_after)
-        p.save_img(h2h, data.get_save_path('h2h'))
+        # toolpath_on_height = p.custom_img_addition(data.height_fframe,
+        #                                            data.toolpath_fframe)
+        # h2h = p.horizontal_stack(toolpath_on_height,
+        #                          data.height_fframe_after)
+        # p.save_img(h2h, data.get_save_path('h2h'))
 
         # split channel
-        height_fframe_split = p.channel_edit(data.height_fframe)
-        height_fframe_after_split = p.channel_edit(data.height_fframe_after)
+        o = np.zeros([256, 256, 3])
+        b_hff, g_hff, r_hff = cv2.split(data.height_fframe)
+        b_hffa, g_hffa, r_hffa = cv2.split(data.height_fframe_after)
+        b_tp, g_tp, r_tp = cv2.split(data.toolpath_fframe)
+        b_depth = get_pix_below_tp(r_tp, g_hff)
+        b_depth_a = get_pix_below_tp(r_tp, g_hffa)
 
         # gb2gb
-        toolpath_on_bg = p.simple_img_addition(height_fframe_split[3],
-                                               data.toolpath_fframe)
-        gb2gb = p.horizontal_stack(toolpath_on_bg,
-                                   height_fframe_after_split[3])
-        p.save_img(gb2gb, data.get_save_path('gb2gb'))
+        before = cv2.merge([o, g_hff, r_tp])
+        after = cv2.merge([o, g_hffa, o])
+        img_stacked = np.hstack((before, after))
+        p.save_img(img_stacked, data.get_save_path('gb2gb'))
 
         # seperate channel
-        img_before = p.get_pix_below_tp(data.height_fframe,
-                                        data.toolpath_thick_fframe,
-                                        before=True)
-        img_after = p.get_pix_below_tp(data.height_fframe_after,
-                                       data.toolpath_thick_fframe,
-                                       before=False)
-        img_split = p.horizontal_stack(img_before,
-                                       img_after)
-        p.save_img(img_split, data.get_save_path('split'))
+        before = cv2.merge([b_depth, g_hff, r_tp])
+        after = cv2.merge([o, g_hffa, o])
+        img_stacked = np.hstack((before, after))
+        p.save_img(img_stacked, data.get_save_path('thd2thd'))
 
         if i % 100 == 0:
             lap = (time.time()-start)/60

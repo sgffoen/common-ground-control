@@ -13,7 +13,8 @@ import random as r
 
 __ITERATION__ = 500
 __START__ = 0
-__FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
+# __FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
+__FOLDER__ = "G:/My Drive/05_T3/01_data/"
 
 
 def training(env):
@@ -31,6 +32,7 @@ def training(env):
         print('#############  iteration {}  #############\n'.format(i))
 
         # 1. initiate a new training iteration
+        print()
         data = TrainingData(iteration=start_id+i, environment=env)
         path_name_raw, path_name_processed, path_name_train = data.create_iter_dirs()
         print('scan id: {}'.format(data.identifier))
@@ -81,14 +83,14 @@ def training(env):
         print('\n#############  iteration {} done  #############\n\n'.format(i))
 
         # 9. cleaning at every 100 iteration
-        if i % 100 == 99:
-            print('#############  cleaning {}  #############\n'.format(i))
-            ur.ur_helper.scan_pose(scanning_time=10)
-            c_frames = cleaning_toolpath_gen.clean()
-            ur.ur_helper.execute_toolpath(c_frames,
-                                          z_center_toolpathbox2D=0,
-                                          excavation_time=125)
-            print('\n#############  cleaning {} done  #############\n\n'.format(i))
+        # if i % 100 == 99:
+        #     print('#############  cleaning {}  #############\n'.format(i))
+        #     ur.ur_helper.scan_pose(scanning_time=10)
+        #     c_frames = cleaning_toolpath_gen.clean()
+        #     ur.ur_helper.execute_toolpath(c_frames,
+        #                                   z_center_toolpathbox2D=0,
+        #                                   excavation_time=125)
+        #     print('\n#############  cleaning {} done  #############\n\n'.format(i))
 
     print('Total fabrication time: ', (time.time()-start)/60, ' min')
 
