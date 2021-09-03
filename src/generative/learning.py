@@ -15,6 +15,36 @@ class LearningData(object):
         self.lvl = lvl
         self.img_type = img_type
 
+    def get_mydrive_dir(self):
+        pass
+
+    def create_iter_dirs_mydrive(self):
+        dir  = "G:/My Drive/05_T3/01_data/00_data_collection/01_production/"
+
+        # create folder for raw data
+        new_dir = os.path.join(self.id, '00_RAW')
+        self.path_name_raw_mydrive = os.path.join(dir, new_dir)
+        try:
+            os.makedirs(self.path_name_raw_mydrive)
+        except FileExistsError:
+            print("Directory " , self.path_name_raw_mydrive ,  " already exists")
+
+        # create folder for processed data
+        new_dir = os.path.join(self.id, '01_processed')
+        self.path_name_processed_mydrive = os.path.join(dir, new_dir)
+        try:
+            os.makedirs(self.path_name_processed_mydrive)
+        except FileExistsError:
+            print("Directory " , self.path_name_processed_mydrive ,  " already exists")
+
+        # create folder for training data
+        new_dir = os.path.join(self.id, '02_training')
+        self.path_name_train_mydrive = os.path.join(dir, new_dir)
+        try:
+            os.makedirs(self.path_name_train_mydrive)
+        except FileExistsError:
+            print("Directory " , self.path_name_train_mydrive ,  " already exists")
+
     def get_environment_folder(self, environment='test'):
         if environment == 'test':
             return "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/00_data_collection/00_test/"
@@ -39,11 +69,21 @@ class LearningData(object):
         self.path_name_train = os.path.join(parent_folder, '02_training')
         self.path_name_augmented = os.path.join(parent_folder, '03_training_augmented')
 
+    def get_iter_dirs_mydrive(self):
+        dir = "G:/My Drive/05_T3/01_data/00_data_collection/01_production/"
+        parent_folder = os.path.join(dir, self.id)
+
+        self.path_name_raw_mydrive = os.path.join(parent_folder, '00_RAW')
+        self.path_name_processed_mydrive = os.path.join(parent_folder, '01_processed')
+        self.path_name_train_mydrive = os.path.join(parent_folder, '02_training')
+
     def get_fframe(self):
         height_fframe_fname = os.path.join(self.path_name_processed, self.id + '_height_featureframe.png')
         height_fframe_after_fname = os.path.join(self.path_name_processed, self.id + '_height_featureframe_after.png')
-        toolpath_fframe_fname = os.path.join(self.path_name_processed, self.id + '_toolpath_featureframe_fix.png')
-        toolpath_fframe_thick_fname = os.path.join(self.path_name_processed, self.id + '_toolpath_featureframe_thickness50.png')
+        # toolpath_fframe_fname = os.path.join(self.path_name_processed, self.id + '_toolpath_featureframe_fix_2.png')
+        # toolpath_fframe_thick_fname = os.path.join(self.path_name_processed, self.id + '_toolpath_featureframe_thickness50_2.png')
+        toolpath_fframe_fname = os.path.join(self.path_name_processed_mydrive, self.id + '_toolpath_featureframe_fix_2.png')
+        toolpath_fframe_thick_fname = os.path.join(self.path_name_processed_mydrive, self.id + '_toolpath_featureframe_thickness50_2.png')
 
         if os.path.isfile(height_fframe_fname):
             self.height_fframe = cv2.imread(height_fframe_fname)
@@ -78,6 +118,26 @@ class LearningData(object):
             filename = self.id + '_tgd2tgd_training.png'
         elif type == 'split':
             filename = self.id + '_split_training_fix.png'
+        elif type == 'tg2t_thick':
+            filename = self.id + '_tg2g_training_thick.png'
+        elif type == 'tgd2tgd_thick':
+            filename = self.id + '_tgd2tgd_training_thick.png'
+        filepath = filedir + '/' + filename
+        return filepath
+
+    def get_save_path_mydrive(self, type):
+        # get filepath
+        filedir = self.path_name_train_mydrive
+        if type == 'tg2g':
+            filename = self.id + '_tg2g_training.png'
+        elif type == 'tgd2tgd':
+            filename = self.id + '_tgd2tgd_training.png'
+        elif type == 'split':
+            filename = self.id + '_split_training_fix.png'
+        elif type == 'tg2t_thick':
+            filename = self.id + '_tg2g_training_thick.png'
+        elif type == 'tgd2tgd_thick':
+            filename = self.id + '_tgd2tgd_training_thick.png'
         filepath = filedir + '/' + filename
         return filepath
 
@@ -105,8 +165,8 @@ class LearningData(object):
         except FileExistsError:
             pass
 
-        # h2h
-        h2h_dir = os.path.join(dataset_dir, 'h2h')
+        # tg2g
+        h2h_dir = os.path.join(dataset_dir, 'tg2g')
         self.h2h_train_dir = os.path.join(h2h_dir, 'train')
         self.h2h_test_dir = os.path.join(h2h_dir, 'test')
         try:
@@ -116,8 +176,8 @@ class LearningData(object):
         except FileExistsError:
             pass
 
-        # gb2gb
-        gb2gb_dir = os.path.join(dataset_dir, 'gb2gb')
+        # tgd2tgd
+        gb2gb_dir = os.path.join(dataset_dir, 'tgd2tgd')
         self.gb2gb_train_dir = os.path.join(gb2gb_dir, 'train')
         self.gb2gb_test_dir = os.path.join(gb2gb_dir, 'test')
         try:

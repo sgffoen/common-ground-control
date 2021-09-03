@@ -2,11 +2,12 @@ import numpy as np
 import cv2
 import os
 import matplotlib.pyplot as plt
+import compas.utilities as cu
 
 
 class Processing():
     def __init__(self):
-        pass
+        self.range_pixel = 188
 
     def remapValue(self, v, ori_Min, ori_Max, targetMin, targetMax):
         rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
@@ -59,9 +60,11 @@ class Processing():
     #     return img
 
     def get_pix_below_tp(self, r_tp, g_hff):
-        zeros = np.zeros([256, 256, 1])
-        cond = (r_tp < g_hff)
-        depth = np.where(cond, g_hff, zeros)
+        zeros = np.zeros([256, 256])
+        cond1 = (r_tp > 0)
+        cond2 = (r_tp < g_hff)
+        depth = np.where(cond1, g_hff, zeros)
+        depth = np.where(cond2, depth, zeros)
         return depth
 
     def custom_img_addition(self, height_img, toolpath_img):
@@ -103,6 +106,28 @@ class Processing():
         """
         pass
 
+    def get_mean_fframe(self, g):
+        return round(np.mean(g))
+
+    def get_min_fframe(self, g):
+        return np.min(g)
+
+    def get_remap_range(self, g):
+        mean = self.get_mean_fframe(g)
+        self.top = mean + self.range_pixel/2
+        self.bottom = mean - self.range_pixel/2
+
+    def remap_fframe(self, g):
+        remapped_list = cu.remap_values(g,
+                                        original_min=self.bottom,
+                                        original_max=self.top,
+                                        target_min=0,
+                                        target_max=255)
+        remapped_g = np.reshape(remapped_list, [256, 256])
+        return remapped_g
+
+
 
 if __name__ == "__main__":
+
     pass

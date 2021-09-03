@@ -1,7 +1,5 @@
 from argparser import parse_args
 from learning import LearningData
-from process import Processing
-import matplotlib.pyplot as plt
 import compas.geometry as cg
 import compas.utilities as cu
 import numpy as np
@@ -13,6 +11,14 @@ import cv2
 import os
 
 __FOLDER__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/"
+
+
+# fact sheet
+path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
+dir = os.path.join(path, 'data_collection', 'data', 'facts.json')
+print(dir)
+with open(dir) as f:
+    facts = json.load(f)
 
 
 def remapValue(v, ori_Min, ori_Max, targetMin, targetMax):
@@ -28,18 +34,21 @@ def get_iteration_dirs():
 
 
 def aliasing_thickening(env, thickness):
-    start = time.time()
+    start_time = time.time()
     print("starting aliasing mode")
     print("environment: {} \n".format(env))
 
     iteration_dirs = get_iteration_dirs()
+    iteration_dir = iteration_dirs[0]
     d = Dimension()
 
     for i, id in enumerate(iteration_dirs):
+    # for i in range(1):
         # initiate lap
         start_lap = time.time()
         # 1. accessing data_collection path/img
         data = LearningData(i, id, env)
+        data.create_iter_dirs_mydrive()
         data.get_iter_dirs()
 
         # load json
@@ -51,43 +60,44 @@ def aliasing_thickening(env, thickness):
 
         # get control frames from json
         ctrl_frames = []
-        for j, c in enumerate(facts['ctrl_frames']):
-            # set a white canvas
-            img = np.zeros(shape=[d.feature_xsize,
-                                  d.feature_ysize,
-                                  3],
-                                 dtype=np.uint8)
-            aliasing_img = np.copy(img)
-            thickening_img = np.copy(img)
-            # get frames
-            fkeys = c.keys()
-            for a, b in cu.pairwise(fkeys):
-                # move to origin
-                feature_origin = cg.Frame(cg.Point(d.feature_origin_x, d.feature_origin_y, 0),
-                                          cg.Vector.Xaxis(),
-                                          cg.Vector.Yaxis())
-                sandbox_origin = cg.Frame(cg.Point(0,0,0),
-                                          cg.Vector.Xaxis(),
-                                          cg.Vector.Yaxis())
-                T = cg.Transformation.from_frame_to_frame(feature_origin, sandbox_origin)
-                # get start and end
-                start = facts['ctrl_frames'][a].point.transformed(T)
-                end = facts['ctrl_frames'][b].point.transformed(T)
-                # remap
-                z_flip = remapValue(start.z, 130, 0, 0, 130)
-                z_pixel = remapValue(z, 0, 150, 0, 255)
-                cv2.line(aliasing_img,
-                        (int(start[0]), int(start[1])),
-                        (int(end[0]), int(end[1])),
-                        color=(0, 0, z),  # red channel for toolpath height
-                        thickness=2,
-                        lineType=cv2.FILLED)
-                cv2.line(thickening_img,
-                        (int(start[0]), int(start[1])),
-                        (int(end[0]), int(end[1])),
-                        color=(0, 0, z),  # red channel for toolpath height
-                        thickness=2,
-                        lineType=cv2.FILLED)
+        fkeys = facts['ctrl_frames'].keys()
+        # for j, c in enumerate(facts['ctrl_frames']):
+        # set a white canvas
+        img = np.zeros(shape=[d.feature_ysize,
+                                d.feature_xsize,
+                                3],
+                                dtype=np.uint8)
+        aliasing_img = np.copy(img)
+        thickening_img = np.copy(img)
+        for a, b in cu.pairwise(fkeys):
+            # move to origin
+            feature_origin = cg.Frame(cg.Point(d.feature_origin_x, d.feature_origin_y, 0),
+                                        cg.Vector.Xaxis(),
+                                        cg.Vector.Yaxis())
+            sandbox_origin = cg.Frame(cg.Point(0,0,0),
+                                        cg.Vector.Xaxis(),
+                                        cg.Vector.Yaxis())
+            # T = cg.Transformation.from_frame_to_frame(feature_origin, sandbox_origin)
+            # get start and end
+            frame = cg.Frame.from_jsonstring(facts['ctrl_frames'][a])
+            start = frame.point#.transformed(T)
+            frame = cg.Frame.from_jsonstring(facts['ctrl_frames'][b])
+            end = frame.point#.transformed(T)
+            # remap
+            z_flip = remapValue(start.z, 130, 0, 0, 130)
+            z_pixel = remapValue(z_flip, 0, 150, 0, 255)
+            cv2.line(aliasing_img,
+                    (int(start[0]), int(start[1])),
+                    (int(end[0]), int(end[1])),
+                    color=(0, 0, z_pixel),  # red channel for toolpath height
+                    thickness=2,
+                    lineType=cv2.FILLED)
+            cv2.line(thickening_img,
+                    (int(start[0]), int(start[1])),
+                    (int(end[0]), int(end[1])),
+                    color=(0, 0, z_pixel),  # red channel for toolpath height
+                    thickness=50,
+                    lineType=cv2.FILLED)
 
         # crop_toolpathbox2d_oriented(self, img, d):
         crop_idx = []
@@ -111,21 +121,21 @@ def aliasing_thickening(env, thickness):
                                                      borderMode=cv2.BORDER_TRANSPARENT)
 
         # export images
-        filename = data.path_name_processed + '/' + data.id + '_toolpath_feature_fix.png'
+        filename = data.path_name_processed_mydrive + '/' + data.id + '_toolpath_feature_fix_2.png'
         cv2.imwrite(filename, aliasing_img)
-        filename = data.path_name_processed + '/' + data.id + '_toolpath_featureframe_fix.png'
+        filename = data.path_name_processed_mydrive + '/' + data.id + '_toolpath_featureframe_fix_2.png'
         cv2.imwrite(filename, aliasing_img_cropped)
         # export images
-        filename = data.path_name_processed + '/' + data.id + '_toolpath_feature_thickness{}.png'.format(thickness)
+        filename = data.path_name_processed_mydrive + '/' + data.id + '_toolpath_feature_thickness{}_2.png'.format(thickness)
         cv2.imwrite(filename, thickening_img)
-        filename = data.path_name_processed + '/' + data.id + '_toolpath_featureframe_thickness{}.png'.format(thickness)
+        filename = data.path_name_processed_mydrive + '/' + data.id + '_toolpath_featureframe_thickness{}_2.png'.format(thickness)
         cv2.imwrite(filename, thickening_img_cropped)
 
         if i % 100 == 0:
-            lap = int((time.time()-start_lap)/60)
+            lap = (time.time()-start_lap)/60
             print('\nfixing id: {} / {}\nLAP-TIME: {} min\n'.format(i, len(iteration_dirs), lap))
 
-    print('\nTotal fixing time: ', int((time.time()-start)/60), ' min\n\n')
+    print('\nTotal fixing time: ', int((time.time()-start_time)/60), ' min\n\n')
 
 
 def meta_data(env):
@@ -194,5 +204,4 @@ class Dimension():
 
 
 if __name__ == "__main__":
-    # aliasing(env='production')
-    thicken(env='production', thickness=50)
+    aliasing_thickening(env='production', thickness=50)
