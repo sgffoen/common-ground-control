@@ -24,16 +24,18 @@ list
 
 class Toolpath():
     def __init__(self,
-                 level,
-                 curve_type,
-                 num_ctrl_pts,
-                 segments_num,
-                 thickness,
-                 parent_folder,
-                 id,
-                 d,
+                 level=None,
+                 curve_type=None,
+                 num_ctrl_pts=None,
+                 segments_num=None,
+                 thickness=None,
+                 parent_folder=None,
+                 id=None,
+                 d=None,
                  hm_feature=None,
-                 adaptive_depth=0):
+                 adaptive_depth=0,
+                 digging_depth=0,
+                 prev_frames=None):
         self.level = level
         self.curve_type = curve_type
         self.num_ctrl_pts = num_ctrl_pts
@@ -44,10 +46,17 @@ class Toolpath():
         self.d = d
         self.hm_feature = hm_feature
         self.adaptive_depth = adaptive_depth
+        self.digging_depth = digging_depth
+        self.prev_frames = prev_frames
 
         self.create_json_file()
-        self.move_ctrl_frames_to_feature()
-        self.shift_list()
+
+        if self.level is not 'repeat':
+            self.move_ctrl_frames_to_feature()
+            self.shift_list()
+        else:
+            self.repeat()
+            self.shift_list()
 
     def generate_ctrl_pts_tuple(self):
         self.y_min = 30
@@ -136,6 +145,15 @@ class Toolpath():
                 x = i * step
                 y = 0.0
                 z = 0.0
+                ctrl_pts_list.append((x, y, z))
+
+        elif self.level == 'multi':
+            length = r.randrange(50, 110)
+            step = length / (self.num_ctrl_pts - 1)
+            for i in range(self.num_ctrl_pts):
+                x = i * step
+                y = 0.0
+                z = 30.0
                 ctrl_pts_list.append((x, y, z))
 
         return ctrl_pts_list
@@ -239,7 +257,7 @@ class Toolpath():
         for ctrl_frame in ctrl_frames:
             f = ctrl_frame.transformed(T)
             f_robot = ctrl_frame.copy()
-            if self.level == 'adaptive':
+            if self.level == 'adaptive':  # or 'multi'
                 h_sand = self.get_scanned_height(int(f.point[0]), int(f.point[1]))
                 f.point[2] = h_sand
                 f_robot.point.z = h_sand
@@ -273,7 +291,7 @@ class Toolpath():
         for a, b in cu.pairwise(range(len(ctrl_frames))):
             pt_s = ctrl_frames[a].point
             pt_e = ctrl_frames[b].point
-            z = self.remapValue(pt_s[2], self.z_min, self.z_max, 0, 255)
+            z = self.remapValue(pt_s[2], 0, 150, 0, 255)
             cv2.line(img,
                      (int(pt_s[0]), int(pt_s[1])),
                      (int(pt_e[0]), int(pt_e[1])),
@@ -424,6 +442,7 @@ class Toolpath():
         data['curve_type'] = {}
         data['thickness'] = {}
         data['adaptive_depth'] = {}
+        data['digging_depth'] = {}
         filepath = self.parent_folder + '/' + '{}_toolpath.json'.format(self.id)
         with open(filepath, 'w') as o:
             json.dump(data, o, indent=4)
@@ -448,9 +467,34 @@ class Toolpath():
         data['thickness'] = self.thickness
         data['curve_type'] = self.curve_type
         data['adaptive_depth'] = self.adaptive_depth
+        data['digging_depth'] = self.digging_depth
         # export and overwrite json
         with open(filepath, 'w') as o:
             json.dump(data, o, indent=4)
+
+    def repeat(self):
+        ctrl_frames = self.prev_frames
+        framefrom = cg.Frame(cg.Point(0, 0, 0),
+                             cg.Vector.Xaxis(),
+                             cg.Vector.Yaxis())
+        frameto = cg.Frame(cg.Point(self.d.feature_origin_x,
+                                    self.d.feature_origin_y,
+                                    self.d.feature_origin_z+self.digging_depth),
+                           cg.Vector.Xaxis(),
+                           cg.Vector.Yaxis())
+        T = cg.Transformation.from_frame_to_frame(frameto, framefrom)
+        self.ctrlframes_feature = []
+        self.ctrlframes = []
+        for ctrl_frame in ctrl_frames:
+            f = ctrl_frame.transformed(T)
+            f_robot = ctrl_frame.copy()
+            f_robot.point.z += self.digging_depth
+            if self.level == 'adaptive':
+                h_sand = self.get_scanned_height(int(f.point[0]), int(f.point[1]))
+                f.point[2] = h_sand
+                f_robot.point.z = h_sand
+            self.ctrlframes_feature.append(f)
+            self.ctrlframes.append(f_robot)
 
 
 class Dimension():

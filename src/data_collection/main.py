@@ -54,17 +54,31 @@ def training(env):
         hm_feature = data.get_hm_feature()
         d = Dimension()
         adaptive_depth = r.randint(0, 30)
-        print(adaptive_depth)
-        tp = Toolpath(level='adaptive',
-                      curve_type='bezier',
-                      num_ctrl_pts=2,
-                      segments_num=50,
-                      thickness=2,
-                      parent_folder=path_name_raw,
-                      id=data.identifier,
-                      d=d,
-                      hm_feature=hm_feature.feature,
-                      adaptive_depth=adaptive_depth)
+        # 5-1. check the depth of previous toolpath for multiple excavation
+        # check min height of the ctrl_frames
+        if data.prev_min_height > 100:  # randomize toolpath
+            # set adaptive height if necessary
+            digging_depth = r.randint(5, 20)
+            level = 'multi'
+        else:  # keep diging with the same toolpath]
+            digging_depth = data.prev_dd
+            level = 'repeat'
+
+        print('\n', level, data.prev_min_height, digging_depth, '\n')
+
+        tp = Toolpath(level=level,
+                        curve_type='bezier',
+                        num_ctrl_pts=2,
+                        segments_num=50,
+                        thickness=2,
+                        parent_folder=path_name_raw,
+                        id=data.identifier,
+                        d=d,
+                        hm_feature=hm_feature.feature,
+                        adaptive_depth=adaptive_depth,
+                        digging_depth=digging_depth,
+                        prev_frames=data.prev_frames)
+
         # 5-2. get crop index
         data.toolpath = tp
         data.frame_corner_pts = tp.crop_idx
