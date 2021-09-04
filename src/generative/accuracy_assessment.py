@@ -2,6 +2,7 @@
 import sys
 import time
 import numpy as np
+from numpy.lib.function_base import average
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import cv2
@@ -21,6 +22,8 @@ __ACC__ = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/training set/
 __ERRORS__ = []
 __ERRORS_MAX__ = []
 
+__DIFFS__ = []
+
 
 def get_iteration_dirs(path):
     iteration_dirs = os.listdir(path)
@@ -34,7 +37,6 @@ def get_iteration_dirs(path):
 
 def load_img(img_path):
     # Read and decode an image file to a uint8 tensor
-    print(img_path)
     image = tf.io.read_file(img_path)
     image = tf.image.decode_png(image)
 
@@ -78,9 +80,9 @@ def predictions(image_paths):
 
 def sample():
     image_names = get_iteration_dirs(__TEST__)
-    test_samples = r.sample(image_names, 5)
+    test_samples = r.sample(image_names, 2000)
     image_paths = [ os.path.join(__TEST__, fname) for fname in test_samples ]
-    predictions(image_paths)
+    return image_paths
 
 def save_assessment(img, img_type, id):
     # create folder
@@ -139,10 +141,25 @@ def to_grayscale(array1d):
     gray[:,:,0], gray[:,:,1], gray[:,:,2] = array1d, array1d, array1d
     return gray
 
+def max_depth():
+    samples = sample()
+    for path in samples:
+        input_img, ground_truth, toolpath = load_img(path)
+        min_ff = np.min(toolpath[np.nonzero(toolpath)])
+        min_gt = np.min(ground_truth[:,:,1])
+        diff = min_ff.astype('float') - min_gt.astype('float')
+        __DIFFS__.append(diff)
+    print("MIN: ", min(__DIFFS__))
+    print("MAX: ",max(__DIFFS__))
+    print("AVG: ",sum(__DIFFS__)/len(__DIFFS__))
+
 
 
 if __name__ == '__main__':
-    sample()
+    samples = sample()
+    predictions(samples)
     print('AVG ERROR: ', sum(__ERRORS__)/len(__ERRORS__))
     print('MAX ERROR: ', max(__ERRORS_MAX__))
     print('AVG MAX ERROR: ', sum(__ERRORS_MAX__)/len(__ERRORS_MAX__))
+
+    #max_depth()
