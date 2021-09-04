@@ -7,7 +7,9 @@ import compas.utilities as cu
 
 class Processing():
     def __init__(self):
-        self.range_pixel = 188
+        self.range_pixel = 200
+        self.bottom_range = 82
+        self.top_range = self.range_pixel - self.bottom_range
 
     def remapValue(self, v, ori_Min, ori_Max, targetMin, targetMax):
         rv = ((v-ori_Min)/(ori_Max-ori_Min))*(targetMax-targetMin)+targetMin
@@ -113,14 +115,14 @@ class Processing():
         return np.min(g)
 
     def get_remap_range(self, g):
-        mean = self.get_mean_fframe(g)
-        self.top = mean + self.range_pixel/2
-        self.bottom = mean - self.range_pixel/2
+        min = self.get_min_fframe(g)
+        self.bottom_bound = min - self.bottom_range
+        self.top_bound = self.bottom_bound + self.range_pixel
 
     def remap_fframe(self, g):
         remapped_list = cu.remap_values(g,
-                                        original_min=self.bottom,
-                                        original_max=self.top,
+                                        original_min=self.bottom_bound,
+                                        original_max=self.top_bound,
                                         target_min=0,
                                         target_max=255)
         remapped_g = np.reshape(remapped_list, [256, 256])
