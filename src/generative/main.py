@@ -69,7 +69,7 @@ def processing(env):
         b_depth_t = p.get_pix_below_tp(r_tpt, g_hff)
 
         # local remapping
-        if p.get_min_fframe(g_hff) < (p.range_pixel/2):
+        if p.get_min_fframe(g_hff) < p.bottom_range:
             out_of_bounds_cnt += 1
             # break
 
