@@ -1,6 +1,7 @@
 import groundtruth.toolbox.compas_utils as cu
 from groundtruth.toolbox.features import Feature
 from groundtruth.toolbox.toolpath import Toolpath, Dimension
+from groundtruth.toolbox.generative_utils import *
 import compas.geometry as cg
 import compas.datastructures as cd
 import random as r
@@ -51,8 +52,16 @@ def generate_input_img(t, hm_feature, dir):
     # channels
     b, g, _ = hm_feature.channel_split(hm_fframe)
     _, _, r = t_feature.channel_split(t_fframe)
-    r = r.astype(np.uint8)
-    input_img = cv2.merge([b, g, r])
+    # get pixels below toolpath
+    b = get_pix_below_tp(r, g)
+    # remap each fframe
+    bottom_bound, top_bound = get_remap_range(g)
+    b_remapped = remap_fframe(b, bottom_bound, top_bound)
+    g_remapped = remap_fframe(g, bottom_bound, top_bound)
+    r_remapped = remap_fframe(r, bottom_bound, top_bound)
+
+    # merge
+    input_img = cv2.merge([b_remapped, g_remapped, r_remapped])
 
     input_fname = 'input.png'
     input_path = os.path.join(dir, input_fname)
@@ -66,7 +75,7 @@ def generate_input_img(t, hm_feature, dir):
     path = os.path.join(dir, hm_fframe_name)
     cv2.imwrite(path, hm_fframe)
 
-    return input_path, M
+    return input_path, M, bottom_bound, top_bound
 
 
 def inverse_fframe(M, crop_idx, feature, fframe):
@@ -102,7 +111,7 @@ def generate_toolpaths():
     xmax = 1135
     ymin = -737
     zmax = 100
-    offset = 125
+    offset = 150
     num_crv = 1
     length = 50
 
@@ -146,7 +155,6 @@ def move_ctrl_frames_to_robot(frames):
             f = f.transformed(T)
             ctrl_frame_robot.append(f)
     return ctrl_frame_robot
-
 
 if __name__ == '__main__':
     pass

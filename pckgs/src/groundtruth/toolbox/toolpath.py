@@ -31,7 +31,7 @@ class Toolpath():
         self.parent_folder = parent_folder
         self.d = dimension
         self.segments_num = 50
-        self.thickness = 2
+        self.thickness = 50
         self.hm_feature = hm_feature
         self.adaptive = adaptive
 
@@ -121,7 +121,7 @@ class Toolpath():
         for a, b in cu.pairwise(range(len(ctrl_frames))):
             pt_s = ctrl_frames[a].point
             pt_e = ctrl_frames[b].point
-            z = self.remapValue(pt_s[2], 0, 130, 0, 255)
+            z = self.remapValue(pt_s[2], 0, 150, 0, 255)
             cv2.line(img,
                      (int(pt_s[0]), int(pt_s[1])),
                      (int(pt_e[0]), int(pt_e[1])),
@@ -253,9 +253,10 @@ class Toolpath():
         img_cropped = cv2.warpPerspective(img,
                                           M,
                                           (int(self.d.frame_size_x),
-                                           int(self.d.frame_size_y)))
+                                           int(self.d.frame_size_y)),
+                                          flags=cv2.WARP_FILL_OUTLIERS,
+                                          borderMode=cv2.BORDER_TRANSPARENT)
         return img_cropped
-
 
 
 class Dimension():

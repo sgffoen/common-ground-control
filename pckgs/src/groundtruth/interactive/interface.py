@@ -3,14 +3,20 @@ from groundtruth.interactive.gh_toolpath import *
 from groundtruth.toolbox.features import Feature
 from groundtruth.toolbox.generative_utils import *
 from groundtruth.toolbox.raster_utils import g2height
+import cv2
 import os
 
 
 __HERE__ = os.path.dirname(__file__)
-#__GH_DATA__ = os.path.join(__HERE__, '..', '..', '..', '..', 'grasshopper/data')
-__GH_DATA__ = 'G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/01_data'
-__GH_EXPORT__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/00_designs"
-
+# shared dbt drive
+# __GH_DATA__ = 'G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/01_data'
+# __GH_EXPORT__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/00_designs"
+# shared temporary drive
+# __GH_EXPORT__ = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/00_designs"
+# __GH_DATA__ = 'G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/01_data'
+# ko's local
+__GH_EXPORT__ = "C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/03_demo/01_interactive-gh/00_designs"
+__GH_DATA__ = 'C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/03_demo/01_interactive-gh/01_data'
 
 def scan_sandbox():
     s = scan()
@@ -42,12 +48,14 @@ def prediction(toolpaths, adaptive):
         # draw toolpath in feature
         t = toolpath(tp, __GH_DATA__, hm_feature, adaptive=adaptive)
         # generate input image
-        input_img_path, M = generate_input_img(t, hm_feature, __GH_DATA__)
+        input_img_path, M, bbound, tbound = generate_input_img(t, hm_feature, __GH_DATA__)
         # create tensor and predict
         input_tensor = load_input_tensor(input_img_path)
         predicted_img = generate_img(model, input_tensor)
+        # remap back into original range
+        remapped_predicted_img = inverse_remap_img(predicted_img, bbound, tbound)
         # patch predicted image into original height map
-        inversed_img = inverse_fframe(M, t.crop_idx, hm_feature, predicted_img)
+        inversed_img = inverse_fframe(M, t.crop_idx, hm_feature, remapped_predicted_img)
         # blend edges prediction and height feature
         blend = blend_edges(background=hm_feature.feature, prediction=inversed_img, crop=t.crop_idx)
         # update current state of sand
@@ -83,8 +91,8 @@ def export_design(tp, iteration):
 
 
 if __name__ == '__main__':
+    # scan_sandbox()
     # get_height_grid()
-    # toolpaths = generate_toolpaths()
-    # heightmap, a = prediction(toolpaths, 0)
-    scan_sandbox()
+    toolpaths = generate_toolpaths()
+    heightmap, a = prediction(toolpaths, 0)
     pass
