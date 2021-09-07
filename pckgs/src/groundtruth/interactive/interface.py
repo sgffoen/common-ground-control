@@ -12,12 +12,12 @@ __HERE__ = os.path.dirname(__file__)
 # __GH_DATA__ = 'G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/01_data'
 # __GH_EXPORT__ = "G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/02_demo/01_interactive-gh/00_designs"
 # shared temporary drive
-# __GH_EXPORT__ = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/00_designs"
-# __GH_DATA__ = 'G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/01_data'
+__GH_EXPORT__ = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/00_designs"
+__GH_DATA__ = 'G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/01_data'
 # ko's local
-__GH_EXPORT__ = "C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/03_demo/01_interactive-gh/00_designs"
-__GH_DATA__ = 'C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/03_demo/01_interactive-gh/01_data'
-__MODELDIR__ = "C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/02_gan/01_models/00010_2021-09-06/model"
+# __GH_EXPORT__ = "C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/03_demo/01_interactive-gh/00_designs"
+# __GH_DATA__ = 'C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/03_demo/01_interactive-gh/01_data'
+# __MODELDIR__ = "C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/02_gan/01_models/00010_2021-09-06/model"
 
 
 __OFFSET_DIST__ = 20
