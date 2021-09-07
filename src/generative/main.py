@@ -1,9 +1,9 @@
 from argparser import parse_args
 from learning import LearningData
 from process import Processing
-# from pix2pix import ML
-# import tensorflow as tf
-# from tensorflow import keras
+from pix2pix import ML
+import tensorflow as tf
+from tensorflow import keras
 import numpy as np
 import datetime
 import time
@@ -36,14 +36,11 @@ def processing(env):
     print("environment: {} \n".format(env))
 
     iteration_dirs = get_iteration_dirs()
-    iteration_dir = iteration_dirs[0]
     out_of_bounds_cnt = 0
 
     for i, id in enumerate(iteration_dirs):
-        start_lap = time.time()
         # 1. accessing data_collection path/img
         data = LearningData(iter=i, id=id, env=env)
-        # data.create_iter_dirs_mydrive()
 
         data.get_iter_dirs()
         data.get_iter_dirs_mydrive()
@@ -52,73 +49,50 @@ def processing(env):
         # 2. do processing
         p = Processing()
 
-        # h2h (height2height)
-        # toolpath_on_height = p.custom_img_addition(data.height_fframe,
-        #                                            data.toolpath_fframe)
-        # h2h = p.horizontal_stack(toolpath_on_height,
-        #                          data.height_fframe_after)
-        # p.save_img(h2h, data.get_save_path('h2h'))
-
         # split channel
-        o = np.zeros([256, 256])
-        _, g_hff, _ = cv2.split(data.height_fframe)
-        _, g_hffa, _ = cv2.split(data.height_fframe_after)
-        _, _, r_tp = cv2.split(data.toolpath_fframe)
-        _, _, r_tpt = cv2.split(data.toolpath_thick_fframe)
-        b_depth = p.get_pix_below_tp(r_tp, g_hff)
-        b_depth_t = p.get_pix_below_tp(r_tpt, g_hff)
+        o = np.zeros([256, 256], dtype=np.uint8)
+        _, g_hff_abs, _ = cv2.split(data.height_fframe)
+        _, g_hffa_abs, _ = cv2.split(data.height_fframe_after)
+        _, _, r_tp_abs = cv2.split(data.toolpath_fframe)
+        _, _, r_tpt_abs = cv2.split(data.toolpath_thick_fframe)
+        b_depth_abs = p.get_pix_below_tp(r_tp_abs, g_hff_abs)
+        b_depth_t_abs = p.get_pix_below_tp(r_tpt_abs, g_hff_abs)
 
         # local remapping
-        if p.get_min_fframe(g_hff) < p.bottom_range:
+        if p.get_bounds(g_hffa_abs) > p.range_pixel or p.get_bounds(g_hff_abs) > p.range_pixel:
             out_of_bounds_cnt += 1
-            # break
+            print(id)
 
         else:
             # get remap range
-            p.get_remap_range(g_hff)
+            p.get_remap_range(g_hff_abs)
             # remap each fframe
-            g_hff = p.remap_fframe(g_hff)
-            g_hffa = p.remap_fframe(g_hffa)
-            r_tp = p.remap_fframe(r_tp)
-            b_depth = p.remap_fframe(b_depth)
-            r_tpt = p.remap_fframe(r_tpt)
-            b_depth_t = p.remap_fframe(b_depth_t)
+            g_hff = p.remap_fframe(g_hff_abs)
+            g_hffa = p.remap_fframe(g_hffa_abs)
+            r_tp = p.remap_fframe(r_tp_abs)
+            b_depth = p.remap_fframe(b_depth_abs)
+            r_tpt = p.remap_fframe(r_tpt_abs)
+            b_depth_t = p.remap_fframe(b_depth_t_abs)
 
-            # print(g_hff.shape, g_hffa.shape, r_tp.shape, b_depth.shape)
-            # print(g_hff.dtype, g_hffa.dtype, r_tp.dtype, b_depth.dtype)
-            # b_test = cv2.merge([b_depth, o, o])
-            # b2_test = cv2.merge([b_depth_t, o, o])
-            # g_test = cv2.merge([o, g_hff, o])
-            # ga_test = cv2.merge([o, g_hffa, o])
-            # r_test = cv2.merge([o, o, r_tp])
-            # r2_test = cv2.merge([o, o, r_tpt])
-            # cv2.imshow('b', b_test)
-            # cv2.imshow('b2', b2_test)
-            # cv2.imshow('g', g_test)
-            # cv2.imshow('g2', ga_test)
-            # cv2.imshow('r', r_test)
-            # cv2.imshow('r2', r2_test)
-            # cv2.waitKey(0)
-
-            # gb2gb
+            # tg2g
             before = cv2.merge([o, g_hff, r_tp])
             after = cv2.merge([o, g_hffa, o])
             img_stacked = np.hstack((before, after))
             p.save_img(img_stacked, data.get_save_path_mydrive('tg2g'))
 
-            # seperate channel
+            # tgd2tgd
             before = cv2.merge([b_depth, g_hff, r_tp])
             after = cv2.merge([o, g_hffa, o])
             img_stacked = np.hstack((before, after))
             p.save_img(img_stacked, data.get_save_path_mydrive('tgd2tgd'))
 
-            # gb2gb
+            # tg2g_thick
             before = cv2.merge([o, g_hff, r_tpt])
             after = cv2.merge([o, g_hffa, o])
             img_stacked = np.hstack((before, after))
-            p.save_img(img_stacked, data.get_save_path_mydrive('tg2t_thick'))
+            p.save_img(img_stacked, data.get_save_path_mydrive('tg2g_thick'))
 
-            # seperate channel
+            # tgd2tgd_thick
             before = cv2.merge([b_depth_t, g_hff, r_tpt])
             after = cv2.merge([o, g_hffa, o])
             img_stacked = np.hstack((before, after))
@@ -141,7 +115,6 @@ def datasetting(env, lvl):
     iteration_dirs = get_iteration_dirs()
 
     for i, id in enumerate(iteration_dirs):
-        print(id)
         # 1. accessing data_collection path/img
         data = LearningData(iter=i, id=id, env=env)
         data.get_iter_dirs()
@@ -249,7 +222,7 @@ def learning(lvl, img_type):
 
     # 8. save params
     ml.save_model(trained_generator, path=ld.model_dir)
-    loaded_model = ml.load_model(ld.model_dir)
+    # loaded_model = ml.load_model(ld.model_dir)
     fitness_time = (time.time()-start)/60
     ml.export_json(ld, fitness_time)
 

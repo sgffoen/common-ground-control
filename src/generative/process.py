@@ -1,14 +1,14 @@
 import numpy as np
 import cv2
 import os
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import compas.utilities as cu
 
 
 class Processing():
     def __init__(self):
         self.range_pixel = 200
-        self.bottom_range = 82
+        self.bottom_range = 60
         self.top_range = self.range_pixel - self.bottom_range
 
     def remapValue(self, v, ori_Min, ori_Max, targetMin, targetMax):
@@ -67,7 +67,8 @@ class Processing():
         cond2 = (r_tp < g_hff)
         depth = np.where(cond1, g_hff, zeros)
         depth = np.where(cond2, depth, zeros)
-        return depth
+
+        return depth.astype(np.uint8)
 
     def custom_img_addition(self, height_img, toolpath_img):
         arr = np.zeros([256, 256, 3])
@@ -114,22 +115,43 @@ class Processing():
     def get_min_fframe(self, g):
         return np.min(g)
 
-    def get_remap_range(self, g):
+    def get_max_fframe(self, g):
+        return np.max(g)
+
+    def get_bounds(self, g):
         min = self.get_min_fframe(g)
-        self.bottom_bound = min - self.bottom_range
-        self.top_bound = self.bottom_bound + self.range_pixel
+        max = self.get_max_fframe(g)
+        return max.astype('float') - min.astype('float')
+
+    def get_remap_range(self, g):
+        mean = self.get_mean_fframe(g)
+        self.bottom_bound = mean - self.range_pixel/2
+        self.top_bound = mean + self.range_pixel/2
+
+    def keep_zero(self):
+        pass
 
     def remap_fframe(self, g):
+        # remap zero to the bottom of range
+        zeros = np.zeros([256,256], dtype=float)
+        bottoms = self.bottom_bound * np.ones([256,256], dtype=float)
+        cond = (g == zeros)
+        g = np.where(cond, bottoms, g)
         remapped_list = cu.remap_values(g,
                                         original_min=self.bottom_bound,
                                         original_max=self.top_bound,
                                         target_min=0,
                                         target_max=255)
         remapped_g = np.reshape(remapped_list, [256, 256])
-        return remapped_g
-
+        round_g = np.round(remapped_g)
+        return round_g.astype(np.uint8)
 
 
 if __name__ == "__main__":
-
-    pass
+    test = np.ones([10,10,3])
+    remapped = remap_fframe(test)
+    print()
+    print(remapped.dtype)
+    print(type(remapped[0][0][0]))
+    print(remapped[0][0][0])
+    print()
