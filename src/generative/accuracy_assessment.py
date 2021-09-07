@@ -16,8 +16,9 @@ import groundtruth.toolbox.generative_utils as gu
 
 
 
-__TEST__ = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/training set/h2h/test"
-__ACC__ = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/training set/accuracy_assessment"
+__TEST__ = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_gan/00_dataset/dataset_lvl_all/tgd2tgd_thick/test"
+__ACC__ = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_gan/01_models/00010_2021-09-06/accuracy/00_data"
+
 
 __ERRORS__ = []
 __ERRORS_MAX__ = []
@@ -62,7 +63,7 @@ def load_img(img_path):
     return input_image, ground_truth, toolpath
 
 def predictions(image_paths):
-    loaded_model = gu.load_model()
+    loaded_model = gu.load_model(dir_name="G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_gan/01_models/00010_2021-09-06/model")
     for path in image_paths:
         input_img, ground_truth, toolpath = load_img(path)
         prediction = gu.generate_img(model=loaded_model, input_tensor=np.reshape(input_img, [1, 256, 256, 3]))
@@ -75,12 +76,13 @@ def predictions(image_paths):
         save_assessment(to_grayscale(prediction[:,:,1]), img_type='prediction', id=id)
         save_assessment(to_grayscale(ground_truth[:,:,1]), img_type='groundtruth', id=id)
         save_assessment(error_map, img_type='error', id=id)
-        combined = np.hstack((toolpath, to_grayscale(ground_truth[:,:,1]), to_grayscale(prediction[:,:,1])))
+        # 4 combination: input/ground truth/prediction/accuracy
+        combined = np.hstack((toolpath, to_grayscale(ground_truth[:,:,1]), to_grayscale(prediction[:,:,1]), error_map))
         save_assessment(combined, img_type='result', id=id)
 
-def sample():
+def sample(n):
     image_names = get_iteration_dirs(__TEST__)
-    test_samples = r.sample(image_names, 2000)
+    test_samples = r.sample(image_names, n)
     image_paths = [ os.path.join(__TEST__, fname) for fname in test_samples ]
     return image_paths
 
@@ -97,16 +99,16 @@ def save_assessment(img, img_type, id):
     cv2.imwrite(file_name, img)
 
 
-def calcalate_error(pred, ground_truth):
+def calcalate_error(pred, ground_truth, error_bounds=30.):
     h_pred = pred[:,:,1]
     h_gr = ground_truth[:,:,1]
 
     error = h_pred.astype(np.float32) - h_gr.astype(np.float32)
-    error = error_to_mm(error)
-    error = error + 150.
-    error_bounds = 20. #mm
-    error = remap_values(error, target_min=0.0, target_max=255.0, original_min=150. - error_bounds, original_max=150. + error_bounds)
-    error = np.reshape(error, (256,256))
+    error_mm = error_to_mm(error)
+    # make range positive (0 -- 300mm), 150 is 0 point -> so 0 is -150mm
+    error_mm = error_mm + 150.
+    error_pix = remap_values(error_mm, target_min=0.0, target_max=255.0, original_min=150. - error_bounds, original_max=150. + error_bounds)
+    error_pix = np.reshape(error_pix, (256,256))
 
 
 
@@ -120,7 +122,7 @@ def calcalate_error(pred, ground_truth):
     __ERRORS_MAX__.append(max_abs_error)
     __ERRORS__.append(avg_abs_error)
 
-    return error, avg_abs_error
+    return error_pix, avg_abs_error
 
 def error_to_bgr(error):
     gray = to_grayscale(error)
@@ -154,12 +156,32 @@ def max_depth():
     print("AVG: ",sum(__DIFFS__)/len(__DIFFS__))
 
 
+def max_bounds():
+    samples = sample()
+    for path in samples:
+        input_img, ground_truth, toolpath = load_img(path)
+        min = np.min(ground_truth[:,:,1])
+        max = np.max(ground_truth[:,:,1])
+        diff = max.astype('float') - min.astype('float')
+        if diff > 180.0:
+            print(path)
+        __DIFFS__.append(diff)
+    print("MIN: ", np.min(__DIFFS__))
+    print("MAX: ",np.max(__DIFFS__))
+    print("AVG: ",sum(__DIFFS__)/len(__DIFFS__))
+
+
 
 if __name__ == '__main__':
-    samples = sample()
+    samples = sample(n=1000)
     predictions(samples)
     print('AVG ERROR: ', sum(__ERRORS__)/len(__ERRORS__))
     print('MAX ERROR: ', max(__ERRORS_MAX__))
     print('AVG MAX ERROR: ', sum(__ERRORS_MAX__)/len(__ERRORS_MAX__))
 
     #max_depth()
+    # max_bounds()
+    # test_f = ["C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/training set/h2h/test",
+    #           "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_gan/00_dataset/dataset_lvl_all/tgd2tgd_thick/test"  ]
+    # __ACC2__ = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/training set/accuracy_assessment/07-09-2021"
+    # __TEST2__ = "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/training set/h2h/test"
