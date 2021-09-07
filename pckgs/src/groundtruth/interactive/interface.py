@@ -17,6 +17,11 @@ __HERE__ = os.path.dirname(__file__)
 # ko's local
 __GH_EXPORT__ = "C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/03_demo/01_interactive-gh/00_designs"
 __GH_DATA__ = 'C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/03_demo/01_interactive-gh/01_data'
+__MODELDIR__ = "C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/02_gan/01_models/00010_2021-09-06/model"
+
+
+__OFFSET_DIST__ = 20
+
 
 def scan_sandbox():
     s = scan()
@@ -40,24 +45,28 @@ def prediction(toolpaths, adaptive):
     f = Feature()
     hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
     # load model
-    model = load_model()
+    model = load_model(dir_name=__MODELDIR__)
     # flip y to match feature
     toolpaths = flip_y_value(toolpaths)
     adapted_toolpaths = []
     for tp in toolpaths:
         # draw toolpath in feature
         t = toolpath(tp, __GH_DATA__, hm_feature, adaptive=adaptive)
+        # offset crop index
+        offset_crop_idx = offset_crop_area(t.crop_idx, __OFFSET_DIST__)
         # generate input image
-        input_img_path, M, bbound, tbound = generate_input_img(t, hm_feature, __GH_DATA__)
+        input_img_path, M, M_offset, bbound, tbound = generate_input_img(t, hm_feature, __GH_DATA__, offset_crop_idx, offset_dist=__OFFSET_DIST__)
         # create tensor and predict
         input_tensor = load_input_tensor(input_img_path)
         predicted_img = generate_img(model, input_tensor)
         # remap back into original range
         remapped_predicted_img = inverse_remap_img(predicted_img, bbound, tbound)
+        # offset image
+        offset_crop_fframe = offset_fframe(remapped_predicted_img, __OFFSET_DIST__)
         # patch predicted image into original height map
-        inversed_img = inverse_fframe(M, t.crop_idx, hm_feature, remapped_predicted_img)
+        inversed_img = inverse_fframe(M_offset, hm_feature, offset_crop_fframe)
         # blend edges prediction and height feature
-        blend = blend_edges(background=hm_feature.feature, prediction=inversed_img, crop=t.crop_idx)
+        blend = blend_edges(background=hm_feature.feature, prediction=inversed_img, crop=offset_crop_idx)
         # update current state of sand
         hm_feature = Feature(blend)
         # store control points
@@ -93,6 +102,5 @@ def export_design(tp, iteration):
 if __name__ == '__main__':
     # scan_sandbox()
     # get_height_grid()
-    toolpaths = generate_toolpaths()
+    toolpaths = generate_toolpaths(center=True)
     heightmap, a = prediction(toolpaths, 0)
-    pass

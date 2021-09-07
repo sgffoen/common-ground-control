@@ -39,11 +39,12 @@ def toolpath(toolpath, save_dir, hm_feature, adaptive):
     return t
 
 
-def generate_input_img(t, hm_feature, dir):
+def generate_input_img(t, hm_feature, dir, offset_crop_idx, offset_dist=0):
     # get feature
     t_feature = Feature(t.img)
     # get warp transformation
     M = t_feature.get_warp_transformation(t.crop_idx)
+    M_offset = t_feature.get_warp_transformation(offset_crop_idx, offset_dist=offset_dist)
     # get fframe
     t_fframe = t_feature.get_featureframe(M)
     hm_fframe = hm_feature.get_featureframe(M)
@@ -75,10 +76,10 @@ def generate_input_img(t, hm_feature, dir):
     path = os.path.join(dir, hm_fframe_name)
     cv2.imwrite(path, hm_fframe)
 
-    return input_path, M, bottom_bound, top_bound
+    return input_path, M, M_offset, bottom_bound, top_bound
 
 
-def inverse_fframe(M, crop_idx, feature, fframe):
+def inverse_fframe(M, feature, fframe):
     rows, cols, chs = feature.feature.shape
     fframe_feature = cv2.warpPerspective(fframe, M, (cols, rows), flags=cv2.WARP_INVERSE_MAP)
     patched_img = overlay_fframe(feature, fframe_feature)
@@ -107,7 +108,7 @@ def overlay_fframe(feature, fframe_feature):
     return patched
 
 
-def generate_toolpaths():
+def generate_toolpaths(center=False):
     xmax = 1135
     ymin = -737
     zmax = 100
@@ -117,9 +118,14 @@ def generate_toolpaths():
 
     toolpaths = []
     for i in range(num_crv):
-        x_coord = r.randint(offset, xmax-offset)
-        y_coord = r.randint(ymin+offset, 0-offset)
-        z_coord = r.randint(50, zmax)
+        if center:
+            x_coord = xmax/2
+            y_coord = ymin/2
+            z_coord = 75
+        else:
+            x_coord = r.randint(offset, xmax-offset)
+            y_coord = r.randint(ymin+offset, 0-offset)
+            z_coord = r.randint(50, zmax)
         pt = cg.Point(x_coord, y_coord, z_coord)
 
         vec = cg.Vector(0, length, 0)
@@ -155,6 +161,7 @@ def move_ctrl_frames_to_robot(frames):
             f = f.transformed(T)
             ctrl_frame_robot.append(f)
     return ctrl_frame_robot
+
 
 if __name__ == '__main__':
     pass

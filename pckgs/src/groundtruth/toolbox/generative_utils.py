@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import cv2
 import compas.utilities as cu
+import compas.geometry as cg
 
 
 __RANGEPIXEL__ = 200
@@ -18,7 +19,7 @@ def split_channel(arr):
     return b, g, r
 
 
-def load_model(dir_name="G:/Shared drives/2021_MAS/T3/Common Ground Control/01_data/01_gan/01_models/00004_2021-08-18/model"):
+def load_model(dir_name="G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model"):
     try:
         loaded_model = tf.keras.models.load_model(dir_name)
         print('model is loaded from {}\n'.format(dir_name))
@@ -125,3 +126,16 @@ def inverse_remap_img(img, bottom_bound, top_bound):
     remapped_img = cv2.merge([remapped_img[:,:,1], remapped_img[:,:,1], remapped_img[:,:,1]])
     round_img = np.round(remapped_img)
     return round_img.astype(np.uint8)
+
+
+def offset_crop_area(crop_idx, distance):
+    crop_points = [cg.Point(id[0], id[1], 0) for id in crop_idx]
+    offset_crop_idx = cg.offset_polygon(crop_points, distance)
+    offset_crop_idx = [[round(pts[0]), round(pts[1])] for pts in offset_crop_idx]
+    return offset_crop_idx
+
+
+def offset_fframe(fframe_img, offset_dist):
+    offset_fframe = fframe_img[offset_dist:256-offset_dist, offset_dist:256-offset_dist, :]
+    return offset_fframe
+

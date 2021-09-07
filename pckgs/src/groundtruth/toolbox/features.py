@@ -42,12 +42,12 @@ class Feature(object):
         f = self.get_featureframe(frame_corner_pts)
         self.save(fname=fname, path=path, frame=f)
 
-    def get_warp_transformation(self, frame_corner_pts):
+    def get_warp_transformation(self, frame_corner_pts, offset_dist=0):
         pts_from = np.float32(frame_corner_pts)
         pts_to = np.float32([[0, 0],
-                            [self.frame_shape[0], 0],
-                            [self.frame_shape[0], self.frame_shape[1]],
-                            [0, self.frame_shape[1]]])
+                            [self.frame_shape[0]-(offset_dist*2), 0],
+                            [self.frame_shape[0]-(offset_dist*2), self.frame_shape[1]-(offset_dist*2)],
+                            [0, self.frame_shape[1]-(offset_dist*2)]])
         M = cv2.getPerspectiveTransform(pts_from, pts_to)
         return M
 
