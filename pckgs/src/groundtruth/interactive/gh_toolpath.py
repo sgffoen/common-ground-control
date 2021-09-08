@@ -86,20 +86,58 @@ def inverse_fframe(M, feature, fframe):
     return patched_img
 
 
-def blend_edges(background, prediction, crop):
-    size = prediction.shape
-    # mask
-    black = np.zeros(size,dtype=np.uint8)
+# def blend_edges(background, prediction, crop):
+#     size = prediction.shape
+#     # mask
+#     black = np.zeros(size,dtype=np.uint8)
+#     black.fill(0)
+#     pts_from = np.int32(crop)
+#     mask = cv2.fillConvexPoly(black, pts_from, (255,255,255))
+#     mask_inv = 255 - mask
+#     mask_blur  = cv2.GaussianBlur(mask,(89,89),0).astype('float') / 255.
+#     # blur edges
+#     prediction = np.where(mask==np.array([255, 255, 255]), prediction, mask)
+#     background = np.where(mask_inv==np.array([255, 255, 255]), background, mask_inv)
+#     # cv2.imshow('pred', prediction)
+#     # cv2.waitKey(0)
+#     # cv2.imshow('back', background)
+#     # cv2.waitKey(0)
+#     img = prediction.astype('float') / 255.
+#     bg = background.astype('float') / 255.
+#     out  = bg * (1 - mask_blur)  + img * mask_blur
+#     out = (out * 255).astype('uint8')
+#     cv2.imshow('result', out)
+#     cv2.waitKey(0)
+#     return out
+
+
+def blend_edges(prediction, crop, blur_ksize, mask_thickness):
+    # segmentation map between prediction (fframe) and feature
+    black = np.zeros(prediction.shape,dtype=np.uint8)
     black.fill(0)
     pts_from = np.int32(crop)
-    mask = cv2.fillConvexPoly(black, pts_from, (255,255,255))
-    mask_blur  = cv2.GaussianBlur(mask,(89,89),0).astype('float') / 255.
-    # blur edges
-    img = prediction.astype('float') / 255.
-    bg = background.astype('float') / 255.
-    out  = bg * (1 - mask_blur)  + img * mask_blur
-    out = (out * 255).astype('uint8')
-    return out
+    segmentation = cv2.fillConvexPoly(black, pts_from, (255,255,255))
+    # create mask
+    mask = np.zeros(prediction.shape, np.uint8)
+    gray = cv2.cvtColor(segmentation, cv2.COLOR_BGR2GRAY)
+    ret, thresh = cv2.threshold(gray, 60, 255, cv2.THRESH_BINARY)
+    # create contour line at edge between feature and feature frame with thickness
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(mask, contours, -1, (255,255,255),mask_thickness)
+    mask_blur  = cv2.GaussianBlur(mask,(21,21),0).astype('float') / 255.
+
+    blurred_img = cv2.GaussianBlur(prediction, (blur_ksize, blur_ksize), 0)
+
+    def alphaBlend(img1, img2, alpha):
+        """ alphaBlend img1 and img 2 (of CV_8UC3) with mask
+        """
+        blended = cv2.convertScaleAbs(img1*(1-alpha) + img2*alpha)
+        return blended
+
+    blended = alphaBlend(prediction, blurred_img, mask_blur)
+
+    return blended
+
 
 
 def overlay_fframe(feature, fframe_feature):

@@ -20,7 +20,7 @@ __GH_DATA__ = 'G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/
 # __MODELDIR__ = "C:/Users/trtku/OneDrive/Data/03_MAS/17_common_ground_control/02_gan/01_models/00010_2021-09-06/model"
 
 
-__OFFSET_DIST__ = 20
+__OFFSET_DIST__ = 5
 
 
 def scan_sandbox():
@@ -45,7 +45,7 @@ def prediction(toolpaths, adaptive):
     f = Feature()
     hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
     # load model
-    model = load_model(dir_name=__MODELDIR__)
+    model = load_model()
     # flip y to match feature
     toolpaths = flip_y_value(toolpaths)
     adapted_toolpaths = []
@@ -66,14 +66,14 @@ def prediction(toolpaths, adaptive):
         # patch predicted image into original height map
         inversed_img = inverse_fframe(M_offset, hm_feature, offset_crop_fframe)
         # blend edges prediction and height feature
-        blend = blend_edges(background=hm_feature.feature, prediction=inversed_img, crop=offset_crop_idx)
+        blend = blend_edges(prediction=inversed_img, crop=offset_crop_idx, blur_ksize=39, mask_thickness=9)
         # update current state of sand
         hm_feature = Feature(blend)
         # store control points
         adapted_toolpaths.append(t.ctrlframes_feature)
     # save image for checking
     save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
-    save_img(inversed_img, __GH_DATA__, 'predicted_feature.png')
+    save_img(hm_feature.feature, __GH_DATA__, 'predicted_feature.png')
     # get path to ascii
     path = get_height_grid(hm_feature=hm_feature, fname='prediction_grid.asc')
     return path, adapted_toolpaths
