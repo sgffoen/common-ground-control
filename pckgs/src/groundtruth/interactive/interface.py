@@ -45,7 +45,7 @@ def prediction(toolpaths, adaptive):
     f = Feature()
     hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
     # load model
-    model = load_model()
+    #model = load_model()
     # flip y to match feature
     toolpaths = flip_y_value(toolpaths)
     adapted_toolpaths = []
@@ -58,7 +58,11 @@ def prediction(toolpaths, adaptive):
         input_img_path, M, M_offset, bbound, tbound = generate_input_img(t, hm_feature, __GH_DATA__, offset_crop_idx, offset_dist=__OFFSET_DIST__)
         # create tensor and predict
         input_tensor = load_input_tensor(input_img_path)
-        predicted_img = generate_img(model, input_tensor)
+        # api prediction
+        prediction_from_api(input_tensor)
+        # prediction from loaded model
+        ##predicted_img = prediction_from_model(model, input_tensor)
+        predicted_img = generate_img(input_tensor)
         # remap back into original range
         remapped_predicted_img = inverse_remap_img(predicted_img, bbound, tbound)
         # offset image
@@ -104,3 +108,5 @@ if __name__ == '__main__':
     # get_height_grid()
     toolpaths = generate_toolpaths(center=True)
     heightmap, a = prediction(toolpaths, 0)
+    # model = load_model(dir_name="G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/1")
+    # modify_model_signatures(model=model, save=False)

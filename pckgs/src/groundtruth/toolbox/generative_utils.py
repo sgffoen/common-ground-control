@@ -3,10 +3,11 @@ import tensorflow as tf
 import cv2
 import compas.utilities as cu
 import compas.geometry as cg
+import requests
+import json
 
 
 __RANGEPIXEL__ = 200
-__BOTTOMRANGE__ = 60
 
 
 def g2gray(g):
@@ -19,7 +20,7 @@ def split_channel(arr):
     return b, g, r
 
 
-def load_model(dir_name="G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model"):
+def load_model(dir_name="G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/1"):
     try:
         loaded_model = tf.keras.models.load_model(dir_name)
         print('model is loaded from {}\n'.format(dir_name))
@@ -39,17 +40,40 @@ def encode(img_to_encode):
     return img_to_encode
 
 
-def generate_img(model, input_tensor):
+def prediction_from_model(model, input_tensor):
     """
     input: loaded model , tensor
     return: predict image
     """
     prediction = model(input_tensor, training=True)
+    prediction = prediction[0].numpy()
+    return prediction
 
-    output_img = prediction[0].numpy()
-    img_denormalized = denormalize(output_img)
+
+def prediction_from_api(input_tensor):
+    data = json.dumps({"signature_name": "serving_default", "instances": input_tensor.tolist()})
+    #print('Data: {} ... {}'.format(data[:50], data[len(data)-52:]))
+    headers = {"content-type": "application/json"}
+    json_response = requests.post('http://localhost:8501/v1/models/model/versions/2:predict', data=data, headers=headers)
+    print(json_response)
+    predictions = json.loads(json_response.text)['predictions']
+    predictions = np.reshape(predictions, (256,256,3)).astype(np.float32)
+    return predictions
+
+
+def generate_img(prediction):
+    img_denormalized = denormalize(prediction)
     img_encoded = encode(img_denormalized)
     return img_encoded
+
+
+def modify_model_signatures(model, save=False):
+    @tf.function(input_signature=[tf.TensorSpec([None, 256,256,3], dtype=tf.float32)])
+    def model_predict(input_batch):
+        return {'outputs': model(input_batch, training=True)}
+    signatures={'serving_default': model_predict}
+    if save:
+        model.save("G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/2",signatures=signatures)
 
 
 def load_input_tensor(img_path):
