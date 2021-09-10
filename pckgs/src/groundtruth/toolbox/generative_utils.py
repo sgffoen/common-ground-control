@@ -1,5 +1,5 @@
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
 import cv2
 import compas.utilities as cu
 import compas.geometry as cg
@@ -20,13 +20,13 @@ def split_channel(arr):
     return b, g, r
 
 
-def load_model(dir_name="G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/1"):
-    try:
-        loaded_model = tf.keras.models.load_model(dir_name)
-        print('model is loaded from {}\n'.format(dir_name))
-        return loaded_model
-    except FileNotFoundError:
-        print('model, {}, does not exist\n'.format(dir_name))
+# def load_model(dir_name="G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/1"):
+#     try:
+#         loaded_model = tf.keras.models.load_model(dir_name)
+#         print('model is loaded from {}\n'.format(dir_name))
+#         return loaded_model
+#     except FileNotFoundError:
+#         print('model, {}, does not exist\n'.format(dir_name))
 
 
 def denormalize(img_to_denormalize):
@@ -67,21 +67,22 @@ def generate_img(prediction):
     return img_encoded
 
 
-def modify_model_signatures(model, save=False):
-    @tf.function(input_signature=[tf.TensorSpec([None, 256,256,3], dtype=tf.float32)])
-    def model_predict(input_batch):
-        return {'outputs': model(input_batch, training=True)}
-    signatures={'serving_default': model_predict}
-    if save:
-        model.save("G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/2",signatures=signatures)
+# def modify_model_signatures(model, save=False):
+#     @tf.function(input_signature=[tf.TensorSpec([None, 256,256,3], dtype=tf.float32)])
+#     def model_predict(input_batch):
+#         return {'outputs': model(input_batch, training=True)}
+#     signatures={'serving_default': model_predict}
+#     if save:
+#         model.save("G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/2",signatures=signatures)
 
 
 def load_input_tensor(img_path):
-    input_img = tf.io.read_file(img_path)
-    input_img = tf.image.decode_png(input_img)
-    input_img = tf.cast(input_img, tf.float32)
+    # input_img = tf.io.read_file(img_path)
+    # input_img = tf.image.decode_png(input_img)
+    # input_img = tf.cast(input_img, tf.float32)
+    input_img = cv2.imread(img_path)
     input_img = (input_img / 127.5) - 1
-    input_tensor = np.reshape(input_img, [1, 256, 256, 3])
+    input_tensor = np.reshape(input_img, [1, 256, 256, 3]).astype(np.float32)
     return input_tensor
 
 

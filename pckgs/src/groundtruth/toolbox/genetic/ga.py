@@ -2,13 +2,12 @@ import random as r
 
 
 def get_fitness(img1, img2):
-    zdiff = cal_zdiff(img1, img2)
-    return zdiff
+    pass
 
 
 def fit(self):
     # generate phenotype
-    generate_img()
+    #generate_img()
     # fitness function
     raw_fitness = self.get_fitness(self.target_img, self.phenotype)
     # put at least one item into pool
@@ -32,3 +31,7 @@ def mutation(self, metation_rate):
             self.genotype[i][0] = r.randint(int(self.fframe_bounds[0][0]), int(self.fframe_bounds[0][1]))
             self.genotype[i][1] = r.randint(int(self.fframe_bounds[1][0]), int(self.fframe_bounds[1][1]))
             self.genotype[i][2] = r.randint(50, 100)
+
+
+def test():
+    print('hello world')
