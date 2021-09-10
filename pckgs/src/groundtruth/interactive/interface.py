@@ -3,7 +3,6 @@ from groundtruth.interactive.gh_toolpath import *
 from groundtruth.toolbox.features import Feature
 from groundtruth.toolbox.generative_utils import *
 from groundtruth.toolbox.raster_utils import g2height
-import cv2
 import os
 
 

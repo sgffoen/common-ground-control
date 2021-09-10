@@ -1,15 +1,11 @@
 # built-in
-import sys
-import time
 import numpy as np
-from numpy.lib.function_base import average
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import cv2
 import random as r
-from tkinter.filedialog import askopenfilename, askdirectory
 import os
-from compas.utilities import remap_values, i_to_white
+from compas.utilities import remap_values
 
 # packag
 import groundtruth.toolbox.generative_utils as gu
