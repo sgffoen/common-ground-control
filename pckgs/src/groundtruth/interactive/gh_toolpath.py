@@ -26,11 +26,17 @@ def import_json(dir):
     pass
 
 
-def flip_y_value(toolpaths):
+def flip_y_value_frame(toolpaths):
     for tp in toolpaths:
         for p in tp.points:
             p.y *= (-1)
     return toolpaths
+
+
+def flip_y_value_point(points):
+    for p in points:
+        p.y *= (-1)
+    return points
 
 
 def toolpath(toolpath, save_dir, hm_feature, adaptive):
@@ -64,19 +70,19 @@ def generate_input_img(t, hm_feature, dir, offset_crop_idx, offset_dist=0):
     # merge
     input_img = cv2.merge([b_remapped, g_remapped, r_remapped])
 
-    input_fname = 'input.png'
-    input_path = os.path.join(dir, input_fname)
-    cv2.imwrite(input_path, input_img)
+    # input_fname = 'input.png'
+    # input_path = os.path.join(dir, input_fname)
+    # cv2.imwrite(input_path, input_img)
 
-    t_fframe_name = 't_fframe.png'
-    path = os.path.join(dir, t_fframe_name)
-    cv2.imwrite(path, t_fframe)
+    # t_fframe_name = 't_fframe.png'
+    # path = os.path.join(dir, t_fframe_name)
+    # cv2.imwrite(path, t_fframe)
 
-    hm_fframe_name = 'hm_fframe.png'
-    path = os.path.join(dir, hm_fframe_name)
-    cv2.imwrite(path, hm_fframe)
+    # hm_fframe_name = 'hm_fframe.png'
+    # path = os.path.join(dir, hm_fframe_name)
+    # cv2.imwrite(path, hm_fframe)
 
-    return input_path, M, M_offset, bottom_bound, top_bound
+    return input_img, M, M_offset, bottom_bound, top_bound
 
 
 def inverse_fframe(M, feature, fframe):
