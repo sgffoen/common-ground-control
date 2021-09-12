@@ -11,7 +11,6 @@ from compas.utilities import remap_values
 import groundtruth.toolbox.generative_utils as gu
 
 
-
 __TEST__ = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_gan/00_dataset/dataset_lvl_all/tgd2tgd_thick/test"
 __ACC__ = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_gan/01_models/00010_2021-09-06/accuracy/00_data"
 

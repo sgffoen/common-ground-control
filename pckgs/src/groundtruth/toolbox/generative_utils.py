@@ -20,15 +20,6 @@ def split_channel(arr):
     return b, g, r
 
 
-# def load_model(dir_name="G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/1"):
-#     try:
-#         loaded_model = tf.keras.models.load_model(dir_name)
-#         print('model is loaded from {}\n'.format(dir_name))
-#         return loaded_model
-#     except FileNotFoundError:
-#         print('model, {}, does not exist\n'.format(dir_name))
-
-
 def denormalize(img_to_denormalize):
     img_to_denormalize = np.add(img_to_denormalize, 1)
     img_to_denormalize = np.multiply(img_to_denormalize, 127.5)
@@ -164,3 +155,20 @@ def offset_fframe(fframe_img, offset_dist):
     offset_fframe = fframe_img[offset_dist:256-offset_dist, offset_dist:256-offset_dist, :]
     return offset_fframe
 
+
+def test_image2tensor(img_path):
+    # Read and decode an image file to a uint8 tensor
+    image = cv2.imread(img_path)
+
+    w = image.shape[1]
+    w = w // 2
+    input_img = image[:, :w, :]
+    ground_truth = image[:, w:, :]
+
+    input_img = (input_img / 127.5) - 1
+    input_tensor = np.reshape(input_img, [1, 256, 256, 3]).astype(np.float32)
+
+    # ground truth
+    ground_truth = image[:, w:, :]
+
+    return input_tensor, ground_truth
