@@ -85,7 +85,7 @@ class Toolpath():
         T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
         self.ctrlframes_feature = []
         for ctrl_frame in ctrl_frames:
-            f = ctrl_frame.transformed(T)
+            f = ctrl_frame#.transformed(T)
             if self.adaptive:
                 h_sand = self.get_scanned_height(int(f.point[0]), int(f.point[1]))
                 f.point[2] = h_sand
