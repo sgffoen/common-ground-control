@@ -140,7 +140,7 @@ def generate_toolpaths(center=False):
         if center:
             x_coord = xmax/2
             y_coord = ymin/2
-            z_coord = 75
+            z_coord = 100
         else:
             x_coord = r.randint(offset, xmax-offset)
             y_coord = r.randint(ymin+offset, 0-offset)

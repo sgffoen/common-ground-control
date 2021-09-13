@@ -53,6 +53,8 @@ def prediction(toolpaths, adaptive, cellsize=1):
         offset_crop_idx = offset_crop_area(t.crop_idx, __OFFSET_DIST__)
         # generate input image
         input_img, M, M_offset, bbound, tbound = generate_input_img(t, hm_feature, __GH_DATA__, offset_crop_idx, offset_dist=__OFFSET_DIST__)
+        cv2.imshow('input', cv2.imread(input_img))
+        cv2.waitKey(0)
         # create tensor and predict
         input_tensor = load_input_tensor(input_img)
         # api prediction
@@ -60,6 +62,8 @@ def prediction(toolpaths, adaptive, cellsize=1):
         # prediction from loaded model
         ##predicted_img = prediction_from_model(model, input_tensor)
         predicted_img = generate_img(predicted_tensor)
+        cv2.imshow('prediction', predicted_img)
+        cv2.waitKey(0)
         # remap back into original range
         remapped_predicted_img = inverse_remap_img(predicted_img, bbound, tbound)
         # offset image
@@ -80,68 +84,68 @@ def prediction(toolpaths, adaptive, cellsize=1):
     return path, adapted_toolpaths
 
 
-def prediction_gh(toolpaths, searchspace_corner):
-    # load heigt map
-    f = Feature()
-    original_hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
-    # flip y to match feature
-    toolpaths = flip_y_value_frame(toolpaths)
-    tp = toolpaths[0]
-    # draw toolpath in feature
-    t = toolpath(tp, __GH_DATA__, original_hm_feature, adaptive=False)
-    # offset crop index
-    offset_crop_idx = offset_crop_area(t.crop_idx, 5)
-    # generate input image
-    input_img, _, M_offset, bbound, tbound = generate_input_img(t, original_hm_feature, __GH_DATA__, offset_crop_idx, offset_dist=5)
-    # create tensor and predict
-    input_tensor = load_input_tensor(input_img)
-    # api prediction
-    predicted_tensor = prediction_from_api(input_tensor)
-    # prediction from loaded model
-    predicted_img = generate_img(predicted_tensor)
-    # remap back into original range
-    remapped_predicted_img = inverse_remap_img(predicted_img, bbound, tbound)
-    # offset image
-    offset_crop_fframe = offset_fframe(remapped_predicted_img, 5)
-    # patch predicted image into original height map
-    inversed_img = inverse_fframe(M_offset, original_hm_feature, offset_crop_fframe)
-    # blend edges prediction and height feature
-    blend = blend_edges(prediction=inversed_img, crop=offset_crop_idx, blur_ksize=39, mask_thickness=9)
-    # update current state of sand
-    predicted_hm_feature = Feature(blend)
-    #predicted_hm_feature.save('test', "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/ga_predictions")
+# def prediction_gh(toolpaths, searchspace_corner):
+#     # load heigt map
+#     f = Feature()
+#     original_hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
+#     # flip y to match feature
+#     toolpaths = flip_y_value_frame(toolpaths)
+#     tp = toolpaths[0]
+#     # draw toolpath in feature
+#     t = toolpath(tp, __GH_DATA__, original_hm_feature, adaptive=False)
+#     # offset crop index
+#     offset_crop_idx = offset_crop_area(t.crop_idx, 5)
+#     # generate input image
+#     input_img, _, M_offset, bbound, tbound = generate_input_img(t, original_hm_feature, __GH_DATA__, offset_crop_idx, offset_dist=5)
+#     # create tensor and predict
+#     input_tensor = load_input_tensor(input_img)
+#     # api prediction
+#     predicted_tensor = prediction_from_api(input_tensor)
+#     # prediction from loaded model
+#     predicted_img = generate_img(predicted_tensor)
+#     # remap back into original range
+#     remapped_predicted_img = inverse_remap_img(predicted_img, bbound, tbound)
+#     # offset image
+#     offset_crop_fframe = offset_fframe(remapped_predicted_img, 5)
+#     # patch predicted image into original height map
+#     inversed_img = inverse_fframe(M_offset, original_hm_feature, offset_crop_fframe)
+#     # blend edges prediction and height feature
+#     blend = blend_edges(prediction=inversed_img, crop=offset_crop_idx, blur_ksize=39, mask_thickness=9)
+#     # update current state of sand
+#     predicted_hm_feature = Feature(blend)
+#     #predicted_hm_feature.save('test', "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/ga_predictions")
 
-    # get crop index for search space
-    searchspace_corner = flip_y_value_point(searchspace_corner)
-    searchspace_crop_idx = [[sc.x, sc.y] for sc in searchspace_corner]
+#     # get crop index for search space
+#     searchspace_corner = flip_y_value_point(searchspace_corner)
+#     searchspace_crop_idx = [[sc.x, sc.y] for sc in searchspace_corner]
 
-    # get current feature frame inside search space
-    M_original = original_hm_feature.get_warp_transformation(searchspace_crop_idx)
-    original_hm_fframe = original_hm_feature.get_featureframe(M_original)
-    original_height = split_channel(original_hm_fframe)[1].astype(np.float32)
+#     # get current feature frame inside search space
+#     M_original = original_hm_feature.get_warp_transformation(searchspace_crop_idx)
+#     original_hm_fframe = original_hm_feature.get_featureframe(M_original)
+#     original_height = split_channel(original_hm_fframe)[1].astype(np.float32)
 
-    # get predicted feature frame inside search space
-    M = predicted_hm_feature.get_warp_transformation(searchspace_crop_idx)
-    predicted_hm_fframe = predicted_hm_feature.get_featureframe(M)
-    predicted_height = split_channel(predicted_hm_fframe)[1].astype(np.float32)
+#     # get predicted feature frame inside search space
+#     M = predicted_hm_feature.get_warp_transformation(searchspace_crop_idx)
+#     predicted_hm_fframe = predicted_hm_feature.get_featureframe(M)
+#     predicted_height = split_channel(predicted_hm_fframe)[1].astype(np.float32)
 
-    # get target fframe
-    fname = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/01_data/target_img/predicted_fframe.png"
-    target_fframe = cv2.imread(fname)
-    target_height = split_channel(target_fframe)[1].astype(np.float32)
+#     # get target fframe
+#     fname = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/01_data/target_img/predicted_fframe.png"
+#     target_fframe = cv2.imread(fname)
+#     target_height = split_channel(target_fframe)[1].astype(np.float32)
 
-    # get fitness
-    initial_error = np.abs(original_height - target_height)
-    max_error = np.amax(initial_error) * np.ones([256, 256])
-    weights = np.power(initial_error, 2)
+#     # get fitness
+#     initial_error = np.abs(original_height - target_height)
+#     max_error = np.amax(initial_error) * np.ones([256, 256])
+#     weights = np.power(initial_error, 2)
 
-    predicted_error = np.abs(predicted_height - target_height)
-    prediction_fitness = np.abs(max_error - predicted_error)
+#     predicted_error = np.abs(predicted_height - target_height)
+#     prediction_fitness = np.abs(max_error - predicted_error)
 
-    fitness = prediction_fitness * weights
-    total_fitness = np.sum(fitness) ** 2
+#     fitness = prediction_fitness * weights
+#     total_fitness = np.sum(fitness) ** 2
 
-    return total_fitness
+#     return total_fitness
 
 
 def export_design(tp, iteration):
