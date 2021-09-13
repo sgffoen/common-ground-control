@@ -21,13 +21,12 @@ __GH_DATA__ = 'G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/
 __OFFSET_DIST__ = 5
 
 
-def scan_sandbox():
+def scan_sandbox(cellsize=1):
     s = scan()
     hm_feature = get_heightmap(s)
     hm_feature.save(fname='scan_height_feature', path=__GH_DATA__)
-    height_g = hm_feature.channel_split()[1]
-    height = g2height(height_g)
-    path = height2ascii(height, path=__GH_DATA__, fname='scan_grid.asc')
+
+    path = get_height_grid(cellsize=int(cellsize), hm_feature=hm_feature, fname='scan_grid.asc')
     return path
 
 
