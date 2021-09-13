@@ -53,8 +53,6 @@ def prediction(toolpaths, adaptive, cellsize=1):
         offset_crop_idx = offset_crop_area(t.crop_idx, __OFFSET_DIST__)
         # generate input image
         input_img, M, M_offset, bbound, tbound = generate_input_img(t, hm_feature, __GH_DATA__, offset_crop_idx, offset_dist=__OFFSET_DIST__)
-        cv2.imshow('input', cv2.imread(input_img))
-        cv2.waitKey(0)
         # create tensor and predict
         input_tensor = load_input_tensor(input_img)
         # api prediction
@@ -62,8 +60,6 @@ def prediction(toolpaths, adaptive, cellsize=1):
         # prediction from loaded model
         ##predicted_img = prediction_from_model(model, input_tensor)
         predicted_img = generate_img(predicted_tensor)
-        cv2.imshow('prediction', predicted_img)
-        cv2.waitKey(0)
         # remap back into original range
         remapped_predicted_img = inverse_remap_img(predicted_img, bbound, tbound)
         # offset image
