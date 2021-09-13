@@ -1,5 +1,5 @@
 import numpy as np
-#import tensorflow as tf
+import tensorflow as tf
 import cv2
 import compas.utilities as cu
 import compas.geometry as cg
@@ -67,11 +67,11 @@ def generate_img(prediction):
 #         model.save("G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/2",signatures=signatures)
 
 
-def load_input_tensor(input_img):
-    # input_img = tf.io.read_file(img_path)
-    # input_img = tf.image.decode_png(input_img)
-    # input_img = tf.cast(input_img, tf.float32)
-    # input_img = cv2.imread(img_path)
+def load_input_tensor(img_path):
+    input_img = tf.io.read_file(img_path)
+    input_img = tf.image.decode_png(input_img)
+    input_img = tf.cast(input_img, tf.float32)
+    #input_img = cv2.imread(img_path)
     input_img = (input_img / 127.5) - 1
     input_tensor = np.reshape(input_img, [1, 256, 256, 3]).astype(np.float32)
     return input_tensor
@@ -158,12 +158,19 @@ def offset_fframe(fframe_img, offset_dist):
 
 def test_image2tensor(img_path):
     # Read and decode an image file to a uint8 tensor
-    image = cv2.imread(img_path)
 
-    w = image.shape[1]
+    #image = cv2.imread(img_path)
+
+    image = tf.io.read_file(img_path)
+    image = tf.image.decode_png(image)
+
+    #w = image.shape[1]
+    w = tf.shape(image)[1]
     w = w // 2
     input_img = image[:, :w, :]
     ground_truth = image[:, w:, :]
+
+    input_img = tf.cast(input_img, tf.float32)
 
     input_img = (input_img / 127.5) - 1
     input_tensor = np.reshape(input_img, [1, 256, 256, 3]).astype(np.float32)

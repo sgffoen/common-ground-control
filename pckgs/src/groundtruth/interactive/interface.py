@@ -109,6 +109,7 @@ def prediction_gh(toolpaths, searchspace_corner):
     blend = blend_edges(prediction=inversed_img, crop=offset_crop_idx, blur_ksize=39, mask_thickness=9)
     # update current state of sand
     predicted_hm_feature = Feature(blend)
+    #predicted_hm_feature.save('test', "C:/Users/simon/Documents/MAS DFAB/04_MAS_THESIS/05_data/ga_predictions")
 
     # get crop index for search space
     searchspace_corner = flip_y_value_point(searchspace_corner)
@@ -166,9 +167,9 @@ def export_design(tp, iteration):
 if __name__ == '__main__':
     # scan_sandbox()
     # get_height_grid()
-    # toolpaths = generate_toolpaths(center=True)
-    # heightmap, a = prediction(toolpaths, 0)
+    toolpaths = generate_toolpaths(center=True)
+    heightmap, a = prediction(toolpaths, 0)
     # model = load_model(dir_name="G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/01_gan/01_models/00010_2021-09-06/model/1")
     # modify_model_signatures(model=model, save=False)
 
-    zeros = np.zeros()
+    #zeros = np.zeros()
