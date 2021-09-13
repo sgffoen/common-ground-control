@@ -21,10 +21,10 @@ def get_heightmap(scan):
     hm_feature = heightmap.height2feature()
     return hm_feature
 
-def height2ascii(arr, path, fname, cellsize=1.0):
+def height2ascii(arr, path, fname, cellsize=1):
     # get offset value
     d = Dimension()
-    grid_data = arr
+    grid_data = arr[::cellsize, ::cellsize].copy()
     # print(grid_data.shape) = (729, 1135)
     rows, cols = np.shape(grid_data)
     esri = EsriGrid(

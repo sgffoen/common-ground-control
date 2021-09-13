@@ -31,14 +31,14 @@ def scan_sandbox():
     return path
 
 
-def get_height_grid(hm_feature, fname):
+def get_height_grid(cellsize, hm_feature, fname):
     height_g = hm_feature.channel_split()[1]
     height = g2height(height_g)
-    path = height2ascii(height, path=__GH_DATA__, fname=fname)
+    path = height2ascii(height, path=__GH_DATA__, fname=fname, cellsize=cellsize)
     return path
 
 
-def prediction(toolpaths, adaptive):
+def prediction(toolpaths, adaptive, cellsize=1):
     # load heigt map
     f = Feature()
     hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
@@ -77,7 +77,7 @@ def prediction(toolpaths, adaptive):
     save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
     save_img(hm_feature.feature, __GH_DATA__, 'predicted_feature.png')
     # get path to ascii
-    path = get_height_grid(hm_feature=hm_feature, fname='prediction_grid.asc')
+    path = get_height_grid(cellsize=int(cellsize), hm_feature=hm_feature, fname='prediction_grid.asc')
     return path, adapted_toolpaths
 
 
