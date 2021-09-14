@@ -96,11 +96,7 @@ class Toolpath():
                 self.ctrlframes_feature.append(ctrl_frame)
 
     def get_scanned_height(self, x, y):
-<<<<<<< Updated upstream
-        depth = 30.
-=======
         depth = self.depth
->>>>>>> Stashed changes
         height_pix = self.hm_feature.feature[y, x, 0]
         height_mm = self.remapValue(height_pix, 0, 255, 0, 150)
         height = (130 - height_mm) + depth
