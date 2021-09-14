@@ -75,6 +75,8 @@ def prediction(toolpaths, adaptive, cellsize=1, depth=0):
     # save image for checking
     # save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
     # save_img(hm_feature.feature, __GH_DATA__, 'predicted_feature.png')
+    # noise filtering
+    hm_feature.remove_noise()
     # get path to ascii
     path = get_height_grid(cellsize=int(cellsize), hm_feature=hm_feature, fname='prediction_grid.asc')
     return path, adapted_toolpaths

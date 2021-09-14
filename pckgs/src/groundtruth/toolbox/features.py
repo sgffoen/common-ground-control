@@ -91,3 +91,7 @@ class Feature(object):
         im = cv2.imread(path)
         self.feature = im
         return self
+
+    def remove_noise(self):
+        """remove noise from image"""
+        self.feature = cv2.fastNlMeansDenoising(self.feature,None,2,15,21)
