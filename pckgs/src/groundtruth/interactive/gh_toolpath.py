@@ -39,13 +39,13 @@ def flip_y_value_point(points):
     return points
 
 
-def toolpath(toolpath, save_dir, hm_feature, adaptive):
+def toolpath(toolpath, save_dir, hm_feature, depth, adaptive):
     d = Dimension()
-    t = Toolpath(toolpath, save_dir, d, hm_feature, adaptive)
+    t = Toolpath(toolpath, save_dir, d, depth, hm_feature, adaptive)
     return t
 
 
-def generate_input_img(t, hm_feature, dir, offset_crop_idx, offset_dist=0):
+def generate_input_img(t, hm_feature, dir, offset_crop_idx, offset_dist):
     # get feature
     t_feature = Feature(t.img)
     # get warp transformation
@@ -57,7 +57,7 @@ def generate_input_img(t, hm_feature, dir, offset_crop_idx, offset_dist=0):
     # turn black to white
     t_fframe = t_feature.turn_background(t_fframe)
     # channels
-    b, g, _ = hm_feature.channel_split(hm_fframe)
+    _, g, _ = hm_feature.channel_split(hm_fframe)
     _, _, r = t_feature.channel_split(t_fframe)
     # get pixels below toolpath
     b = get_pix_below_tp(r, g)

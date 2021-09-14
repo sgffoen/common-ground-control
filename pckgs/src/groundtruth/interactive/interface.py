@@ -37,7 +37,7 @@ def get_height_grid(cellsize, hm_feature, fname):
     return path
 
 
-def prediction(toolpaths, adaptive, cellsize=1):
+def prediction(toolpaths, adaptive, cellsize=1, depth=0):
     # load heigt map
     f = Feature()
     hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
@@ -48,7 +48,7 @@ def prediction(toolpaths, adaptive, cellsize=1):
     adapted_toolpaths = []
     for tp in toolpaths:
         # draw toolpath in feature
-        t = toolpath(tp, __GH_DATA__, hm_feature, adaptive=adaptive)
+        t = toolpath(tp, __GH_DATA__, hm_feature, depth, adaptive=adaptive)
         # offset crop index
         offset_crop_idx = offset_crop_area(t.crop_idx, __OFFSET_DIST__)
         # generate input image
@@ -73,8 +73,8 @@ def prediction(toolpaths, adaptive, cellsize=1):
         # store control points
         adapted_toolpaths.append(t.ctrlframes_feature)
     # save image for checking
-    save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
-    save_img(hm_feature.feature, __GH_DATA__, 'predicted_feature.png')
+    # save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
+    # save_img(hm_feature.feature, __GH_DATA__, 'predicted_feature.png')
     # get path to ascii
     path = get_height_grid(cellsize=int(cellsize), hm_feature=hm_feature, fname='prediction_grid.asc')
     return path, adapted_toolpaths

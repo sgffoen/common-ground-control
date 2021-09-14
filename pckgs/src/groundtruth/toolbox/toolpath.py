@@ -25,10 +25,12 @@ class Toolpath():
                  toolpath,
                  parent_folder,
                  dimension,
+                 depth,
                  hm_feature=None,
-                 adaptive=False):
+                 adaptive=None):
         self.toolpath = toolpath
         self.parent_folder = parent_folder
+        self.depth = depth
         self.d = dimension
         self.segments_num = 50
         self.thickness = 50
@@ -85,19 +87,24 @@ class Toolpath():
         T = cg.Transformation.from_frame_to_frame(framefrom, frameto)
         self.ctrlframes_feature = []
         for ctrl_frame in ctrl_frames:
-            f = ctrl_frame#.transformed(T)
             if self.adaptive:
+                f = ctrl_frame.transformed(T)
                 h_sand = self.get_scanned_height(int(f.point[0]), int(f.point[1]))
                 f.point[2] = h_sand
+                self.ctrlframes_feature.append(f)
             else:
-                f.point.z = self.remapValue(f.point.z, 0, 130, 130, 0)
-            self.ctrlframes_feature.append(f)
+                self.ctrlframes_feature.append(ctrl_frame)
 
     def get_scanned_height(self, x, y):
+<<<<<<< Updated upstream
         depth = 30.
+=======
+        depth = self.depth
+>>>>>>> Stashed changes
         height_pix = self.hm_feature.feature[y, x, 0]
         height_mm = self.remapValue(height_pix, 0, 255, 0, 150)
         height = (130 - height_mm) + depth
+        height = self.remapValue(height, 0, 130, 130, 0)
 
         # safety net
         if height > 130:
@@ -113,7 +120,7 @@ class Toolpath():
         return rv
 
     def draw_polyline_in_sandbox2d(self):
-        ctrl_frames = self.ctrlframes_feature
+        ctrl_frames = self.ctrlframes_feature.copy()
         img = 255 * np.ones(shape=[m.floor(self.d.feature_ysize),
                                    m.floor(self.d.feature_xsize),
                                    3], dtype=np.uint8)
