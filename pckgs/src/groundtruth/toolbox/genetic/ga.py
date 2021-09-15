@@ -13,31 +13,33 @@ class GA(object):
         self.target = self.target_height(target_img)
         self.initial_height = initial_height
 
-
     def target_height(self, target_img):
         return gu.split_channel(target_img)[1].astype(np.float32)
-
 
     def get_weights_matrix(self):
         initial_error = np.abs(self.initial_height - self.target)
         return np.power(initial_error, 2)
 
-
-    def get_max_error_matrix(self):
+    def get_max_error_matrix_fframe(self):
         initial_error = np.abs(self.initial_height - self.target)
         return np.amax(initial_error) * np.ones([256, 256])
 
+    def get_max_error_matrix_feature(self):
+        initial_error = np.abs(self.initial_height - self.target)
+        return np.amax(initial_error) * np.ones([729, 1135])
 
-    def get_fitness(self, prediction):
+    def get_fitness(self, prediction, fframe):
         # get fitness
         predicted_error = np.abs(prediction - self.target)
-        prediction_fitness = np.abs(self.get_max_error_matrix() - predicted_error)
+        if fframe:
+            prediction_fitness = np.abs(self.get_max_error_matrix_fframe() - predicted_error)
+        else:
+            prediction_fitness = np.abs(self.get_max_error_matrix_feature() - predicted_error)
 
         fitness = prediction_fitness * self.get_weights_matrix()
         total_fitness = np.sum(fitness) ** 2
 
         return total_fitness
-
 
     def generate_img(self):
 
@@ -46,7 +48,6 @@ class GA(object):
         pred = gu.prediction_from_model(model=self.model, input_tensor=input_tensor)
         # denormalized
         self.phenotype = gu.generate_img(pred)
-
 
     def fit(self):
         # generate phenotype
@@ -57,7 +58,6 @@ class GA(object):
             raw_fitness += 0.01
         self.fitness = raw_fitness
 
-
     def crossover(self, parent_a, parent_b):
 
         midpoint = int(r.randint(0, self.genotype.shape[0]-1))
@@ -66,7 +66,6 @@ class GA(object):
                 self.genotype[i] = parent_a.genotype[i]
             else:
                 self.genotype[i] = parent_b.genotype[i]
-
 
     def mutation(self, mutation_rate):
         for i in range(self.genotype.shape[0]):

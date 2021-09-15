@@ -3,6 +3,7 @@ from groundtruth.interactive.gh_toolpath import *
 from groundtruth.toolbox.features import Feature
 from groundtruth.toolbox.generative_utils import *
 from groundtruth.toolbox.raster_utils import g2height
+from groundtruth.toolbox.genetic import GA
 import time
 import numpy as np
 import cv2
@@ -82,7 +83,54 @@ def prediction(toolpaths, adaptive, cellsize=1, depth=0):
     return path, adapted_toolpaths
 
 
-# def prediction_gh(toolpaths, searchspace_corner):
+def prediction_ga(toolpaths, target_path, searchspace, denoise=False):
+    # load heigt map
+    f = Feature()
+    hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
+    # flip y to match feature
+    toolpaths = flip_y_value_frame(toolpaths)
+    for tp in toolpaths:
+        # draw toolpath in feature
+        t = toolpath(tp, __GH_DATA__, hm_feature, depth=0, adaptive=False)
+        # offset crop index
+        offset_crop_idx = offset_crop_area(t.crop_idx, __OFFSET_DIST__)
+        # generate input image
+        input_img, M, M_offset, bbound, tbound = generate_input_img(t, hm_feature, __GH_DATA__, offset_crop_idx, offset_dist=__OFFSET_DIST__)
+        # create tensor and predict
+        input_tensor = load_input_tensor(input_img)
+        # api prediction
+        predicted_tensor = prediction_from_api(input_tensor)
+        # prediction from loaded model
+        ##predicted_img = prediction_from_model(model, input_tensor)
+        predicted_img = generate_img(predicted_tensor)
+        # remap back into original range
+        remapped_predicted_img = inverse_remap_img(predicted_img, bbound, tbound)
+        # offset image
+        offset_crop_fframe = offset_fframe(remapped_predicted_img, __OFFSET_DIST__)
+        # patch predicted image into original height map
+        inversed_img = inverse_fframe(M_offset, hm_feature, offset_crop_fframe)
+        # blend edges prediction and height feature
+        blend = blend_edges(prediction=inversed_img, crop=offset_crop_idx, blur_ksize=39, mask_thickness=9)
+        # update current state of sand
+        hm_feature = Feature(blend)
+    if denoise:
+        # noise filtering
+        hm_feature.remove_noise()
+
+    # ga
+    target_img = cv2.imread(target_path)
+    fname = os.path.join(__GH_DATA__, "scan_height_feature.png")
+    initial_img = cv2.imread(fname)
+    initial_height = initial_img[:, :, 1]
+    ga = GA(target_img, initial_height)
+    # get fitness
+    prediction = hm_feature.feature[:, :, 1]
+    fitness = ga.get_fitness(prediction, fframe=searchspace)
+
+    return fitness
+
+
+# def prediction_ga(toolpaths, searchspace_corner):
 #     # load heigt map
 #     f = Feature()
 #     original_hm_feature = f.feature_from_file(path=os.path.join(__GH_DATA__, 'scan_height_feature.png'))
