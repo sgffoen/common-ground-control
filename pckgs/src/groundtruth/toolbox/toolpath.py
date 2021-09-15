@@ -103,10 +103,10 @@ class Toolpath():
         height = self.remapValue(height, 0, 130, 130, 0)
 
         # safety net
-        if height > 130:
-            height = 130
-        elif height < 0:
-            height = 0
+        if height > 110:
+            height = 110
+        elif height < 10:
+            height = 10
         return height
 
     # image processing from here
