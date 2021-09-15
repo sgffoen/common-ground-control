@@ -33,6 +33,8 @@ else:
         # Specify as many types as you want here
         color_frame = k.get_frame(ktb.COLOR)
 
+        fname = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/01_data/rgb.png"
+        cv2.imwrite(fname, color_frame)
         cv2.imshow('frame', color_frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
