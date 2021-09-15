@@ -3,6 +3,8 @@ import groundtruth.toolbox.ur_helper as ur
 from groundtruth.toolbox import EsriGrid
 from groundtruth.toolbox import Facts
 from groundtruth.toolbox.toolpath import Dimension
+import compas.utilities as cu
+import cv2
 # python libs
 import numpy as np
 import os
@@ -41,5 +43,40 @@ def height2ascii(arr, path, fname, cellsize=1):
     return esri.filepath
 
 
+def ascii2height():
+
+    ncols = 1135
+    nrows = 729
+    xllCorner = 17.0
+    yllCorner = -751.0
+    cellsize = 1.0
+    NODATA_value = -9999.0
+
+    # read ascii
+    __HERE__ = os.getcwd()
+    fname = "grasshopper/df_target.asc"
+    dir = os.path.join(__HERE__ , fname)
+
+    data = open(dir)
+
+    lines = data.readlines()
+
+    arr = np.empty([nrows, ncols], dtype=np.float32)
+    for i in range(729):
+        index = i + 6
+        myArray = np.fromstring(lines[index], dtype = float, sep = ' ')
+        pixarray = cu.remap_values(myArray,
+                                   original_min=0,
+                                   original_max=150,
+                                   target_min=0,
+                                   target_max=255)
+        arr[i] = pixarray
+    arr.astype(np.uint8)
+    # 3 channels
+    im = np.stack((arr,)*3, axis=-1)
+    fname = "G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/01_data/target.png"
+    cv2.imwrite(fname, im)
+
+
 if __name__ == '__main__':
-    pass
+    ascii2height()
