@@ -74,7 +74,7 @@ def prediction(toolpaths, adaptive, cellsize=1, depth=0):
         adapted_toolpaths.append(t.ctrlframes_feature)
     # save image for checking
     # save_img(predicted_img, __GH_DATA__, 'predicted_fframe.png')
-    # save_img(hm_feature.feature, __GH_DATA__, 'predicted_feature.png')
+    save_img(hm_feature.feature, __GH_DATA__, 'predicted_feature.png')
     # noise filtering
     hm_feature.remove_noise()
     # get path to ascii
@@ -164,6 +164,14 @@ def export_design(tp, iteration):
     export_json(dir=__GH_EXPORT__, data=data, iter=iteration)
     text = 'json is saved in {}'.format(__GH_EXPORT__)
     return text
+
+
+def surface2image(dists):
+    unum, vnum = 729, 1135
+    dists = np.reshape(dists, [unum, vnum])
+    image = cv2.merge([dists, dists, dists])
+    fname = 'G:/Shared drives/Ko-Simon MAS thesis (temporary)/01_data/02_demo/01_interactive-gh/01_data/target.png'
+    cv2.imwrite(fname, image)
 
 
 if __name__ == '__main__':
