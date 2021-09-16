@@ -1,6 +1,7 @@
 # python libs
 import random as r
 import numpy as np
+import cv2
 
 # package
 from groundtruth.toolbox.helper import Facts
@@ -8,13 +9,16 @@ import groundtruth.toolbox.generative_utils as gu
 
 
 class GA(object):
-    def __init__(self, target_img, initial_height):
+    def __init__(self, target_img, initial_img, prediction_img):
         self.facts = Facts().facts
-        self.target = self.target_height(target_img)
-        self.initial_height = initial_height
+        self.target = self.get_height(target_img)
+        self.initial_height = self.get_height(initial_img)
+        self.prediction = self.get_height(prediction_img)
 
-    def target_height(self, target_img):
-        return gu.split_channel(target_img)[1].astype(np.float32)
+    def get_height(self, arr):
+        arr1 =  gu.split_channel(arr)[1].astype(np.float32)
+        cropped_arr = self.create_designspace(arr1)
+        return cropped_arr
 
     def get_weights_matrix(self):
         initial_error = np.abs(self.initial_height - self.target)
@@ -26,11 +30,15 @@ class GA(object):
 
     def get_max_error_matrix_feature(self):
         initial_error = np.abs(self.initial_height - self.target)
-        return np.amax(initial_error) * np.ones([729, 1135])
+        return np.amax(initial_error) * np.ones(self.target.shape)
 
-    def get_fitness(self, prediction, fframe):
+    def create_designspace(self, arr):
+        offset = 100  # 100mm
+        return arr[offset:729-offset, offset:1135-offset]
+
+    def get_fitness(self, fframe):
         # get fitness
-        predicted_error = np.abs(prediction - self.target)
+        predicted_error = np.abs(self.prediction - self.target)
         if fframe:
             prediction_fitness = np.abs(self.get_max_error_matrix_fframe() - predicted_error)
         else:
@@ -38,6 +46,15 @@ class GA(object):
 
         fitness = prediction_fitness * self.get_weights_matrix()
         total_fitness = np.sum(fitness) ** 2
+
+        return total_fitness
+
+    def get_fitness_minimize(self):
+        errors = np.abs(self.prediction - self.target)
+        ones = np.ones(errors.shape, dtype=np.float32)
+        weights = np.abs(self.initial_height - self.target)
+        cond = (weights != 0)
+        total_fitness = np.sum( errors * np.divide(ones, weights, out=np.zeros_like(ones), where=cond) ) ** 2
 
         return total_fitness
 

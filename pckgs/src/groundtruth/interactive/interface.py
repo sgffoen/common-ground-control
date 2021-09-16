@@ -117,15 +117,13 @@ def prediction_ga(toolpaths, target_path, searchspace, denoise=False):
         # noise filtering
         hm_feature.remove_noise()
 
-    # ga
+    # load image for ga
     target_img = cv2.imread(target_path)
     fname = os.path.join(__GH_DATA__, "scan_height_feature.png")
     initial_img = cv2.imread(fname)
-    initial_height = initial_img[:, :, 1]
-    ga = GA(target_img, initial_height)
     # get fitness
-    prediction = hm_feature.feature[:, :, 1]
-    fitness = ga.get_fitness(prediction, fframe=searchspace)
+    ga = GA(target_img, initial_img, hm_feature.feature)
+    fitness = ga.get_fitness_minimize()
 
     return fitness
 
@@ -180,18 +178,18 @@ def prediction_ga(toolpaths, target_path, searchspace, denoise=False):
 #     target_fframe = cv2.imread(fname)
 #     target_height = split_channel(target_fframe)[1].astype(np.float32)
 
-#     # get fitness
-#     initial_error = np.abs(original_height - target_height)
-#     max_error = np.amax(initial_error) * np.ones([256, 256])
-#     weights = np.power(initial_error, 2)
+    # get fitness
+    # initial_error = np.abs(original_height - target_height)
+    # max_error = np.amax(initial_error) * np.ones([256, 256])
+    # weights = np.power(initial_error, 2)
 
-#     predicted_error = np.abs(predicted_height - target_height)
-#     prediction_fitness = np.abs(max_error - predicted_error)
+    # predicted_error = np.abs(predicted_height - target_height)
+    # prediction_fitness = np.abs(max_error - predicted_error)
 
-#     fitness = prediction_fitness * weights
-#     total_fitness = np.sum(fitness) ** 2
+    # fitness = prediction_fitness * weights
+    # total_fitness = np.sum(fitness) ** 2
 
-#     return total_fitness
+    # return total_fitness
 
 
 def export_design(tp, iteration):
